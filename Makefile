@@ -1,4 +1,14 @@
 
+# deps ensures fresh go.mod and go.sum.
+.PHONY: deps
+deps:
+	@go mod tidy
+	@go mod verify
+
+.PHONY: test
+test:
+	go test ./...
+
 # Specify the name for the binaries
 UPGRADE=upgrade
 
