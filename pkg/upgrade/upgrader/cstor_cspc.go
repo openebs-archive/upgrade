@@ -20,6 +20,8 @@ import (
 	apis "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/upgrade/pkg/upgrade/patch"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
+	"time"
 )
 
 // CSPCPatch is the patch required to upgrade CSPC
@@ -140,24 +142,23 @@ func (obj *CSPCPatch) Upgrade() error {
 }
 
 func (obj *CSPCPatch) verifyCSPCVersionReconcile() error {
-	// TODO: Uncomment code after framework is ready in operator
-	// // get the latest cspc object
-	// err := obj.CSPC.Get(obj.Name, obj.Namespace)
-	// if err != nil {
-	// 	return err
-	// }
-	// // waiting for the current version to be equal to desired version
-	// for obj.CSPC.Object.VersionDetails.Status.Current != obj.To {
-	// 	klog.Infof("Verifying the reconciliation of version for %s", obj.CSPC.Object.Name)
-	// 	// Sleep equal to the default sync time
-	// 	time.Sleep(10 * time.Second)
-	// 	err = obj.CSPC.Get(obj.Name, obj.Namespace)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	if obj.CSPC.Object.VersionDetails.Status.Message != "" {
-	// 		klog.Errorf("failed to reconcile: %s", obj.CSPC.Object.VersionDetails.Status.Reason)
-	// 	}
-	// }
+	// get the latest cspc object
+	err := obj.CSPC.Get(obj.Name, obj.Namespace)
+	if err != nil {
+		return err
+	}
+	// waiting for the current version to be equal to desired version
+	for obj.CSPC.Object.VersionDetails.Status.Current != obj.To {
+		klog.Infof("Verifying the reconciliation of version for %s", obj.CSPC.Object.Name)
+		// Sleep equal to the default sync time
+		time.Sleep(10 * time.Second)
+		err = obj.CSPC.Get(obj.Name, obj.Namespace)
+		if err != nil {
+			return err
+		}
+		if obj.CSPC.Object.VersionDetails.Status.Message != "" {
+			klog.Errorf("failed to reconcile: %s", obj.CSPC.Object.VersionDetails.Status.Reason)
+		}
+	}
 	return nil
 }

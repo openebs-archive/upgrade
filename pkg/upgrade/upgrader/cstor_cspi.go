@@ -20,6 +20,8 @@ import (
 	apis "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/upgrade/pkg/upgrade/patch"
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/klog"
+	"time"
 )
 
 // CSPIPatch is the patch required to upgrade cspi
@@ -187,24 +189,23 @@ func transformCSPI(c *apis.CStorPoolInstance, res *ResourcePatch) error {
 }
 
 func (obj *CSPIPatch) verifyCSPIVersionReconcile() error {
-	// TODO: Uncomment code after framework is ready in operator
-	// // get the latest cspi object
-	// err := obj.CSPI.Get(obj.Name, obj.Namespace)
-	// if err != nil {
-	// 	return err
-	// }
-	// // waiting for the current version to be equal to desired version
-	// for obj.CSPI.Object.VersionDetails.Status.Current != obj.To {
-	// 	klog.Infof("Verifying the reconciliation of version for %s", obj.CSPI.Object.Name)
-	// 	// Sleep equal to the default sync time
-	// 	time.Sleep(10 * time.Second)
-	// 	err = obj.CSPI.Get(obj.Name, obj.Namespace)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	if obj.CSPI.Object.VersionDetails.Status.Message != "" {
-	// 		klog.Errorf("failed to reconcile: %s", obj.CSPI.Object.VersionDetails.Status.Reason)
-	// 	}
-	// }
+	// get the latest cspi object
+	err := obj.CSPI.Get(obj.Name, obj.Namespace)
+	if err != nil {
+		return err
+	}
+	// waiting for the current version to be equal to desired version
+	for obj.CSPI.Object.VersionDetails.Status.Current != obj.To {
+		klog.Infof("Verifying the reconciliation of version for %s", obj.CSPI.Object.Name)
+		// Sleep equal to the default sync time
+		time.Sleep(10 * time.Second)
+		err = obj.CSPI.Get(obj.Name, obj.Namespace)
+		if err != nil {
+			return err
+		}
+		if obj.CSPI.Object.VersionDetails.Status.Message != "" {
+			klog.Errorf("failed to reconcile: %s", obj.CSPI.Object.VersionDetails.Status.Reason)
+		}
+	}
 	return nil
 }
