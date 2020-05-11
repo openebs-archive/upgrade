@@ -116,7 +116,9 @@ func (obj *CSPIPatch) Upgrade() error {
 
 // Init initializes all the fields of the CSPIPatch
 func (obj *CSPIPatch) Init() error {
-	obj.Deploy = patch.NewDeployment()
+	obj.Deploy = patch.NewDeployment(
+		patch.WithDeploymentClient(obj.KubeClientset),
+	)
 	obj.Namespace = obj.OpenebsNamespace
 	label := "openebs.io/cstor-pool-instance=" + obj.Name
 	err := obj.Deploy.Get(label, obj.Namespace)

@@ -21,8 +21,8 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 
-	apis "github.com/openebs/maya/pkg/apis/openebs.io/v1alpha1"
 	upgrade "github.com/openebs/upgrade/pkg/upgrade"
+	"github.com/openebs/upgrade/pkg/version"
 	errors "github.com/pkg/errors"
 )
 
@@ -61,7 +61,7 @@ func NewUpgradeCStorCSPCJob() *cobra.Command {
 // RunCStorCSPCUpgrade upgrades the given Jiva Volume.
 func (u *UpgradeOptions) RunCStorCSPCUpgrade(cmd *cobra.Command, name string) error {
 
-	if apis.IsCurrentVersionValid(u.fromVersion) && apis.IsDesiredVersionValid(u.toVersion) {
+	if version.IsCurrentVersionValid(u.fromVersion) && version.IsDesiredVersionValid(u.toVersion) {
 		klog.Infof("Upgrading %s to %s", name, u.toVersion)
 		err := upgrade.Exec(u.fromVersion, u.toVersion,
 			u.resourceKind,
