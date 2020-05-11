@@ -37,6 +37,7 @@ func NewJob() *cobra.Command {
 
 	cmd.AddCommand(
 		NewUpgradeCStorCSPCJob(),
+		NewUpgradeCStorVolumeJob(),
 	)
 
 	cmd.PersistentFlags().StringVarP(&options.fromVersion,

@@ -127,7 +127,7 @@ func (d *Deployment) Get(label, namespace string) error {
 		return errors.Wrapf(err, "failed to get deployment for %s", label)
 	}
 	if len(deployments.Items) != 1 {
-		return errors.Errorf("no deployments found for label: %s  in namespace %s", label, namespace)
+		return errors.Errorf("no deployments found for label: %s in %s namespace", label, namespace)
 	}
 	d.Object = &deployments.Items[0]
 	return nil

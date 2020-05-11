@@ -25,7 +25,7 @@ func (u *Upgrade) registerUpgrade(kind string, obj UpgradeOptions) *Upgrade {
 func (u *Upgrade) RegisterAll() *Upgrade {
 	u.registerUpgrade("cstorpoolinstance", RegisterCstorPoolInstance)
 	u.registerUpgrade("cstorpoolcluster", RegisterCstorPoolCluster)
-	// u.registerUpgrade("cstorVolume", RegisterCstorVolume)
+	u.registerUpgrade("cstorVolume", RegisterCstorVolume)
 	// u.registerUpgrade("jivaVolume", RegisterJivaVolume)
 	return u
 }
@@ -44,6 +44,15 @@ func RegisterCstorPoolCluster(r *ResourcePatch, c *Client) Upgrader {
 	obj := NewCSPCPatch(
 		WithCSPCResorcePatch(r),
 		WithCSPCClient(c),
+	)
+	return obj
+}
+
+// RegisterCstorVolume ....
+func RegisterCstorVolume(r *ResourcePatch, c *Client) Upgrader {
+	obj := NewCStorVolumePatch(
+		WithCStorVolumeResorcePatch(r),
+		WithCStorVolumeClient(c),
 	)
 	return obj
 }
