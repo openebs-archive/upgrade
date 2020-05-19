@@ -17,6 +17,8 @@ limitations under the License.
 package executor
 
 import (
+	"fmt"
+
 	"github.com/openebs/maya/pkg/util"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
@@ -27,30 +29,30 @@ import (
 )
 
 var (
-	cstorCSPCUpgradeCmdHelpText = `
+	cstorCStorVolumeUpgradeCmdHelpText = `
 This command upgrades the cStor SPC
 
-Usage: upgrade cstor-cspc --options... <cspc-name>...
+Usage: upgrade cstor-volume --options... <volume-name>...
 `
 )
 
-// NewUpgradeCStorCSPCJob upgrades all the cStor Pools associated with
+// NewUpgradeCStorVolumeJob upgrades all the cStor Pools associated with
 // a given Storage Pool Claim
-func NewUpgradeCStorCSPCJob() *cobra.Command {
+func NewUpgradeCStorVolumeJob() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "cstor-cspc",
-		Short:   "Upgrade cStor CSPC",
-		Long:    cstorCSPCUpgradeCmdHelpText,
-		Example: `upgrade cstor-cspc <spc-name>...`,
+		Use:     "cstor-volume",
+		Short:   "Upgrade CStor Volume",
+		Long:    cstorCStorVolumeUpgradeCmdHelpText,
+		Example: `upgrade cstor-volume <spc-name>...`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
-				util.Fatal("failed to upgrade: no cspc name provided")
+				util.Fatal("failed to upgrade: no volume name provided")
 			}
 			for _, name := range args {
-				options.resourceKind = "cstorpoolcluster"
+				options.resourceKind = "cstorVolume"
 				util.CheckErr(options.RunPreFlightChecks(cmd), util.Fatal)
 				util.CheckErr(options.InitializeDefaults(cmd), util.Fatal)
-				util.CheckErr(options.RunCStorCSPCUpgrade(cmd, name), util.Fatal)
+				util.CheckErr(options.RunCStorVolumeUpgrade(cmd, name), util.Fatal)
 			}
 		},
 	}
@@ -58,8 +60,8 @@ func NewUpgradeCStorCSPCJob() *cobra.Command {
 	return cmd
 }
 
-// RunCStorCSPCUpgrade upgrades the given Jiva Volume.
-func (u *UpgradeOptions) RunCStorCSPCUpgrade(cmd *cobra.Command, name string) error {
+// RunCStorVolumeUpgrade upgrades the given Jiva Volume.
+func (u *UpgradeOptions) RunCStorVolumeUpgrade(cmd *cobra.Command, name string) error {
 
 	if version.IsCurrentVersionValid(u.fromVersion) && version.IsDesiredVersionValid(u.toVersion) {
 		klog.Infof("Upgrading %s to %s", name, u.toVersion)
@@ -71,10 +73,11 @@ func (u *UpgradeOptions) RunCStorCSPCUpgrade(cmd *cobra.Command, name string) er
 			u.toVersionImageTag)
 		if err != nil {
 			klog.Error(err)
-			return errors.Errorf("Failed to upgrade cStor CSPC %v", name)
+			return errors.Errorf("Failed to upgrade CStorVolume %v", name)
 		}
 		klog.Infof("Successfully upgraded %s to %s", name, u.toVersion)
 	} else {
+		fmt.Println(version.IsCurrentVersionValid(u.fromVersion), version.IsDesiredVersionValid(u.toVersion))
 		return errors.Errorf("Invalid from version %s or to version %s", u.fromVersion, u.toVersion)
 	}
 	return nil

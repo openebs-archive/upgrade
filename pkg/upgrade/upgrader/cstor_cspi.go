@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The OpenEBS Authors
+Copyright 2020 The OpenEBS Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -118,7 +118,9 @@ func (obj *CSPIPatch) Upgrade() error {
 
 // Init initializes all the fields of the CSPIPatch
 func (obj *CSPIPatch) Init() error {
-	obj.Deploy = patch.NewDeployment()
+	obj.Deploy = patch.NewDeployment(
+		patch.WithDeploymentClient(obj.KubeClientset),
+	)
 	obj.Namespace = obj.OpenebsNamespace
 	label := "openebs.io/cstor-pool-instance=" + obj.Name
 	err := obj.Deploy.Get(label, obj.Namespace)

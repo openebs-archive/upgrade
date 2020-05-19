@@ -27,41 +27,41 @@ import (
 	"k8s.io/klog"
 )
 
-// CSPC ...
-type CSPC struct {
-	Object *apis.CStorPoolCluster
+// CVC ...
+type CVC struct {
+	Object *apis.CStorVolumeConfig
 	Data   []byte
 	Client clientset.Interface
 }
 
-// CSPCOptions ...
-type CSPCOptions func(*CSPC)
+// CVCOptions ...
+type CVCOptions func(*CVC)
 
-// NewCSPC ...
-func NewCSPC(opts ...CSPCOptions) *CSPC {
-	obj := &CSPC{}
+// NewCVC ...
+func NewCVC(opts ...CVCOptions) *CVC {
+	obj := &CVC{}
 	for _, o := range opts {
 		o(obj)
 	}
 	return obj
 }
 
-// WithCSPCClient ...
-func WithCSPCClient(c clientset.Interface) CSPCOptions {
-	return func(obj *CSPC) {
+// WithCVCClient ...
+func WithCVCClient(c clientset.Interface) CVCOptions {
+	return func(obj *CVC) {
 		obj.Client = c
 	}
 }
 
 // PreChecks ...
-func (c *CSPC) PreChecks(from, to string) error {
+func (c *CVC) PreChecks(from, to string) error {
 	if c.Object == nil {
-		return errors.Errorf("nil cspc object")
+		return errors.Errorf("nil cvc object")
 	}
 	version := strings.Split(c.Object.VersionDetails.Status.Current, "-")[0]
 	if version != from && version != to {
 		return errors.Errorf(
-			"cspc version %s is neither %s nor %s",
+			"cvc version %s is neither %s nor %s",
 			version,
 			from,
 			to,
@@ -71,16 +71,16 @@ func (c *CSPC) PreChecks(from, to string) error {
 }
 
 // Patch ...
-func (c *CSPC) Patch(from, to string) error {
-	klog.Info("patching cspc ", c.Object.Name)
+func (c *CVC) Patch(from, to string) error {
+	klog.Info("patching cvc ", c.Object.Name)
 	version := c.Object.VersionDetails.Desired
 	if version == to {
-		klog.Infof("cspc already in %s version", to)
+		klog.Infof("cvc already in %s version", to)
 		return nil
 	}
 	if version == from {
 		patch := c.Data
-		_, err := c.Client.CstorV1().CStorPoolClusters(c.Object.Namespace).Patch(
+		_, err := c.Client.CstorV1().CStorVolumeConfigs(c.Object.Namespace).Patch(
 			c.Object.Name,
 			types.MergePatchType,
 			[]byte(patch),
@@ -88,22 +88,22 @@ func (c *CSPC) Patch(from, to string) error {
 		if err != nil {
 			return errors.Wrapf(
 				err,
-				"failed to patch cspc %s",
+				"failed to patch cvc %s",
 				c.Object.Name,
 			)
 		}
-		klog.Infof("cspc %s patched", c.Object.Name)
+		klog.Infof("cvc %s patched", c.Object.Name)
 	}
 	return nil
 }
 
 // Get ...
-func (c *CSPC) Get(name, namespace string) error {
-	cspcObj, err := c.Client.CstorV1().CStorPoolClusters(namespace).
+func (c *CVC) Get(name, namespace string) error {
+	cvcObj, err := c.Client.CstorV1().CStorVolumeConfigs(namespace).
 		Get(name, metav1.GetOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "failed to get cspc %s in %s namespace", name, namespace)
+		return errors.Wrapf(err, "failed to get cvc %s in %s namespace", name, namespace)
 	}
-	c.Object = cspcObj
+	c.Object = cvcObj
 	return nil
 }
