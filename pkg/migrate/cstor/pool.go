@@ -256,7 +256,25 @@ func (c *CSPCMigrator) csptocspi(
 	if err != nil {
 		return err
 	}
-	return nil
+	// remove the finalizers from csp object for cleanup
+	// as pool pod is no longer running to remove them.
+	return removeCSPFinalizers(cspObj)
+}
+
+func removeCSPFinalizers(cspObj *apis.CStorPool) error {
+	cspClient := csp.KubeClient()
+	newCSP := cspObj.DeepCopy()
+	newCSP.Finalizers = []string{}
+	patchData, err := GetPatchData(cspObj, newCSP)
+	if err != nil {
+		return err
+	}
+	_, err = cspClient.Patch(
+		cspObj.Name,
+		k8stypes.MergePatchType,
+		patchData,
+	)
+	return err
 }
 
 // get csp for cspi on the basis of cspLabel, which is the combination of
@@ -304,13 +322,15 @@ func (c *CSPCMigrator) scaleDownDeployment(cspObj *apis.CStorPool, openebsNamesp
 		Times(60).
 		Wait(5 * time.Second).
 		Try(func(attempt uint) error {
-			cspDeploy, err1 := c.KubeClientset.AppsV1().
-				Deployments(openebsNamespace).
-				Get(cspDeployList.Items[0].Name, metav1.GetOptions{})
+			cspPods, err1 := c.KubeClientset.CoreV1().
+				Pods(openebsNamespace).
+				List(metav1.ListOptions{
+					LabelSelector: "openebs.io/cstor-pool=" + cspObj.Name,
+				})
 			if err1 != nil {
 				return errors.Wrapf(err1, "failed to get csp deploy")
 			}
-			if cspDeploy.Status.ReadyReplicas != 0 {
+			if len(cspPods.Items) != 0 {
 				return errors.Errorf("failed to scale down csp deployment")
 			}
 			return nil
