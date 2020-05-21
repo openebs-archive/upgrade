@@ -102,7 +102,7 @@ upgrade-image.amd64: upgrade
 	@echo "-----------------------------------------------"
 	@cp bin/${UPGRADE}/${UPGRADE} build/${UPGRADE}
 	@cd build/${UPGRADE} && \
-	 sudo docker build -t "${HUB_USER}/${UPGRADE_REPO_NAME_AMD64}:${IMAGE_TAG}" --build-arg BUILD_DATE=${BUILD_DATE} .
+	 sudo docker build -t "${HUB_USER}/${UPGRADE_REPO_NAME_AMD64}:${IMAGE_TAG}" ${DBUILD_ARGS} .
 	@rm build/${UPGRADE}/${UPGRADE}
 
 .PHONY: upgrade-image.arm64
@@ -113,7 +113,7 @@ upgrade-image.arm64: upgrade
 	@echo "-----------------------------------------------"
 	@cp bin/${UPGRADE}/${UPGRADE} build/${UPGRADE}
 	@cd build/${UPGRADE} && \
-	 sudo docker build -t "${HUB_USER}/${UPGRADE_REPO_NAME_ARM64}:${IMAGE_TAG}" --build-arg BUILD_DATE=${BUILD_DATE} .
+	 sudo docker build -t "${HUB_USER}/${UPGRADE_REPO_NAME_ARM64}:${IMAGE_TAG}" ${DBUILD_ARGS} .
 	@rm build/${UPGRADE}/${UPGRADE}
 
 
