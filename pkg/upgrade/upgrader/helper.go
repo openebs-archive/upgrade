@@ -22,7 +22,9 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"k8s.io/client-go/kubernetes"
 )
 
 func getImageURL(url, prefix string) (string, error) {
@@ -61,4 +63,26 @@ func GetPatchData(oldObj, newObj interface{}) ([]byte, error) {
 		return nil, fmt.Errorf("CreateTwoWayMergePatch failed: %v", err)
 	}
 	return patchBytes, nil
+}
+
+func isOperatorUpgraded(componentName string, namespace string,
+	toVersion string, kubeClient kubernetes.Interface) error {
+	operatorPods, err := kubeClient.CoreV1().
+		Pods(namespace).
+		List(metav1.ListOptions{
+			LabelSelector: "openebs.io/component-name=" + componentName,
+		})
+	if err != nil {
+		return err
+	}
+	if len(operatorPods.Items) == 0 {
+		return fmt.Errorf("operator pod missing for %s", componentName)
+	}
+	for _, pod := range operatorPods.Items {
+		if pod.Labels["openebs.io/version"] != toVersion {
+			return fmt.Errorf("operator %s is in % version, please upgrade it to %s version",
+				componentName, pod.Labels["openebs.io/version"], toVersion)
+		}
+	}
+	return nil
 }
