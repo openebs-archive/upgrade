@@ -80,7 +80,7 @@ func isOperatorUpgraded(componentName string, namespace string,
 	}
 	for _, pod := range operatorPods.Items {
 		if pod.Labels["openebs.io/version"] != toVersion {
-			return fmt.Errorf("operator %s is in % version, please upgrade it to %s version",
+			return fmt.Errorf("%s is in %s version, please upgrade it to %s version",
 				componentName, pod.Labels["openebs.io/version"], toVersion)
 		}
 	}
