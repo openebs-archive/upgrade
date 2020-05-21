@@ -41,7 +41,7 @@ script:
     fi
 
 after_success:
-  - # make deploy-images
+  - make deploy-images
 
 notifications:
   email:

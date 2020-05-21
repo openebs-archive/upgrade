@@ -1,3 +1,26 @@
+# Copyright © 2020 The OpenEBS Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# IMAGE_ORG can be used to customize the organization 
+# under which images should be pushed. 
+# By default the organization name is `openebs`. 
+
+ifeq (${IMAGE_ORG}, )
+  IMAGE_ORG = openebs
+  export IMAGE_ORG
+endif
 
 # deps ensures fresh go.mod and go.sum.
 .PHONY: deps
@@ -69,3 +92,9 @@ upgrade-image.arm64: upgrade
 .PHONY: cleanup-upgrade
 cleanup-upgrade: 
 	rm -rf ${GOPATH}/bin/${UPGRADE}
+
+
+# Push images
+.PHONY: deploy-images
+deploy-images:
+	@./build/deploy.sh
