@@ -53,23 +53,23 @@ func getBDList(cspObj apis.CStorPool) []cstor.CStorPoolInstanceBlockDevice {
 	return list
 }
 
-func getCSPCSpecForSPC(spc *apis.StoragePoolClaim, openebsNamespace string) (*cstor.CStorPoolCluster, error) {
+func (c *CSPCMigrator) getCSPCSpecForSPC() (*cstor.CStorPoolCluster, error) {
 	cspClient := csp.KubeClient()
 	cspList, err := cspClient.List(metav1.ListOptions{
-		LabelSelector: string(apis.StoragePoolClaimCPK) + "=" + spc.Name,
+		LabelSelector: string(apis.StoragePoolClaimCPK) + "=" + c.SPCObj.Name,
 	})
 	if err != nil {
 		return nil, err
 	}
 	cspcObj := &cstor.CStorPoolCluster{}
-	cspcObj.Name = spc.Name
+	cspcObj.Name = c.SPCObj.Name
 	cspcObj.Annotations = map[string]string{
 		// This label will be used to disable reconciliation on the dependants.
 		// In this case that will be CSPI
 		types.OpenEBSDisableDependantsReconcileKey: "true",
 	}
 	for _, cspObj := range cspList.Items {
-		cspDeployList, err := deploy.NewKubeClient().WithNamespace(openebsNamespace).
+		cspDeployList, err := deploy.NewKubeClient().WithNamespace(c.OpenebsNamespace).
 			List(&metav1.ListOptions{
 				LabelSelector: "openebs.io/cstor-pool=" + cspObj.Name,
 			})
@@ -122,20 +122,20 @@ func getCSPAuxResources(cspDeploy appsv1.Deployment) *corev1.ResourceRequirement
 }
 
 // generateCSPC creates an equivalent cspc for the given spc object
-func (c *CSPCMigrator) generateCSPC(spcObj *apis.StoragePoolClaim, openebsNamespace string) (
+func (c *CSPCMigrator) generateCSPC() (
 	*cstor.CStorPoolCluster, error) {
 	cspcObj, err := c.OpenebsClientset.CstorV1().
-		CStorPoolClusters(openebsNamespace).Get(spcObj.Name, metav1.GetOptions{})
-	if !k8serrors.IsNotFound(err) {
+		CStorPoolClusters(c.OpenebsNamespace).Get(c.SPCObj.Name, metav1.GetOptions{})
+	if !k8serrors.IsNotFound(err) && err != nil {
 		return nil, err
 	}
 	if err != nil {
-		cspcObj, err = getCSPCSpecForSPC(spcObj, openebsNamespace)
+		cspcObj, err = c.getCSPCSpecForSPC()
 		if err != nil {
 			return nil, err
 		}
 		cspcObj, err = c.OpenebsClientset.CstorV1().
-			CStorPoolClusters(openebsNamespace).Create(cspcObj)
+			CStorPoolClusters(c.OpenebsNamespace).Create(cspcObj)
 		if err != nil {
 			return nil, err
 		}
@@ -149,7 +149,7 @@ func (c *CSPCMigrator) generateCSPC(spcObj *apis.StoragePoolClaim, openebsNamesp
 		Wait(5 * time.Second).
 		Try(func(attempt uint) error {
 			cspiList, err1 := c.OpenebsClientset.CstorV1().
-				CStorPoolInstances(openebsNamespace).List(
+				CStorPoolInstances(c.OpenebsNamespace).List(
 				metav1.ListOptions{
 					LabelSelector: types.CStorPoolClusterLabelKey + "=" + cspcObj.Name,
 				})
@@ -168,7 +168,7 @@ func (c *CSPCMigrator) generateCSPC(spcObj *apis.StoragePoolClaim, openebsNamesp
 		return nil, err
 	}
 	cspcObj, err = c.OpenebsClientset.CstorV1().
-		CStorPoolClusters(openebsNamespace).Get(spcObj.Name, metav1.GetOptions{})
+		CStorPoolClusters(c.OpenebsNamespace).Get(c.SPCObj.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func (c *CSPCMigrator) generateCSPC(spcObj *apis.StoragePoolClaim, openebsNamesp
 	// reconciliation disabled
 	delete(cspcObj.Annotations, types.OpenEBSDisableDependantsReconcileKey)
 	cspcObj, err = c.OpenebsClientset.CstorV1().
-		CStorPoolClusters(openebsNamespace).
+		CStorPoolClusters(c.OpenebsNamespace).
 		Update(cspcObj)
 	if err != nil {
 		return nil, err
