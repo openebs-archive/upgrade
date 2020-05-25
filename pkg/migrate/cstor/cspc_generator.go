@@ -41,9 +41,21 @@ var (
 	}
 )
 
-func getBDList(cspObj apis.CStorPool) []cstor.CStorPoolInstanceBlockDevice {
+func getDataRaidGroups(cspObj apis.CStorPool) []cstor.RaidGroup {
+	dataRaidGroups := []cstor.RaidGroup{}
+	for _, rg := range cspObj.Spec.Group {
+		dataRaidGroups = append(dataRaidGroups,
+			cstor.RaidGroup{
+				CStorPoolInstanceBlockDevices: getBDList(rg),
+			},
+		)
+	}
+	return dataRaidGroups
+}
+
+func getBDList(rg apis.BlockDeviceGroup) []cstor.CStorPoolInstanceBlockDevice {
 	list := []cstor.CStorPoolInstanceBlockDevice{}
-	for _, bdcObj := range cspObj.Spec.Group[0].Item {
+	for _, bdcObj := range rg.Item {
 		list = append(list,
 			cstor.CStorPoolInstanceBlockDevice{
 				BlockDeviceName: bdcObj.Name,
@@ -83,11 +95,7 @@ func (c *CSPCMigrator) getCSPCSpecForSPC() (*cstor.CStorPoolCluster, error) {
 			NodeSelector: map[string]string{
 				types.HostNameLabelKey: cspObj.Labels[string(apis.HostNameCPK)],
 			},
-			DataRaidGroups: []cstor.RaidGroup{
-				{
-					CStorPoolInstanceBlockDevices: getBDList(cspObj),
-				},
-			},
+			DataRaidGroups: getDataRaidGroups(cspObj),
 			PoolConfig: cstor.PoolConfig{
 				DataRaidGroupType: typeMap[cspObj.Spec.PoolSpec.PoolType],
 				ThickProvision:    cspObj.Spec.PoolSpec.ThickProvisioning,

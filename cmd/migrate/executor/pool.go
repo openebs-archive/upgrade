@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The OpenEBS Authors.
+Copyright 2020 The OpenEBS Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -44,9 +44,9 @@ func NewMigratePoolJob() *cobra.Command {
 		Long:    cstorSPCMigrateCmdHelpText,
 		Example: `migrate cstor-spc --spc-name <spc-name>`,
 		Run: func(cmd *cobra.Command, args []string) {
-			util.CheckErr(options.RunPreFlightChecks(cmd), util.Fatal)
-			util.CheckErr(options.RunCStorSPCMigrateChecks(cmd), util.Fatal)
-			util.CheckErr(options.RunCStorSPCMigrate(cmd), util.Fatal)
+			util.CheckErr(options.RunPreFlightChecks(), util.Fatal)
+			util.CheckErr(options.RunCStorSPCMigrateChecks(), util.Fatal)
+			util.CheckErr(options.RunCStorSPCMigrate(), util.Fatal)
 		},
 	}
 
@@ -59,8 +59,8 @@ func NewMigratePoolJob() *cobra.Command {
 }
 
 // RunCStorSPCMigrateChecks will ensure the sanity of the cstor SPC migrate options
-func (u *MigrateOptions) RunCStorSPCMigrateChecks(cmd *cobra.Command) error {
-	if len(strings.TrimSpace(u.spcName)) == 0 {
+func (m *MigrateOptions) RunCStorSPCMigrateChecks() error {
+	if len(strings.TrimSpace(m.spcName)) == 0 {
 		return errors.Errorf("Cannot execute migrate job: cstor spc name is missing")
 	}
 
@@ -68,16 +68,16 @@ func (u *MigrateOptions) RunCStorSPCMigrateChecks(cmd *cobra.Command) error {
 }
 
 // RunCStorSPCMigrate migrates the given spc.
-func (u *MigrateOptions) RunCStorSPCMigrate(cmd *cobra.Command) error {
+func (m *MigrateOptions) RunCStorSPCMigrate() error {
 
-	klog.Infof("Migrating spc %s to cspc", u.spcName)
+	klog.Infof("Migrating spc %s to cspc", m.spcName)
 	migrator := cstor.CSPCMigrator{}
-	err := migrator.Migrate(u.spcName, u.openebsNamespace)
+	err := migrator.Migrate(m.spcName, m.openebsNamespace)
 	if err != nil {
 		klog.Error(err)
-		return errors.Errorf("Failed to migrate cStor SPC : %s", u.spcName)
+		return errors.Errorf("Failed to migrate cStor SPC : %s", m.spcName)
 	}
-	klog.Infof("Successfully migrated spc %s to cspc", u.spcName)
+	klog.Infof("Successfully migrated spc %s to cspc", m.spcName)
 
 	return nil
 }

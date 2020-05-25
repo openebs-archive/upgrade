@@ -68,10 +68,11 @@ UPGRADE=upgrade
 
 # Specify the name of the docker repo for amd64
 UPGRADE_REPO_NAME_AMD64="upgrade-amd64"
-M_MIGRATE_REPO_NAME?=migrate
+MIGRATE_REPO_NAME_AMD64="migrate-amd64"
 
 # Specify the name of the docker repo for arm64
 UPGRADE_REPO_NAME_ARM64="upgrade-arm64"
+MIGRATE_REPO_NAME_ARM64="migrate-arm64"
 
 # build upgrade binary
 .PHONY: upgrade

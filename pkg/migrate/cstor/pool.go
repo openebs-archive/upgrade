@@ -18,6 +18,7 @@ package migrate
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"k8s.io/client-go/kubernetes"
@@ -80,8 +81,34 @@ func (c *CSPCMigrator) Migrate(name, namespace string) error {
 	if err != nil {
 		return errors.Wrap(err, "error building openebs clientset")
 	}
+	err = c.validateCSPCOperator()
+	if err != nil {
+		return err
+	}
 	err = c.migrate(name)
 	return err
+}
+
+func (c *CSPCMigrator) validateCSPCOperator() error {
+	operatorPods, err := c.KubeClientset.CoreV1().
+		Pods(c.OpenebsNamespace).
+		List(metav1.ListOptions{
+			LabelSelector: "openebs.io/component-name=cspc-operator",
+		})
+	if err != nil {
+		return err
+	}
+	if len(operatorPods.Items) == 0 {
+		return fmt.Errorf("cspc operator pod missing")
+	}
+	for _, pod := range operatorPods.Items {
+		operatorVersion := strings.Split(pod.Labels["openebs.io/version"], "-")[0]
+		if operatorVersion != "1.11.0" {
+			return fmt.Errorf("cspc operator is in %s version, please upgrade it to 1.11.0 or above version",
+				pod.Labels["openebs.io/version"])
+		}
+	}
+	return nil
 }
 
 // Pool migrates the pool from SPC schema to CSPC schema
@@ -98,11 +125,11 @@ func (c *CSPCMigrator) migrate(spcName string) error {
 	}
 	err = c.validateSPC()
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to validate spc %s", spcName)
 	}
 	err = c.updateBDCLabels(spcName)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to update bdc labels for spc %s", spcName)
 	}
 	klog.Infof("Creating equivalent cspc for spc %s", spcName)
 	c.CSPCObj, err = c.generateCSPC()
@@ -130,11 +157,9 @@ func (c *CSPCMigrator) migrate(spcName string) error {
 		// which implies the migration is done and makes it idempotent
 		cspiItem := cspiItem // pin it
 		cspiObj := &cspiItem
-		if cspiObj.Status.Phase != "ONLINE" {
-			err = c.csptocspi(cspiObj)
-			if err != nil {
-				return err
-			}
+		err = c.cspTocspi(cspiObj)
+		if err != nil {
+			return err
 		}
 	}
 	// Clean up old SPC resources after the migration is complete
@@ -172,8 +197,10 @@ func (c *CSPCMigrator) validateSPC() error {
 		bdMap[bdName]++
 	}
 	for _, cspObj := range cspList.Items {
-		for _, bdObj := range cspObj.Spec.Group[0].Item {
-			bdMap[bdObj.Name]++
+		for _, rg := range cspObj.Spec.Group {
+			for _, bdObj := range rg.Item {
+				bdMap[bdObj.Name]++
+			}
 		}
 	}
 	for bdName, count := range bdMap {
@@ -210,34 +237,37 @@ func (c *CSPCMigrator) getSPCWithMigrationStatus(spcName string) (*apis.StorageP
 }
 
 // csptocspi migrates a CSP to CSPI based on hostname
-func (c *CSPCMigrator) csptocspi(cspiObj *cstor.CStorPoolInstance) error {
+func (c *CSPCMigrator) cspTocspi(cspiObj *cstor.CStorPoolInstance) error {
+	var err1 error
 	hostnameLabel := types.HostNameLabelKey + "=" + cspiObj.Labels[types.HostNameLabelKey]
 	spcLabel := string(apis.StoragePoolClaimCPK) + "=" + c.CSPCObj.Name
 	cspLabel := hostnameLabel + "," + spcLabel
-	var err1 error
 	cspObj, err := getCSP(cspLabel)
 	if err != nil {
 		return err
 	}
-	klog.Infof("Migrating csp %s to cspi %s", cspiObj.Name, cspObj.Name)
-	err = c.scaleDownDeployment(cspObj, c.OpenebsNamespace)
-	if err != nil {
-		return err
-	}
-	// once the old pool pod is scaled down and bdcs are patched
-	// bring up the cspi pod so that the old pool can be renamed and imported.
-	cspiObj.Annotations[types.OldPoolName] = "cstor-" + string(cspObj.UID)
-	delete(cspiObj.Annotations, types.OpenEBSDisableReconcileLabelKey)
-	cspiObj, err = c.OpenebsClientset.CstorV1().
-		CStorPoolInstances(c.OpenebsNamespace).
-		Update(cspiObj)
-	if err != nil {
-		return err
+	if cspiObj.Annotations[types.OpenEBSDisableReconcileLabelKey] != "" {
+		klog.Infof("Migrating csp %s to cspi %s", cspObj.Name, cspiObj.Name)
+		err = c.scaleDownDeployment(cspObj, c.OpenebsNamespace)
+		if err != nil {
+			return err
+		}
+		// once the old pool pod is scaled down and bdcs are patched
+		// bring up the cspi pod so that the old pool can be renamed and imported.
+		cspiObj.Annotations[types.ExistingPoolName] = "cstor-" + string(cspObj.UID)
+		delete(cspiObj.Annotations, types.OpenEBSDisableReconcileLabelKey)
+		cspiObj, err = c.OpenebsClientset.CstorV1().
+			CStorPoolInstances(c.OpenebsNamespace).
+			Update(cspiObj)
+		if err != nil {
+			return err
+		}
 	}
 	err = retry.
 		Times(60).
 		Wait(5 * time.Second).
 		Try(func(attempt uint) error {
+			klog.Infof("waiting for cspi %s to come to ONLINE state", cspiObj.Name)
 			cspiObj, err1 = c.OpenebsClientset.CstorV1().
 				CStorPoolInstances(c.OpenebsNamespace).
 				Get(cspiObj.Name, metav1.GetOptions{})
@@ -323,6 +353,7 @@ func (c *CSPCMigrator) scaleDownDeployment(cspObj *apis.CStorPool, openebsNamesp
 		Times(60).
 		Wait(5 * time.Second).
 		Try(func(attempt uint) error {
+			klog.Infof("waiting for csp %s deployment to scale down", cspObj.Name)
 			cspPods, err1 := c.KubeClientset.CoreV1().
 				Pods(openebsNamespace).
 				List(metav1.ListOptions{

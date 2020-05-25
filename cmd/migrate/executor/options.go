@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The OpenEBS Authors.
+Copyright 2020 The OpenEBS Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,11 +20,10 @@ import (
 	"strings"
 
 	errors "github.com/pkg/errors"
-
-	"github.com/spf13/cobra"
 )
 
-// MigrateOptions stores information required for migrate
+// MigrateOptions stores information required for migration of
+// OpenEBS resources
 type MigrateOptions struct {
 	openebsNamespace string
 	spcName          string
@@ -37,9 +36,9 @@ var (
 )
 
 // RunPreFlightChecks will ensure the sanity of the common migrate options
-func (u *MigrateOptions) RunPreFlightChecks(cmd *cobra.Command) error {
-	if len(strings.TrimSpace(u.openebsNamespace)) == 0 {
-		return errors.Errorf("Cannot execute migrate job: namespace is missing")
+func (m *MigrateOptions) RunPreFlightChecks() error {
+	if len(strings.TrimSpace(m.openebsNamespace)) == 0 {
+		return errors.Errorf("Cannot execute migrate job: openebs namespace is missing")
 	}
 	return nil
 }

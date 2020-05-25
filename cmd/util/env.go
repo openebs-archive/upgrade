@@ -17,14 +17,15 @@ limitations under the License.
 package util
 
 import (
-	menv "github.com/openebs/maya/pkg/env/v1alpha1"
+	"os"
 )
 
-//This file defines the environement variable names that are specific
-// to this provisioner. In addition to the variables defined in this file,
-// provisioner also uses the following:
-//   OPENEBS_NAMESPACE
+const (
+	openebsNamespaceEnv = "OPENEBS_NAMESPACE"
+)
 
+// GetOpenEBSNamespace gets the openebs namespace set to
+// the OPENEBS_NAMESPACE env
 func GetOpenEBSNamespace() string {
-	return menv.Get(menv.OpenEBSNamespace)
+	return os.Getenv(openebsNamespaceEnv)
 }

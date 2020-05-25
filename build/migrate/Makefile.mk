@@ -15,15 +15,27 @@ migrate:
 	@PNAME=${MIGRATE} CTLNAME=${MIGRATE} CGO_ENABLED=0 sh -c "'$(PWD)/build/build.sh'"
 
 # build migrate image
-.PHONY: migrate-image
-migrate-image: migrate
+.PHONY: migrate-image.amd64
+migrate-image.amd64: migrate
 	@echo "-----------------------------------------------"
 	@echo "--> ${MIGRATE} image                           "
-	@echo "${HUB_USER}/${M_MIGRATE_REPO_NAME}:${IMAGE_TAG}"
+	@echo "${HUB_USER}/${MIGRATE_REPO_NAME_AMD64}:${IMAGE_TAG}"
 	@echo "-----------------------------------------------"
 	@cp bin/${MIGRATE}/${MIGRATE} build/${MIGRATE}/
 	@cd build/${MIGRATE} && \
-	 sudo docker build -t "${HUB_USER}/${M_MIGRATE_REPO_NAME}:${IMAGE_TAG}" --build-arg BUILD_DATE=${BUILD_DATE} .
+	 sudo docker build -t "${HUB_USER}/${MIGRATE_REPO_NAME_AMD64}:${IMAGE_TAG}" ${DBUILD_ARGS} .
+	@rm build/${MIGRATE}/${MIGRATE}
+
+# build migrate image
+.PHONY: migrate-image.arm64
+migrate-image.arm64: migrate
+	@echo "-----------------------------------------------"
+	@echo "--> ${MIGRATE} image                           "
+	@echo "${HUB_USER}/${MIGRATE_REPO_NAME_ARM64}:${IMAGE_TAG}"
+	@echo "-----------------------------------------------"
+	@cp bin/${MIGRATE}/${MIGRATE} build/${MIGRATE}/
+	@cd build/${MIGRATE} && \
+	 sudo docker build -t "${HUB_USER}/${MIGRATE_REPO_NAME_ARM64}:${IMAGE_TAG}" ${DBUILD_ARGS} .
 	@rm build/${MIGRATE}/${MIGRATE}
 
 # cleanup migrate build
