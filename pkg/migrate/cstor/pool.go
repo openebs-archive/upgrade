@@ -254,7 +254,7 @@ func (c *CSPCMigrator) cspTocspi(cspiObj *cstor.CStorPoolInstance) error {
 		}
 		// once the old pool pod is scaled down and bdcs are patched
 		// bring up the cspi pod so that the old pool can be renamed and imported.
-		cspiObj.Annotations[types.ExistingPoolName] = "cstor-" + string(cspObj.UID)
+		cspiObj.Annotations[types.OpenEBSCStorExistingPoolName] = "cstor-" + string(cspObj.UID)
 		delete(cspiObj.Annotations, types.OpenEBSDisableReconcileLabelKey)
 		cspiObj, err = c.OpenebsClientset.CstorV1().
 			CStorPoolInstances(c.OpenebsNamespace).

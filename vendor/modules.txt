@@ -1,7 +1,5 @@
-# github.com/beorn7/perks v1.0.1
+# github.com/beorn7/perks v1.0.0
 github.com/beorn7/perks/quantile
-# github.com/cespare/xxhash/v2 v2.1.1
-github.com/cespare/xxhash/v2
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/ghodss/yaml v1.0.0
@@ -33,7 +31,7 @@ github.com/matttproud/golang_protobuf_extensions/pbutil
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
-# github.com/openebs/api v0.0.0-20200417151024-f20750521fa8
+# github.com/openebs/api v1.10.0-RC1.0.20200526131432-e5ad18841c3d
 github.com/openebs/api/pkg/apis/cstor
 github.com/openebs/api/pkg/apis/cstor/v1
 github.com/openebs/api/pkg/apis/openebs.io
@@ -49,6 +47,15 @@ github.com/openebs/maya/pkg/apis/openebs.io
 github.com/openebs/maya/pkg/apis/openebs.io/ndm/v1alpha1
 github.com/openebs/maya/pkg/apis/openebs.io/v1alpha1
 github.com/openebs/maya/pkg/apis/stringer/v1alpha1
+github.com/openebs/maya/pkg/blockdeviceclaim/v1alpha1
+github.com/openebs/maya/pkg/client/generated/clientset/versioned
+github.com/openebs/maya/pkg/client/generated/clientset/versioned/scheme
+github.com/openebs/maya/pkg/client/generated/clientset/versioned/typed/openebs.io/v1alpha1
+github.com/openebs/maya/pkg/client/generated/openebs.io/ndm/v1alpha1/clientset/internalclientset
+github.com/openebs/maya/pkg/client/generated/openebs.io/ndm/v1alpha1/clientset/internalclientset/scheme
+github.com/openebs/maya/pkg/client/generated/openebs.io/ndm/v1alpha1/clientset/internalclientset/typed/ndm/v1alpha1
+github.com/openebs/maya/pkg/cstor/pool/v1alpha3
+github.com/openebs/maya/pkg/cstor/volumereplica/v1alpha1
 github.com/openebs/maya/pkg/debug
 github.com/openebs/maya/pkg/env/v1alpha1
 github.com/openebs/maya/pkg/kubernetes/client/v1alpha1
@@ -57,24 +64,24 @@ github.com/openebs/maya/pkg/kubernetes/deployment/appsv1/v1alpha1
 github.com/openebs/maya/pkg/kubernetes/podtemplatespec/v1alpha1
 github.com/openebs/maya/pkg/kubernetes/volume/v1alpha1
 github.com/openebs/maya/pkg/logs
+github.com/openebs/maya/pkg/storagepoolclaim/v1alpha1
 github.com/openebs/maya/pkg/util
 github.com/openebs/maya/pkg/util/retry
 github.com/openebs/maya/pkg/version
 # github.com/pkg/errors v0.9.1
 github.com/pkg/errors
-# github.com/prometheus/client_golang v1.4.1
+# github.com/prometheus/client_golang v1.0.0
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
-# github.com/prometheus/client_model v0.2.0
+# github.com/prometheus/client_model v0.0.0-20190129233127-fd36f4220a90
 github.com/prometheus/client_model/go
-# github.com/prometheus/common v0.9.1
+# github.com/prometheus/common v0.4.1
 github.com/prometheus/common/expfmt
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
 github.com/prometheus/common/model
-# github.com/prometheus/procfs v0.0.8
+# github.com/prometheus/procfs v0.0.2
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
-github.com/prometheus/procfs/internal/util
 # github.com/ryanuber/columnize v2.1.0+incompatible
 github.com/ryanuber/columnize
 # github.com/spf13/cobra v1.0.0
