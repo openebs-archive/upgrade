@@ -3,6 +3,7 @@ module github.com/openebs/upgrade
 go 1.13
 
 require (
+	github.com/hashicorp/go-version v1.2.0
 	github.com/openebs/api v1.10.0-RC1.0.20200526131432-e5ad18841c3d
 	github.com/openebs/maya v0.0.0-20200417064301-11135d0b7ebd
 	github.com/pkg/errors v0.9.1
