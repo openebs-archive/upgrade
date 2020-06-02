@@ -76,7 +76,7 @@ func (c *CSPCMigrator) getCSPCSpecForSPC() (*cstor.CStorPoolCluster, error) {
 	cspcObj := &cstor.CStorPoolCluster{}
 	cspcObj.Name = c.SPCObj.Name
 	cspcObj.Annotations = map[string]string{
-		// This label will be used to disable reconciliation on the dependants.
+		// This annotation will be used to disable reconciliation on the dependants.
 		// In this case that will be CSPI
 		types.OpenEBSDisableDependantsReconcileKey: "true",
 	}

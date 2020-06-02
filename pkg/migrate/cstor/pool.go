@@ -159,8 +159,6 @@ func (c *CSPCMigrator) migrate(spcName string) error {
 	// For each cspi perform the migration from csp that present was on
 	// node on which cspi came up.
 	for _, cspiItem := range cspiList.Items {
-		// Skip the migration if cspi is already in ONLINE state,
-		// which implies the migration is done and makes it idempotent
 		cspiItem := cspiItem // pin it
 		cspiObj := &cspiItem
 		err = c.cspTocspi(cspiObj)
@@ -261,6 +259,7 @@ func (c *CSPCMigrator) cspTocspi(cspiObj *cstor.CStorPoolInstance) error {
 		// once the old pool pod is scaled down and bdcs are patched
 		// bring up the cspi pod so that the old pool can be renamed and imported.
 		cspiObj.Annotations[types.OpenEBSCStorExistingPoolName] = "cstor-" + string(cspObj.UID)
+		cspiObj.Status.Phase = cstor.CStorPoolStatusOffline
 		delete(cspiObj.Annotations, types.OpenEBSDisableReconcileLabelKey)
 		cspiObj, err = c.OpenebsClientset.CstorV1().
 			CStorPoolInstances(c.OpenebsNamespace).
@@ -289,7 +288,7 @@ func (c *CSPCMigrator) cspTocspi(cspiObj *cstor.CStorPoolInstance) error {
 	if err != nil {
 		return err
 	}
-	err = c.updateCVRsLabels(cspiObj)
+	err = c.updateCVRsLabels(cspObj, cspiObj)
 	if err != nil {
 		return err
 	}
@@ -422,7 +421,7 @@ func (c *CSPCMigrator) updateBDCOwnerRef() error {
 		if bdcItem.OwnerReferences[0].Kind != "CStorPoolCluster" {
 			bdcItem := bdcItem // pin it
 			bdcObj := &bdcItem
-			klog.Infof("Updating bdc %s with cspc ownerRef.", bdcObj.Name)
+			klog.Infof("Updating bdc %s with cspc %s ownerRef.", bdcObj.Name, c.CSPCObj.Name)
 			bdcObj.OwnerReferences[0].Kind = "CStorPoolCluster"
 			bdcObj.OwnerReferences[0].UID = c.CSPCObj.UID
 			bdcObj.OwnerReferences[0].APIVersion = "cstor.openebs.io/v1"
@@ -438,10 +437,10 @@ func (c *CSPCMigrator) updateBDCOwnerRef() error {
 
 // Update the cvrs on the old csp with the migrated cspi labels and annotations
 // to allow backward compatibility with old external provisioned volumes.
-func (c *CSPCMigrator) updateCVRsLabels(cspiObj *cstor.CStorPoolInstance) error {
+func (c *CSPCMigrator) updateCVRsLabels(cspObj *apis.CStorPool, cspiObj *cstor.CStorPoolInstance) error {
 	cvrList, err := cvr.NewKubeclient().
 		WithNamespace(c.OpenebsNamespace).List(metav1.ListOptions{
-		LabelSelector: cspNameLabel + "=" + c.CSPCObj.Name,
+		LabelSelector: cspNameLabel + "=" + cspObj.Name,
 	})
 	if err != nil {
 		return err
