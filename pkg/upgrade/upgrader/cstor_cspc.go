@@ -17,11 +17,12 @@ limitations under the License.
 package upgrader
 
 import (
+	"time"
+
 	apis "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/upgrade/pkg/upgrade/patch"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
-	"time"
 )
 
 // CSPCPatch is the patch required to upgrade CSPC
@@ -60,7 +61,11 @@ func NewCSPCPatch(opts ...CSPCPatchOptions) *CSPCPatch {
 
 // PreUpgrade ...
 func (obj *CSPCPatch) PreUpgrade() error {
-	err := obj.CSPC.PreChecks(obj.From, obj.To)
+	err := isOperatorUpgraded("cspc-operator", obj.Namespace, obj.To, obj.KubeClientset)
+	if err != nil {
+		return err
+	}
+	err = obj.CSPC.PreChecks(obj.From, obj.To)
 	return err
 }
 

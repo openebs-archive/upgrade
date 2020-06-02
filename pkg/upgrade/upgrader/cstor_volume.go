@@ -66,7 +66,11 @@ func NewCStorVolumePatch(opts ...CStorVolumePatchOptions) *CStorVolumePatch {
 
 // PreUpgrade ...
 func (obj *CStorVolumePatch) PreUpgrade() error {
-	err := obj.CVC.PreChecks(obj.From, obj.To)
+	err := isOperatorUpgraded("cvc-operator", obj.Namespace, obj.To, obj.KubeClientset)
+	if err != nil {
+		return err
+	}
+	err = obj.CVC.PreChecks(obj.From, obj.To)
 	if err != nil {
 		return err
 	}
