@@ -29,7 +29,7 @@ import (
 
 var (
 	cstorSPCMigrateCmdHelpText = `
-This command migrates the cStor SPC
+This command migrates the cStor SPC to CSPC
 
 Usage: migrate cstor-spc --spc-name <spc-name>
 `

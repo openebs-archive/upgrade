@@ -176,8 +176,9 @@ func (c *CSPCMigrator) migrate(spcName string) error {
 }
 
 // validateSPC determines that if the spc is allowed to migrate or not.
-// If the max pool count does not match the number of csp for auto spc, or
-// the bd list in spc does not match bds from the csp migration should not be done.
+// If the max pool count does not match the number of csp in case auto spc provisioning,
+// or the blocldevice list in spc does not match bds from the csp, in case of manual provisioning
+// pool migration can not be allowed.
 func (c *CSPCMigrator) validateSPC() error {
 	cspClient := csp.KubeClient()
 	cspList, err := cspClient.List(metav1.ListOptions{
@@ -280,7 +281,7 @@ func (c *CSPCMigrator) cspTocspi(cspiObj *cstor.CStorPoolInstance) error {
 				return err1
 			}
 			if cspiObj.Status.Phase != "ONLINE" {
-				return errors.Errorf("failed to verify cspi %s phase expected: Healthy got: %s",
+				return errors.Errorf("failed to verify cspi %s phase expected: ONLINE got: %s",
 					cspiObj.Name, cspiObj.Status.Phase)
 			}
 			return nil
