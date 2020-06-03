@@ -156,8 +156,7 @@ func (c *CSPCMigrator) migrate(spcName string) error {
 		return err
 	}
 
-	// For each cspi perform the migration from csp that present was on
-	// node on which cspi came up.
+	// Perform migration for each cspi created on similar node as csp
 	for _, cspiItem := range cspiList.Items {
 		cspiItem := cspiItem // pin it
 		cspiObj := &cspiItem
@@ -334,7 +333,7 @@ func getCSP(cspLabel string) (*apis.CStorPool, error) {
 // The old pool pod should be scaled down before the new cspi pod reconcile is
 // enabled to avoid importing the pool at two places at the same time.
 func (c *CSPCMigrator) scaleDownDeployment(cspObj *apis.CStorPool, openebsNamespace string) error {
-	klog.Infof("Scaling down deployemnt %s", cspObj.Name)
+	klog.Infof("Scaling down deployment %s", cspObj.Name)
 	cspDeployList, err := c.KubeClientset.AppsV1().
 		Deployments(openebsNamespace).List(
 		metav1.ListOptions{
@@ -344,7 +343,7 @@ func (c *CSPCMigrator) scaleDownDeployment(cspObj *apis.CStorPool, openebsNamesp
 		return err
 	}
 	if len(cspDeployList.Items) != 1 {
-		return errors.Errorf("invalid number of csp deployment found for %s: %d", cspObj.Name, len(cspDeployList.Items))
+		return errors.Errorf("invalid number of csp deployment found for %s: expected 1, got %d", cspObj.Name, len(cspDeployList.Items))
 	}
 	_, err = c.KubeClientset.AppsV1().Deployments(openebsNamespace).
 		Patch(
@@ -423,9 +422,10 @@ func (c *CSPCMigrator) updateBDCOwnerRef() error {
 			bdcItem := bdcItem // pin it
 			bdcObj := &bdcItem
 			klog.Infof("Updating bdc %s with cspc %s ownerRef.", bdcObj.Name, c.CSPCObj.Name)
-			bdcObj.OwnerReferences[0].Kind = "CStorPoolCluster"
-			bdcObj.OwnerReferences[0].UID = c.CSPCObj.UID
-			bdcObj.OwnerReferences[0].APIVersion = "cstor.openebs.io/v1"
+			bdcObj.OwnerReferences = []metav1.OwnerReference{
+				*metav1.NewControllerRef(c.CSPCObj,
+					apis.SchemeGroupVersion.WithKind(c.CSPCObj.Kind)),
+			}
 			_, err := c.OpenebsClientset.OpenebsV1alpha1().BlockDeviceClaims(c.OpenebsNamespace).
 				Update(bdcObj)
 			if err != nil {
@@ -453,9 +453,9 @@ func (c *CSPCMigrator) updateCVRsLabels(cspObj *apis.CStorPool, cspiObj *cstor.C
 			klog.Infof("Updating cvr %s with cspi %s info.", cvrObj.Name, cspiObj.Name)
 			delete(cvrObj.Labels, cspNameLabel)
 			delete(cvrObj.Labels, cspUIDLabel)
+			delete(cvrObj.Annotations, cspHostnameAnnotation)
 			cvrObj.Labels[cspiNameLabel] = cspiObj.Name
 			cvrObj.Labels[cspiUIDLabel] = string(cspiObj.UID)
-			delete(cvrObj.Annotations, cspHostnameAnnotation)
 			cvrObj.Annotations[cspiHostnameAnnotation] = cspiObj.Spec.HostName
 			_, err = cvr.NewKubeclient().WithNamespace(c.OpenebsNamespace).
 				Update(cvrObj)
