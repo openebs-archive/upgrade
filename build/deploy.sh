@@ -20,9 +20,12 @@ ARCH=$(uname -m)
 
 if [ "${ARCH}" = "x86_64" ]; then
   UPGRADE_IMG="${IMAGE_ORG}/upgrade-amd64"
+  MIGRATE_IMG="${IMAGE_ORG}/migrate-amd64"
 elif [ "${ARCH}" = "aarch64" ]; then
   UPGRADE_IMG="${IMAGE_ORG}/upgrade-arm64"
+  MIGRATE_IMG="${IMAGE_ORG}/migrate-arm64"
 fi
 
 # tag and push all the images
 DIMAGE="${UPGRADE_IMG}" ./build/push
+DIMAGE="${MIGRATE_IMG}" ./build/push

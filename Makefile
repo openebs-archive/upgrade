@@ -129,6 +129,9 @@ cleanup-upgrade:
 
 include ./build/migrate/Makefile.mk
 
+.PHONY: all.amd64
+all.amd64: upgrade-image.amd64 migrate-image.amd64
+
 # Push images
 .PHONY: deploy-images
 deploy-images:

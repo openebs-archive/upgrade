@@ -27,6 +27,7 @@ import (
 type MigrateOptions struct {
 	openebsNamespace string
 	spcName          string
+	pvName           string
 }
 
 var (

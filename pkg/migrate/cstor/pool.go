@@ -54,6 +54,7 @@ const (
 	cspiHostnameAnnotation = "cstorpoolinstance.openebs.io/hostname"
 	spcFinalizer           = "storagepoolclaim.openebs.io/finalizer"
 	cspcFinalizer          = "cstorpoolcluster.openebs.io/finalizer"
+	cspcKind               = "CStorPoolCluster"
 )
 
 // CSPCMigrator ...
@@ -418,13 +419,13 @@ func (c *CSPCMigrator) updateBDCOwnerRef() error {
 		return err
 	}
 	for _, bdcItem := range bdcList.Items {
-		if bdcItem.OwnerReferences[0].Kind != "CStorPoolCluster" {
+		if bdcItem.OwnerReferences[0].Kind != cspcKind {
 			bdcItem := bdcItem // pin it
 			bdcObj := &bdcItem
 			klog.Infof("Updating bdc %s with cspc %s ownerRef.", bdcObj.Name, c.CSPCObj.Name)
 			bdcObj.OwnerReferences = []metav1.OwnerReference{
 				*metav1.NewControllerRef(c.CSPCObj,
-					apis.SchemeGroupVersion.WithKind(c.CSPCObj.Kind)),
+					cstor.SchemeGroupVersion.WithKind(cspcKind)),
 			}
 			_, err := c.OpenebsClientset.OpenebsV1alpha1().BlockDeviceClaims(c.OpenebsNamespace).
 				Update(bdcObj)
