@@ -68,9 +68,11 @@ UPGRADE=upgrade
 
 # Specify the name of the docker repo for amd64
 UPGRADE_REPO_NAME_AMD64="upgrade-amd64"
+MIGRATE_REPO_NAME_AMD64="migrate-amd64"
 
 # Specify the name of the docker repo for arm64
 UPGRADE_REPO_NAME_ARM64="upgrade-arm64"
+MIGRATE_REPO_NAME_ARM64="migrate-arm64"
 
 # build upgrade binary
 .PHONY: upgrade
@@ -125,7 +127,10 @@ cleanup-upgrade:
 	rm -rf ${GOPATH}/bin/${UPGRADE}
 
 
+include ./build/migrate/Makefile.mk
+
 # Push images
 .PHONY: deploy-images
 deploy-images:
 	@./build/deploy.sh
+
