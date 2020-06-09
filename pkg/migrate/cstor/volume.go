@@ -18,6 +18,7 @@ package migrate
 
 import (
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -28,7 +29,6 @@ import (
 	apis "github.com/openebs/maya/pkg/apis/openebs.io/v1alpha1"
 	cv "github.com/openebs/maya/pkg/cstor/volume/v1alpha1"
 	cvr "github.com/openebs/maya/pkg/cstor/volumereplica/v1alpha1"
-	"github.com/openebs/maya/pkg/util/retry"
 	"github.com/openebs/upgrade/pkg/version"
 	errors "github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -43,9 +43,11 @@ import (
 )
 
 var (
-	cvcKind        = "CStorVolumeConfig"
-	trueBool       = true
-	cstorCSIDriver = "cstor.csi.openebs.io"
+	cvcKind                = "CStorVolumeConfig"
+	trueBool               = true
+	cstorCSIDriver         = "cstor.csi.openebs.io"
+	timeStamp              = time.Now().UnixNano() / int64(time.Millisecond)
+	csiProvisionerIdentity = strconv.FormatInt(timeStamp, 10) + "-" + strconv.Itoa(rand.Intn(10000)) + "-" + "cstor.csi.openebs.io"
 )
 
 // VolumeMigrator ...
@@ -80,8 +82,7 @@ func (v *VolumeMigrator) Migrate(pvName, openebsNamespace string) error {
 	if err != nil {
 		return err
 	}
-	err = v.migrate()
-	return nil
+	return v.migrate()
 }
 
 func (v *VolumeMigrator) validateCVCOperator() error {
@@ -190,6 +191,10 @@ func (v *VolumeMigrator) migratePVC(pvObj *corev1.PersistentVolume) (*corev1.Per
 		return nil, err
 	}
 	if recreateRequired {
+		err := v.addSkipAnnotationToPVC(pvcObj)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to add skip-validations annotation")
+		}
 		klog.Infof("Recreating equivalent CSI PVC")
 		pvcObj, err = v.RecreatePVC(pvcObj)
 		if err != nil {
@@ -197,6 +202,28 @@ func (v *VolumeMigrator) migratePVC(pvObj *corev1.PersistentVolume) (*corev1.Per
 		}
 	}
 	return pvcObj, nil
+}
+
+func (v *VolumeMigrator) addSkipAnnotationToPVC(pvcObj *corev1.PersistentVolumeClaim) error {
+	oldPVC, err := v.KubeClientset.CoreV1().
+		PersistentVolumeClaims(pvcObj.Namespace).Get(pvcObj.Name, metav1.GetOptions{})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return err
+	}
+	if oldPVC.Annotations["openebs.io/skip-validations"] != "true" {
+		newPVC := oldPVC.DeepCopy()
+		newPVC.Annotations["openebs.io/skip-validations"] = "true"
+		data, err := GetPatchData(oldPVC, newPVC)
+		if err != nil {
+			return err
+		}
+		_, err = v.KubeClientset.CoreV1().PersistentVolumeClaims(oldPVC.Namespace).Patch(
+			oldPVC.Name,
+			types.StrategicMergePatchType,
+			data,
+		)
+	}
+	return err
 }
 
 func (v *VolumeMigrator) migratePV(pvcObj *corev1.PersistentVolumeClaim) (*corev1.PersistentVolume, error) {
@@ -290,7 +317,7 @@ func (v *VolumeMigrator) generateCSIPV(
 				VolumeHandle: pvObj.Name,
 				VolumeAttributes: map[string]string{
 					"openebs.io/cas-type":                          "cstor",
-					"storage.kubernetes.io/csiProvisionerIdentity": "1574675355213-8081-cstor.csi.openebs.io",
+					"storage.kubernetes.io/csiProvisionerIdentity": csiProvisionerIdentity,
 				},
 			},
 		}
@@ -334,7 +361,7 @@ func (v *VolumeMigrator) generateCSIPVFromCV(
 			VolumeHandle: cvObj.Name,
 			VolumeAttributes: map[string]string{
 				"openebs.io/cas-type":                          "cstor",
-				"storage.kubernetes.io/csiProvisionerIdentity": "1574675355213-8081-cstor.csi.openebs.io",
+				"storage.kubernetes.io/csiProvisionerIdentity": csiProvisionerIdentity,
 			},
 		},
 	}
@@ -371,6 +398,9 @@ func (v *VolumeMigrator) createCVC(pvName string) error {
 		labels := map[string]string{
 			"openebs.io/cstor-pool-cluster": v.StorageClass.Parameters["cstorPoolCluster"],
 		}
+		if len(cvObj.Labels["openebs.io/source-volume"]) != 0 {
+			labels["openebs.io/source-volume"] = cvObj.Labels["openebs.io/source-volume"]
+		}
 		finalizer := "cvc.openebs.io/finalizer"
 		cvcObj = cstor.NewCStorVolumeConfig().
 			WithName(cvObj.Name).
@@ -384,7 +414,7 @@ func (v *VolumeMigrator) createCVC(pvName string) error {
 		cvcObj.Spec.Provision.Capacity = corev1.ResourceList{
 			corev1.ResourceName(corev1.ResourceStorage): cvObj.Spec.Capacity,
 		}
-		cvcObj.Spec.Provision.ReplicaCount, _ = strconv.Atoi(v.StorageClass.Parameters["replicaCount"])
+		cvcObj.Spec.Provision.ReplicaCount = cvObj.Spec.ReplicationFactor
 		cvcObj.Status.Phase = cstor.CStorVolumeConfigPhasePending
 		cvcObj.VersionDetails = cstor.VersionDetails{
 			Desired:     version.Current(),
@@ -394,16 +424,14 @@ func (v *VolumeMigrator) createCVC(pvName string) error {
 				DependentsUpgraded: true,
 			},
 		}
+		if len(cvObj.Labels["openebs.io/source-volume"]) != 0 {
+			cvcObj.Spec.CStorVolumeSource = cvObj.Labels["openebs.io/source-volume"] + "@" + cvObj.Annotations["openebs.io/snapshot"]
+		}
 		_, err = v.OpenebsClientset.CstorV1().CStorVolumeConfigs(v.OpenebsNamespace).
 			Create(cvcObj)
 		if err != nil {
 			return err
 		}
-	}
-	klog.Info("Patching the target svc with cvc owner ref")
-	err = v.patchTargetSVCOwnerRef()
-	if err != nil {
-		errors.Wrap(err, "failed to patch cvc owner ref to target svc")
 	}
 	return nil
 }
@@ -441,6 +469,7 @@ func (v *VolumeMigrator) patchTargetSVCOwnerRef() error {
 // as the information about the storageclass cannot be gathered from other
 // resources a temporary storageclass is created before deleting the original
 func (v *VolumeMigrator) updateStorageClass(pvName, scName string) error {
+	var tmpSCObj *storagev1.StorageClass
 	klog.Infof("Updating storageclass %s with csi parameters", scName)
 	scObj, err := v.KubeClientset.StorageV1().
 		StorageClasses().
@@ -451,7 +480,7 @@ func (v *VolumeMigrator) updateStorageClass(pvName, scName string) error {
 		}
 	}
 	if scObj == nil || scObj.Provisioner != cstorCSIDriver {
-		tmpSCObj, err := v.createTmpSC(scName)
+		tmpSCObj, err = v.createTmpSC(scName)
 		if err != nil {
 			return err
 		}
@@ -477,7 +506,7 @@ func (v *VolumeMigrator) updateStorageClass(pvName, scName string) error {
 		}
 		if scObj != nil {
 			err = v.KubeClientset.StorageV1().
-				StorageClasses().Delete(scName, &metav1.DeleteOptions{})
+				StorageClasses().Delete(scObj.Name, &metav1.DeleteOptions{})
 			if err != nil {
 				return err
 			}
@@ -488,6 +517,9 @@ func (v *VolumeMigrator) updateStorageClass(pvName, scName string) error {
 			return err
 		}
 		v.StorageClass = scObj
+
+	}
+	if tmpSCObj != nil {
 		err = v.KubeClientset.StorageV1().
 			StorageClasses().Delete(tmpSCObj.Name, &metav1.DeleteOptions{})
 		if err != nil {
@@ -537,7 +569,9 @@ func (v *VolumeMigrator) getReplicaCount(pvName string) (string, error) {
 func (v *VolumeMigrator) populateCVNamespace(cvName string) error {
 	v.CVNamespace = v.OpenebsNamespace
 	cvList, err := cv.NewKubeclient().WithNamespace("").
-		List(metav1.ListOptions{})
+		List(metav1.ListOptions{
+			LabelSelector: "openebs.io/persistent-volume=" + v.PVName,
+		})
 	if err != nil {
 		return err
 	}
@@ -578,7 +612,7 @@ func (v *VolumeMigrator) validatePVName() (*corev1.PersistentVolumeClaim, bool, 
 		Get(v.PVName, metav1.GetOptions{})
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
-			return pvcObj, false, err
+			return nil, false, err
 		}
 		pvcList, err := v.KubeClientset.CoreV1().
 			PersistentVolumeClaims("").
@@ -593,7 +627,7 @@ func (v *VolumeMigrator) validatePVName() (*corev1.PersistentVolumeClaim, bool, 
 				return pvcObj, false, nil
 			}
 		}
-		return pvcObj, false, errors.Errorf("No PVC found for the given PV")
+		return pvcObj, false, errors.Errorf("No PVC found for the given PV %s", v.PVName)
 	}
 	return pvcObj, true, nil
 }
@@ -763,52 +797,25 @@ func (v *VolumeMigrator) createTempPolicy() error {
 
 func (v *VolumeMigrator) validateMigratedVolume() error {
 	klog.Info("Validating the migrated volume")
-	err := retry.
-		Times(60).
-		Wait(5 * time.Second).
-		Try(func(attempt uint) error {
-			klog.Info("Waiting for cvrs to come to Healthy state")
-			cvrList, err1 := v.OpenebsClientset.CstorV1().
-				CStorVolumeReplicas(v.OpenebsNamespace).
-				List(metav1.ListOptions{
-					LabelSelector: "openebs.io/persistent-volume=" + v.PVName,
-				})
-			if err1 != nil {
-				return err1
+	for {
+		cvObj, err1 := v.OpenebsClientset.CstorV1().
+			CStorVolumes(v.OpenebsNamespace).
+			Get(v.PVName, metav1.GetOptions{})
+		if err1 != nil {
+			klog.Errorf("failed to get cv %s: %s", v.PVName, err1.Error())
+		} else {
+			if cvObj.Status.Phase == cstor.CStorVolumePhase("Healthy") {
+				break
 			}
-			if len(cvrList.Items) == 0 {
-				return errors.Errorf("no cvrs found for pv %s", v.PVName)
-			}
-			for _, replica := range cvrList.Items {
-				if replica.Status.Phase != cstor.CVRStatusOnline {
-					return errors.Errorf("failed to verify cvr %s phase expected: Healthy got: %s",
-						replica.Name, replica.Status.Phase)
-				}
-			}
-			return nil
-		})
-	if err != nil {
-		return err
+			klog.Infof("Waiting for cv %s to come to Healthy state, got: %s",
+				v.PVName, cvObj.Status.Phase)
+		}
+		time.Sleep(10 * time.Second)
 	}
-	err = retry.
-		Times(60).
-		Wait(5 * time.Second).
-		Try(func(attempt uint) error {
-			klog.Info("Waiting for cv to come to Healthy state")
-			cvObj, err1 := v.OpenebsClientset.CstorV1().
-				CStorVolumes(v.OpenebsNamespace).
-				Get(v.PVName, metav1.GetOptions{})
-			if err1 != nil {
-				return err1
-			}
-			if cvObj.Status.Phase != cstor.CStorVolumePhase("Healthy") {
-				return errors.Errorf("failed to verify cv %s phase expected: Healthy got: %s",
-					cvObj.Name, cvObj.Status.Phase)
-			}
-			return nil
-		})
+	klog.Info("Patching the target svc with cvc owner ref")
+	err := v.patchTargetSVCOwnerRef()
 	if err != nil {
-		return err
+		errors.Wrap(err, "failed to patch cvc owner ref to target svc")
 	}
 	return nil
 }
@@ -852,6 +859,9 @@ func (v *VolumeMigrator) cleanupOldResources() error {
 		List(metav1.ListOptions{
 			LabelSelector: "openebs.io/persistent-volume=" + v.PVName,
 		})
+	if err != nil {
+		return errors.Wrapf(err, "failed too list cvrs for %s", v.PVName)
+	}
 	for _, replica := range cvrList.Items {
 		rep := replica // pin it
 		rep.Finalizers = []string{}
@@ -859,7 +869,7 @@ func (v *VolumeMigrator) cleanupOldResources() error {
 			WithNamespace(v.OpenebsNamespace).
 			Update(&rep)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "failed to remove finalizer from cvr %s", rep.Name)
 		}
 		err = cvr.NewKubeclient().
 			WithNamespace(v.OpenebsNamespace).
@@ -871,8 +881,8 @@ func (v *VolumeMigrator) cleanupOldResources() error {
 	err = v.OpenebsClientset.CstorV1().
 		CStorVolumePolicies(v.OpenebsNamespace).
 		Delete(v.PVName, &metav1.DeleteOptions{})
-	if k8serrors.IsNotFound(err) {
-		return nil
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return err
 	}
 	cvcObj, err := v.OpenebsClientset.CstorV1().
 		CStorVolumeConfigs(v.OpenebsNamespace).

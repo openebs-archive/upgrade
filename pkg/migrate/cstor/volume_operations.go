@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 )
 
 // IsVolumeMounted checks if the volume is mounted into any pod.
@@ -129,6 +130,7 @@ func (v *VolumeMigrator) isPVCDeletedEventually(pvcObj *corev1.PersistentVolumeC
 		if k8serrors.IsNotFound(err) {
 			return nil
 		}
+		klog.Infof("Waiting for pvc %s to go away", pvcObj.Name)
 		time.Sleep(5 * time.Second)
 	}
 	return errors.Errorf("PVC %s still present", pvcObj.Name)
@@ -145,6 +147,7 @@ func (v *VolumeMigrator) isPVDeletedEventually(pvObj *corev1.PersistentVolume) e
 		if k8serrors.IsNotFound(err) {
 			return nil
 		}
+		klog.Infof("Waiting for pv %s to go away", pvObj.Name)
 		time.Sleep(5 * time.Second)
 	}
 	return errors.Errorf("PVC %s still present", pvObj.Name)

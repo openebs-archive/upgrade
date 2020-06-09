@@ -33,7 +33,6 @@ import (
 	csp "github.com/openebs/maya/pkg/cstor/pool/v1alpha3"
 	cvr "github.com/openebs/maya/pkg/cstor/volumereplica/v1alpha1"
 	spc "github.com/openebs/maya/pkg/storagepoolclaim/v1alpha1"
-	"github.com/openebs/maya/pkg/util/retry"
 	"github.com/pkg/errors"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -166,6 +165,10 @@ func (c *CSPCMigrator) migrate(spcName string) error {
 			return err
 		}
 	}
+	err = addSkipAnnotationToSPC(c.SPCObj)
+	if err != nil {
+		return errors.Wrap(err, "failed to add skip-validation annotation")
+	}
 	// Clean up old SPC resources after the migration is complete
 	err = spc.NewKubeClient().
 		Delete(spcName, &metav1.DeleteOptions{})
@@ -269,25 +272,20 @@ func (c *CSPCMigrator) cspTocspi(cspiObj *cstor.CStorPoolInstance) error {
 			return err
 		}
 	}
-	err = retry.
-		Times(60).
-		Wait(5 * time.Second).
-		Try(func(attempt uint) error {
-			klog.Infof("waiting for cspi %s to come to ONLINE state", cspiObj.Name)
-			cspiObj, err1 = c.OpenebsClientset.CstorV1().
-				CStorPoolInstances(c.OpenebsNamespace).
-				Get(cspiObj.Name, metav1.GetOptions{})
-			if err1 != nil {
-				return err1
+	for {
+		cspiObj, err1 = c.OpenebsClientset.CstorV1().
+			CStorPoolInstances(c.OpenebsNamespace).
+			Get(cspiObj.Name, metav1.GetOptions{})
+		if err1 != nil {
+			klog.Errorf("failed to get cspi %s: %s", cspiObj.Name, err1.Error())
+		} else {
+			if cspiObj.Status.Phase == "ONLINE" {
+				break
 			}
-			if cspiObj.Status.Phase != "ONLINE" {
-				return errors.Errorf("failed to verify cspi %s phase expected: ONLINE got: %s",
-					cspiObj.Name, cspiObj.Status.Phase)
-			}
-			return nil
-		})
-	if err != nil {
-		return err
+			klog.Infof("waiting for cspi %s to come to ONLINE state, got %s",
+				cspiObj.Name, cspiObj.Status.Phase)
+		}
+		time.Sleep(10 * time.Second)
 	}
 	err = c.updateCVRsLabels(cspObj, cspiObj)
 	if err != nil {
@@ -355,25 +353,23 @@ func (c *CSPCMigrator) scaleDownDeployment(cspObj *apis.CStorPool, openebsNamesp
 	if err != nil {
 		return err
 	}
-	err = retry.
-		Times(60).
-		Wait(5 * time.Second).
-		Try(func(attempt uint) error {
+	for {
+		cspPods, err1 := c.KubeClientset.CoreV1().
+			Pods(openebsNamespace).
+			List(metav1.ListOptions{
+				LabelSelector: "openebs.io/cstor-pool=" + cspObj.Name,
+			})
+		if err1 != nil {
+			klog.Errorf("failed to list pods for csp %s deployment: %s", cspObj.Name, err1.Error())
+		} else {
+			if len(cspPods.Items) == 0 {
+				break
+			}
 			klog.Infof("waiting for csp %s deployment to scale down", cspObj.Name)
-			cspPods, err1 := c.KubeClientset.CoreV1().
-				Pods(openebsNamespace).
-				List(metav1.ListOptions{
-					LabelSelector: "openebs.io/cstor-pool=" + cspObj.Name,
-				})
-			if err1 != nil {
-				return errors.Wrapf(err1, "failed to get csp deploy")
-			}
-			if len(cspPods.Items) != 0 {
-				return errors.Errorf("failed to scale down csp deployment")
-			}
-			return nil
-		})
-	return err
+		}
+		time.Sleep(10 * time.Second)
+	}
+	return nil
 }
 
 // Update the bdc with the cspc labels instead of spc labels to allow
@@ -466,4 +462,17 @@ func (c *CSPCMigrator) updateCVRsLabels(cspObj *apis.CStorPool, cspiObj *cstor.C
 		}
 	}
 	return nil
+}
+
+func addSkipAnnotationToSPC(spcObj *apis.StoragePoolClaim) error {
+retry:
+	spcObj.Annotations = map[string]string{
+		"openebs.io/skip-validations": "true",
+	}
+	_, err := spc.NewKubeClient().Update(spcObj)
+	if k8serrors.IsConflict(err) {
+		klog.Errorf("failed to update spc with skip-validation annotation due to conflict error")
+		goto retry
+	}
+	return err
 }
