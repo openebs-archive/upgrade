@@ -252,6 +252,9 @@ func (v *VolumeMigrator) addSkipAnnotationToPVC(pvcObj *corev1.PersistentVolumeC
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
+	if k8serrors.IsNotFound(err) {
+		return nil
+	}
 	if oldPVC.Annotations["openebs.io/skip-validations"] != "true" {
 		newPVC := oldPVC.DeepCopy()
 		newPVC.Annotations["openebs.io/skip-validations"] = "true"
