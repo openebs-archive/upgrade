@@ -52,6 +52,9 @@ const (
 	// CStorPoolInstanceNameLabelKey is the key used on pool dependent resources
 	CStorPoolInstanceNameLabelKey = "cstorpoolinstance.openebs.io/name"
 
+	// CStorPoolInstanceUIDLabelKey is the key used on pool dependent resources
+	CStorPoolInstanceUIDLabelKey = "cstorpoolinstance.openebs.io/uid"
+
 	// PersistentVolumeLabelKey label key set in all cstorvolume replicas of a
 	// given volume
 	PersistentVolumeLabelKey = "openebs.io/persistent-volume"
