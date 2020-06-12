@@ -1,0 +1,36 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  # the name can be of the form migrate-<spc-name>
+  name: migrate-spc-sparse-claim
+  namespace: openebs
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      #VERIFY the value of serviceAccountName is pointing to service account
+      # created within openebs namespace. Use the non-default account.
+      # by running `kubectl get sa -n <openebs-namespace>`
+      serviceAccountName: openebs-maya-operator
+      containers:
+      - name:  migrate
+        args:
+        - "cstor-spc"
+        # name of the spc that is to be migrated
+        - "--spc-name=sparse-claim"
+
+        #Following are optional parameters
+        #Log Level
+        - "--v=4"
+        #DO NOT CHANGE BELOW PARAMETERS
+        env:
+        - name: OPENEBS_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        tty: true
+        image: openebs/migrate-amd64:ci
+      restartPolicy: Never
+---
+
