@@ -96,7 +96,12 @@ func (v *VolumeMigrator) Migrate(pvName, openebsNamespace string) error {
 	} else {
 		klog.Infof("Volume %s already migrated to csi spec", pvName)
 	}
-	return v.deleteTempPolicy()
+	err = v.deleteTempPolicy()
+	if err != nil {
+		return errors.Wrapf(err, "failed to delete temporary policy %s", pvName)
+	}
+	snap := &SnapshotMigrator{}
+	return snap.migrate(pvName)
 }
 
 func (v *VolumeMigrator) isMigrationRequired() (bool, error) {
