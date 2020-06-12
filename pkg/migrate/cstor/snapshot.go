@@ -17,6 +17,8 @@ limitations under the License.
 package migrate
 
 import (
+	"time"
+
 	snapv1beta1 "github.com/kubernetes-csi/external-snapshotter/v2/pkg/apis/volumesnapshot/v1beta1"
 	snapclientset "github.com/kubernetes-csi/external-snapshotter/v2/pkg/client/clientset/versioned"
 	snapv1 "github.com/openebs/maya/pkg/apis/openebs.io/snapshot/v1"
@@ -70,6 +72,10 @@ func (s *SnapshotMigrator) migrateSnapshots() error {
 	}
 	for _, snapshot := range snapshotList.Items {
 		snapshot := snapshot // pin it
+		if len(snapshot.Spec.SnapshotDataName) == 0 {
+			klog.Infof("Skipping snapshot migration for %s as it is not bound to any snapshotdata", snapshot.Name)
+			continue
+		}
 		err = s.migrateSnapshot(&snapshot)
 		if err != nil {
 			return err
@@ -175,12 +181,19 @@ retry:
 		return err
 	}
 	if newSnap.Status == nil || newSnap.Status.BoundVolumeSnapshotContentName == nil {
+		klog.Infof("volumesnapshot %s status not populated. retrying....", newSnap.Name)
+		time.Sleep(5 * time.Second)
 		goto retry
 	}
 	if *newSnap.Status.BoundVolumeSnapshotContentName != snapContent.Name {
 		return errors.Errorf("volumesnapshot %s is bound to incorrect volumesnapshotcontent: expected %s got %s",
 			newSnap.Name, snapContent.Name, *newSnap.Status.BoundVolumeSnapshotContentName,
 		)
+	}
+	if newSnap.Status.ReadyToUse == nil || *newSnap.Status.ReadyToUse != true {
+		klog.Infof("volumesnapshot %s not ready to use", newSnap.Name)
+		time.Sleep(5 * time.Second)
+		goto retry
 	}
 	return nil
 }
