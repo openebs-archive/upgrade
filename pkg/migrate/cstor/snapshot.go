@@ -97,7 +97,7 @@ func (s *SnapshotMigrator) migrateSnapshot(oldSnap *snapv1.VolumeSnapshot) error
 	klog.Infof("Validating new csi volumesnapshot %s is bound to volumesnapshotcontent %s", newSnap.Name, snapContent.Name)
 	err = s.validateMigration(snapContent, newSnap)
 	if err != nil {
-		return errors.Wrapf(err, "failed to validate new volumesnapshot %")
+		return errors.Wrapf(err, "failed to validate new volumesnapshot %s", newSnap.Name)
 	}
 	klog.Infof("Cleaing up old volumesnapshot %s", oldSnap.Name)
 	err = snap.NewKubeClient().WithNamespace(oldSnap.Namespace).Delete(oldSnap.Name, &metav1.DeleteOptions{})
