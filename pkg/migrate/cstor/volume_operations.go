@@ -150,5 +150,5 @@ func (v *VolumeMigrator) isPVDeletedEventually(pvObj *corev1.PersistentVolume) e
 		klog.Infof("Waiting for pv %s to go away", pvObj.Name)
 		time.Sleep(5 * time.Second)
 	}
-	return errors.Errorf("PVC %s still present", pvObj.Name)
+	return errors.Errorf("PV %s still present", pvObj.Name)
 }
