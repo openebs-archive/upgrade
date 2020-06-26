@@ -17,11 +17,14 @@ limitations under the License.
 package upgrader
 
 import (
-	apis "github.com/openebs/api/pkg/apis/cstor/v1"
+	"time"
+
+	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
+	apis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/upgrade/pkg/upgrade/patch"
+	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/klog"
-	"time"
 )
 
 // CSPIPatch is the patch required to upgrade cspi
@@ -30,6 +33,7 @@ type CSPIPatch struct {
 	Namespace string
 	Deploy    *patch.Deployment
 	CSPI      *patch.CSPI
+	Utask     *apis.UpgradeTask
 	*Client
 }
 
@@ -67,79 +71,159 @@ func NewCSPIPatch(opts ...CSPIPatchOptions) *CSPIPatch {
 }
 
 // PreUpgrade ...
-func (obj *CSPIPatch) PreUpgrade() error {
+func (obj *CSPIPatch) PreUpgrade() (string, error) {
 	err := obj.Deploy.PreChecks(obj.From, obj.To)
 	if err != nil {
-		return err
+		return "failed to verify cstor pool deployment", err
 	}
 	err = obj.CSPI.PreChecks(obj.From, obj.To)
-	return err
+	if err != nil {
+		return "failed to verify cstor pool instance", err
+	}
+	return "", nil
 }
 
 // DeployUpgrade ...
-func (obj *CSPIPatch) DeployUpgrade() error {
+func (obj *CSPIPatch) DeployUpgrade() (string, error) {
 	err := obj.Deploy.Patch(obj.From, obj.To)
 	if err != nil {
-		return err
+		return "failed to patch cstor pool deployment", err
 	}
-	return nil
+	return "", nil
 }
 
 // CSPIUpgrade ...
-func (obj *CSPIPatch) CSPIUpgrade() error {
+func (obj *CSPIPatch) CSPIUpgrade() (string, error) {
 	err := obj.CSPI.Patch(obj.From, obj.To)
 	if err != nil {
-		return err
+		return "failed to verify cstor pool instance", err
 	}
-	return nil
+	return "", nil
 }
 
 // Upgrade execute the steps to upgrade cspi
 func (obj *CSPIPatch) Upgrade() error {
-	err := obj.Init()
-	if err != nil {
-		return err
+	var err, uerr error
+	obj.Utask, err = getOrCreateUpgradeTask(
+		"cstorpoolinstance",
+		obj.ResourcePatch,
+		obj.Client,
+	)
+	if uerr != nil && isUpgradeTaskJob {
+		return uerr
 	}
-	err = obj.PreUpgrade()
-	if err != nil {
-		return err
+	statusObj := apis.UpgradeDetailedStatuses{Step: apis.PreUpgrade}
+	statusObj.Phase = apis.StepWaiting
+	obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+	if uerr != nil && isUpgradeTaskJob {
+		return uerr
 	}
-	err = obj.DeployUpgrade()
+	statusObj.Phase = apis.StepErrored
+	msg, err := obj.Init()
 	if err != nil {
-		return err
+		statusObj.Message = msg
+		statusObj.Reason = err.Error()
+		obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+		if uerr != nil && isUpgradeTaskJob {
+			return uerr
+		}
+		return errors.Wrap(err, msg)
 	}
-	err = obj.CSPIUpgrade()
+	msg, err = obj.PreUpgrade()
 	if err != nil {
-		return err
+		statusObj.Message = msg
+		statusObj.Reason = err.Error()
+		obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+		if uerr != nil && isUpgradeTaskJob {
+			return uerr
+		}
+		return errors.Wrap(err, msg)
 	}
-	err = obj.verifyCSPIVersionReconcile()
-	return err
+	statusObj.Phase = apis.StepCompleted
+	statusObj.Message = "Pre-upgrade steps were successful"
+	statusObj.Reason = ""
+	obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+	if uerr != nil && isUpgradeTaskJob {
+		return uerr
+	}
+
+	statusObj = apis.UpgradeDetailedStatuses{Step: apis.PoolInstanceUpgrade}
+	statusObj.Phase = apis.StepWaiting
+	obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+	if uerr != nil && isUpgradeTaskJob {
+		return uerr
+	}
+	statusObj.Phase = apis.StepErrored
+	msg, err = obj.DeployUpgrade()
+	if err != nil {
+		statusObj.Message = msg
+		statusObj.Reason = err.Error()
+		obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+		if uerr != nil && isUpgradeTaskJob {
+			return uerr
+		}
+		return errors.Wrap(err, msg)
+	}
+	msg, err = obj.CSPIUpgrade()
+	if err != nil {
+		statusObj.Message = msg
+		statusObj.Reason = err.Error()
+		obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+		if uerr != nil && isUpgradeTaskJob {
+			return uerr
+		}
+		return errors.Wrap(err, msg)
+	}
+	msg, err = obj.verifyCSPIVersionReconcile()
+	if err != nil {
+		statusObj.Message = msg
+		statusObj.Reason = err.Error()
+		obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+		if uerr != nil && isUpgradeTaskJob {
+			return uerr
+		}
+		return errors.Wrap(err, msg)
+	}
+	statusObj.Phase = apis.StepCompleted
+	statusObj.Message = "Pre-upgrade steps were successful"
+	statusObj.Reason = ""
+	obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+	if uerr != nil && isUpgradeTaskJob {
+		return uerr
+	}
+	return nil
 }
 
 // Init initializes all the fields of the CSPIPatch
-func (obj *CSPIPatch) Init() error {
+func (obj *CSPIPatch) Init() (string, error) {
+	var err error
+	statusObj := apis.UpgradeDetailedStatuses{Step: apis.PreUpgrade}
+	statusObj.Phase = apis.StepErrored
 	obj.Deploy = patch.NewDeployment(
 		patch.WithDeploymentClient(obj.KubeClientset),
 	)
 	obj.Namespace = obj.OpenebsNamespace
 	label := "openebs.io/cstor-pool-instance=" + obj.Name
-	err := obj.Deploy.Get(label, obj.Namespace)
+	err = obj.Deploy.Get(label, obj.Namespace)
 	if err != nil {
-		return err
+		return "failed to get cstor pool deployment", err
 	}
 	obj.CSPI = patch.NewCSPI(
 		patch.WithCSPIClient(obj.OpenebsClientset),
 	)
 	err = obj.CSPI.Get(obj.Name, obj.Namespace)
 	if err != nil {
-		return err
+		return "failed to get cstor pool instance", err
 	}
 	err = getCSPIDeployPatchData(obj)
 	if err != nil {
-		return err
+		return "failed to create cstor pool deployment patch", err
 	}
 	err = getCSPIPatchData(obj)
-	return err
+	if err != nil {
+		return "failed to create cstor pool instance patch", err
+	}
+	return "", nil
 }
 
 func getCSPIDeployPatchData(obobj *CSPIPatch) error {
@@ -184,17 +268,17 @@ func getCSPIPatchData(obj *CSPIPatch) error {
 	return err
 }
 
-func transformCSPI(c *apis.CStorPoolInstance, res *ResourcePatch) error {
+func transformCSPI(c *cstor.CStorPoolInstance, res *ResourcePatch) error {
 	c.Labels["openebs.io/version"] = res.To
 	c.VersionDetails.Desired = res.To
 	return nil
 }
 
-func (obj *CSPIPatch) verifyCSPIVersionReconcile() error {
+func (obj *CSPIPatch) verifyCSPIVersionReconcile() (string, error) {
 	// get the latest cspi object
 	err := obj.CSPI.Get(obj.Name, obj.Namespace)
 	if err != nil {
-		return err
+		return "failed to get cstor pool to verify ", err
 	}
 	// waiting for the current version to be equal to desired version
 	for obj.CSPI.Object.VersionDetails.Status.Current != obj.To {
@@ -203,11 +287,11 @@ func (obj *CSPIPatch) verifyCSPIVersionReconcile() error {
 		time.Sleep(10 * time.Second)
 		err = obj.CSPI.Get(obj.Name, obj.Namespace)
 		if err != nil {
-			return err
+			return "failed to get cstor pool to verify ", err
 		}
 		if obj.CSPI.Object.VersionDetails.Status.Message != "" {
 			klog.Errorf("failed to reconcile: %s", obj.CSPI.Object.VersionDetails.Status.Reason)
 		}
 	}
-	return nil
+	return "", nil
 }

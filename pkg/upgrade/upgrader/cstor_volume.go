@@ -19,8 +19,10 @@ package upgrader
 import (
 	"time"
 
-	apis "github.com/openebs/api/pkg/apis/cstor/v1"
+	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
+	apis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/upgrade/pkg/upgrade/patch"
+	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,6 +37,7 @@ type CStorVolumePatch struct {
 	CV        *patch.CV
 	Deploy    *patch.Deployment
 	Service   *patch.Service
+	Utask     *apis.UpgradeTask
 	*Client
 }
 
@@ -65,29 +68,32 @@ func NewCStorVolumePatch(opts ...CStorVolumePatchOptions) *CStorVolumePatch {
 }
 
 // PreUpgrade ...
-func (obj *CStorVolumePatch) PreUpgrade() error {
+func (obj *CStorVolumePatch) PreUpgrade() (string, error) {
 	err := isOperatorUpgraded("cvc-operator", obj.Namespace, obj.To, obj.KubeClientset)
 	if err != nil {
-		return err
+		return "failed to verify cvc-operator", err
 	}
 	err = obj.CVC.PreChecks(obj.From, obj.To)
 	if err != nil {
-		return err
+		return "failed to verify CVC", err
 	}
 	err = obj.CV.PreChecks(obj.From, obj.To)
 	if err != nil {
-		return err
+		return "failed to verify CV", err
 	}
 	err = obj.Deploy.PreChecks(obj.From, obj.To)
 	if err != nil {
-		return err
+		return "failed to verify target deploy", err
 	}
 	err = obj.Service.PreChecks(obj.From, obj.To)
-	return err
+	if err != nil {
+		return "failed to verify target svc", err
+	}
+	return "", nil
 }
 
 // Init initializes all the fields of the CStorVolumePatch
-func (obj *CStorVolumePatch) Init() error {
+func (obj *CStorVolumePatch) Init() (string, error) {
 	label := "openebs.io/persistent-volume=" + obj.Name
 	obj.Namespace = obj.OpenebsNamespace
 	obj.CVC = patch.NewCVC(
@@ -95,43 +101,46 @@ func (obj *CStorVolumePatch) Init() error {
 	)
 	err := obj.CVC.Get(obj.Name, obj.Namespace)
 	if err != nil {
-		return err
+		return "failed to get CVC for volume" + obj.Name, err
 	}
 	obj.CV = patch.NewCV(
 		patch.WithCVClient(obj.OpenebsClientset),
 	)
 	err = obj.CV.Get(obj.Name, obj.Namespace)
 	if err != nil {
-		return err
+		return "failed to get CV for volume" + obj.Name, err
 	}
 	obj.Deploy = patch.NewDeployment(
 		patch.WithDeploymentClient(obj.KubeClientset),
 	)
 	err = obj.Deploy.Get(label, obj.Namespace)
 	if err != nil {
-		return err
+		return "failed to get target deploy for volume" + obj.Name, err
 	}
 	obj.Service = patch.NewService(
 		patch.WithKubeClient(obj.KubeClientset),
 	)
 	err = obj.Service.Get(label, obj.Namespace)
 	if err != nil {
-		return err
+		return "failed to get target svc for volume" + obj.Name, err
 	}
 	err = getCVCPatchData(obj)
 	if err != nil {
-		return err
+		return "failed to create CVC patch for volume" + obj.Name, err
 	}
 	err = getCVPatchData(obj)
 	if err != nil {
-		return err
+		return "failed to create CV patch for volume" + obj.Name, err
 	}
 	err = getCVDeployPatchData(obj)
 	if err != nil {
-		return err
+		return "failed to target deploy patch for volume" + obj.Name, err
 	}
 	err = getCVServicePatchData(obj)
-	return err
+	if err != nil {
+		return "failed to target svc patch for volume" + obj.Name, err
+	}
+	return "", nil
 }
 
 func getCVCPatchData(obj *CStorVolumePatch) error {
@@ -144,7 +153,7 @@ func getCVCPatchData(obj *CStorVolumePatch) error {
 	return err
 }
 
-func transformCVC(c *apis.CStorVolumeConfig, res *ResourcePatch) error {
+func transformCVC(c *cstor.CStorVolumeConfig, res *ResourcePatch) error {
 	c.VersionDetails.Desired = res.To
 	return nil
 }
@@ -159,7 +168,7 @@ func getCVPatchData(obj *CStorVolumePatch) error {
 	return err
 }
 
-func transformCV(c *apis.CStorVolume, res *ResourcePatch) error {
+func transformCV(c *cstor.CStorVolume, res *ResourcePatch) error {
 	c.VersionDetails.Desired = res.To
 	return nil
 }
@@ -212,41 +221,87 @@ func transformCVService(svc *corev1.Service, res *ResourcePatch) error {
 }
 
 // CStorVolumeUpgrade ...
-func (obj *CStorVolumePatch) CStorVolumeUpgrade() error {
+func (obj *CStorVolumePatch) CStorVolumeUpgrade() (string, error) {
 	err := obj.Deploy.Patch(obj.From, obj.To)
 	if err != nil {
-		return err
+		return "failed to patch target deploy", err
 	}
 	err = obj.Service.Patch(obj.From, obj.To)
 	if err != nil {
-		return err
+		return "failed to patch target svc", err
 	}
 	err = obj.CV.Patch(obj.From, obj.To)
 	if err != nil {
-		return err
+		return "failed to patch CV", err
 	}
 	err = obj.verifyCVVersionReconcile()
 	if err != nil {
-		return err
+		return "failed to verify version reconcile on CV", err
 	}
 	err = obj.CVC.Patch(obj.From, obj.To)
 	if err != nil {
-		return err
+		return "failed to patch CVC", err
 	}
 	err = obj.verifyCVCVersionReconcile()
-	return err
+	if err != nil {
+		return "failed to verify version reconcile on CVC", err
+	}
+	return "", nil
 }
 
 // Upgrade execute the steps to upgrade CStorVolume
 func (obj *CStorVolumePatch) Upgrade() error {
-	err := obj.Init()
-	if err != nil {
-		return err
+	var err, uerr error
+	obj.Utask, err = getOrCreateUpgradeTask(
+		"cstorVolume",
+		obj.ResourcePatch,
+		obj.Client,
+	)
+	if uerr != nil && isUpgradeTaskJob {
+		return uerr
 	}
-	err = obj.PreUpgrade()
-	if err != nil {
-		return err
+	statusObj := apis.UpgradeDetailedStatuses{Step: apis.PreUpgrade}
+	statusObj.Phase = apis.StepWaiting
+	obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+	if uerr != nil && isUpgradeTaskJob {
+		return uerr
 	}
+	statusObj.Phase = apis.StepErrored
+	msg, err := obj.Init()
+	if err != nil {
+		statusObj.Message = msg
+		statusObj.Reason = err.Error()
+		obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+		if uerr != nil && isUpgradeTaskJob {
+			return uerr
+		}
+		return errors.Wrap(err, msg)
+	}
+	msg, err = obj.PreUpgrade()
+	if err != nil {
+		statusObj.Message = msg
+		statusObj.Reason = err.Error()
+		obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+		if uerr != nil && isUpgradeTaskJob {
+			return uerr
+		}
+		return errors.Wrap(err, msg)
+	}
+	statusObj.Phase = apis.StepCompleted
+	statusObj.Message = "Pre-upgrade steps were successful"
+	statusObj.Reason = ""
+	obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+	if uerr != nil && isUpgradeTaskJob {
+		return uerr
+	}
+
+	statusObj = apis.UpgradeDetailedStatuses{Step: apis.ReplicaUpgrade}
+	statusObj.Phase = apis.StepWaiting
+	obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+	if uerr != nil && isUpgradeTaskJob {
+		return uerr
+	}
+	statusObj.Phase = apis.StepErrored
 	res := *obj.ResourcePatch
 	cvrList, err := obj.Client.OpenebsClientset.CstorV1().
 		CStorVolumeReplicas(obj.Namespace).List(
@@ -254,8 +309,15 @@ func (obj *CStorVolumePatch) Upgrade() error {
 			LabelSelector: "openebs.io/persistent-volume=" + obj.Name,
 		},
 	)
-	if err != nil {
-		return err
+	if err != nil && isUpgradeTaskJob {
+		msg = "failed to list cvrs for volume"
+		statusObj.Message = msg
+		statusObj.Reason = err.Error()
+		obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+		if uerr != nil && isUpgradeTaskJob {
+			return uerr
+		}
+		return errors.Wrap(err, msg)
 	}
 	for _, cvrObj := range cvrList.Items {
 		res.Name = cvrObj.Name
@@ -265,11 +327,48 @@ func (obj *CStorVolumePatch) Upgrade() error {
 		)
 		err = dependant.Upgrade()
 		if err != nil {
-			return err
+			msg = "failed to patch cvr " + cvrObj.Name
+			statusObj.Message = msg
+			statusObj.Reason = err.Error()
+			obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+			if uerr != nil && isUpgradeTaskJob {
+				return uerr
+			}
+			return errors.Wrap(err, msg)
 		}
 	}
-	err = obj.CStorVolumeUpgrade()
-	return err
+	statusObj.Phase = apis.StepCompleted
+	statusObj.Message = "Replica upgrade was successful"
+	statusObj.Reason = ""
+	obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+	if uerr != nil && isUpgradeTaskJob {
+		return uerr
+	}
+	statusObj = apis.UpgradeDetailedStatuses{Step: apis.TargetUpgrade}
+	statusObj.Phase = apis.StepWaiting
+	obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+	if uerr != nil && isUpgradeTaskJob {
+		return uerr
+	}
+	statusObj.Phase = apis.StepErrored
+	msg, err = obj.CStorVolumeUpgrade()
+	if err != nil {
+		statusObj.Message = msg
+		statusObj.Reason = err.Error()
+		obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+		if uerr != nil && isUpgradeTaskJob {
+			return uerr
+		}
+		return errors.Wrap(err, msg)
+	}
+	statusObj.Phase = apis.StepCompleted
+	statusObj.Message = "Target upgrade was successful"
+	statusObj.Reason = ""
+	obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+	if uerr != nil && isUpgradeTaskJob {
+		return uerr
+	}
+	return nil
 }
 
 func (obj *CStorVolumePatch) verifyCVVersionReconcile() error {

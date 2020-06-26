@@ -32,12 +32,13 @@ type UpgradeOptions struct {
 	imageURLPrefix    string
 	toVersionImageTag string
 	resourceKind      string
+	name              string
 }
 
 var (
 	options = &UpgradeOptions{
 		openebsNamespace: "openebs",
-		imageURLPrefix:   "quay.io/openebs/",
+		imageURLPrefix:   "",
 	}
 )
 
@@ -68,6 +69,5 @@ func (u *UpgradeOptions) InitializeDefaults(cmd *cobra.Command) error {
 	if len(strings.TrimSpace(u.toVersionImageTag)) == 0 {
 		u.toVersionImageTag = u.toVersion
 	}
-
 	return nil
 }
