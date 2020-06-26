@@ -864,12 +864,30 @@ func (v *VolumeMigrator) createTempPolicy() error {
 			v.PVName, cvObj.Spec.ReplicationFactor, len(replicas.Items),
 		)
 	}
+	tempPolicy.Spec.Replica.IOWorkers = replicas.Items[0].Spec.ZvolWorkers
 	for _, replica := range replicas.Items {
 		tempPolicy.Spec.ReplicaPoolInfo = append(tempPolicy.Spec.ReplicaPoolInfo,
 			cstor.ReplicaPoolInfo{
 				PoolName: replica.Labels[cspiNameLabel],
 			},
 		)
+	}
+	for _, con := range targetDeploy.Spec.Template.Spec.Containers {
+		if con.Name == "cstor-istgt" {
+			for _, env := range con.Env {
+				switch env.Name {
+				case "QueueDepth":
+					tempPolicy.Spec.Target.QueueDepth = env.Value
+
+				case "Luworkers":
+					tempPolicy.Spec.Target.IOWorkers, err = strconv.ParseInt(env.Value, 10, 64)
+					if err != nil {
+						klog.Info("failed to set Luworkers on cvc: ", err.Error())
+					}
+				}
+			}
+			break
+		}
 	}
 	_, err = v.OpenebsClientset.CstorV1().
 		CStorVolumePolicies(v.OpenebsNamespace).
