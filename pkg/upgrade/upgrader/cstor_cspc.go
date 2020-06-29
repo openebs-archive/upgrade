@@ -20,7 +20,7 @@ import (
 	"time"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
-	apis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
+	v1Alpha1API "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/upgrade/pkg/upgrade/patch"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -148,7 +148,7 @@ func (obj *CSPCPatch) Upgrade() error {
 			}
 			utaskObj.Status.Retries = utaskObj.Status.Retries + 1
 			if utaskObj.Status.Retries == backoffLimit {
-				utaskObj.Status.Phase = apis.UpgradeError
+				utaskObj.Status.Phase = v1Alpha1API.UpgradeError
 				utaskObj.Status.CompletedTime = metav1.Now()
 			}
 			_, uerr = obj.OpenebsClientset.OpenebsV1alpha1().UpgradeTasks(obj.OpenebsNamespace).
@@ -163,7 +163,7 @@ func (obj *CSPCPatch) Upgrade() error {
 		if uerr != nil && isUpgradeTaskJob {
 			return uerr
 		}
-		utaskObj.Status.Phase = apis.UpgradeSuccess
+		utaskObj.Status.Phase = v1Alpha1API.UpgradeSuccess
 		utaskObj.Status.CompletedTime = metav1.Now()
 		_, uerr = obj.OpenebsClientset.OpenebsV1alpha1().UpgradeTasks(obj.OpenebsNamespace).
 			Update(utaskObj)

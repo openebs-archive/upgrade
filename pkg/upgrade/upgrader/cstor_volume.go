@@ -20,7 +20,7 @@ import (
 	"time"
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
-	apis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
+	v1Alpha1API "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/upgrade/pkg/upgrade/patch"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
@@ -37,7 +37,7 @@ type CStorVolumePatch struct {
 	CV        *patch.CV
 	Deploy    *patch.Deployment
 	Service   *patch.Service
-	Utask     *apis.UpgradeTask
+	Utask     *v1Alpha1API.UpgradeTask
 	*Client
 }
 
@@ -260,13 +260,13 @@ func (obj *CStorVolumePatch) Upgrade() error {
 	if uerr != nil && isUpgradeTaskJob {
 		return uerr
 	}
-	statusObj := apis.UpgradeDetailedStatuses{Step: apis.PreUpgrade}
-	statusObj.Phase = apis.StepWaiting
+	statusObj := v1Alpha1API.UpgradeDetailedStatuses{Step: v1Alpha1API.PreUpgrade}
+	statusObj.Phase = v1Alpha1API.StepWaiting
 	obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
 	if uerr != nil && isUpgradeTaskJob {
 		return uerr
 	}
-	statusObj.Phase = apis.StepErrored
+	statusObj.Phase = v1Alpha1API.StepErrored
 	msg, err := obj.Init()
 	if err != nil {
 		statusObj.Message = msg
@@ -287,7 +287,7 @@ func (obj *CStorVolumePatch) Upgrade() error {
 		}
 		return errors.Wrap(err, msg)
 	}
-	statusObj.Phase = apis.StepCompleted
+	statusObj.Phase = v1Alpha1API.StepCompleted
 	statusObj.Message = "Pre-upgrade steps were successful"
 	statusObj.Reason = ""
 	obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
@@ -295,13 +295,13 @@ func (obj *CStorVolumePatch) Upgrade() error {
 		return uerr
 	}
 
-	statusObj = apis.UpgradeDetailedStatuses{Step: apis.ReplicaUpgrade}
-	statusObj.Phase = apis.StepWaiting
+	statusObj = v1Alpha1API.UpgradeDetailedStatuses{Step: v1Alpha1API.ReplicaUpgrade}
+	statusObj.Phase = v1Alpha1API.StepWaiting
 	obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
 	if uerr != nil && isUpgradeTaskJob {
 		return uerr
 	}
-	statusObj.Phase = apis.StepErrored
+	statusObj.Phase = v1Alpha1API.StepErrored
 	res := *obj.ResourcePatch
 	cvrList, err := obj.Client.OpenebsClientset.CstorV1().
 		CStorVolumeReplicas(obj.Namespace).List(
@@ -337,20 +337,20 @@ func (obj *CStorVolumePatch) Upgrade() error {
 			return errors.Wrap(err, msg)
 		}
 	}
-	statusObj.Phase = apis.StepCompleted
+	statusObj.Phase = v1Alpha1API.StepCompleted
 	statusObj.Message = "Replica upgrade was successful"
 	statusObj.Reason = ""
 	obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
 	if uerr != nil && isUpgradeTaskJob {
 		return uerr
 	}
-	statusObj = apis.UpgradeDetailedStatuses{Step: apis.TargetUpgrade}
-	statusObj.Phase = apis.StepWaiting
+	statusObj = v1Alpha1API.UpgradeDetailedStatuses{Step: v1Alpha1API.TargetUpgrade}
+	statusObj.Phase = v1Alpha1API.StepWaiting
 	obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
 	if uerr != nil && isUpgradeTaskJob {
 		return uerr
 	}
-	statusObj.Phase = apis.StepErrored
+	statusObj.Phase = v1Alpha1API.StepErrored
 	msg, err = obj.CStorVolumeUpgrade()
 	if err != nil {
 		statusObj.Message = msg
@@ -361,7 +361,7 @@ func (obj *CStorVolumePatch) Upgrade() error {
 		}
 		return errors.Wrap(err, msg)
 	}
-	statusObj.Phase = apis.StepCompleted
+	statusObj.Phase = v1Alpha1API.StepCompleted
 	statusObj.Message = "Target upgrade was successful"
 	statusObj.Reason = ""
 	obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)

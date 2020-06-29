@@ -23,7 +23,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog"
 
-	apis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
+	v1Alpha1API "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	openebsclientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	"github.com/openebs/maya/pkg/util"
 	cmdUtil "github.com/openebs/upgrade/cmd/util"
@@ -87,7 +87,7 @@ func NewUpgradeResourceJob() *cobra.Command {
 					}
 					utaskObj.Status.Retries = utaskObj.Status.Retries + 1
 					if utaskObj.Status.Retries == backoffLimit {
-						utaskObj.Status.Phase = apis.UpgradeError
+						utaskObj.Status.Phase = v1Alpha1API.UpgradeError
 						utaskObj.Status.CompletedTime = metav1.Now()
 					}
 					_, err = client.OpenebsV1alpha1().UpgradeTasks(openebsNamespace).
@@ -101,7 +101,7 @@ func NewUpgradeResourceJob() *cobra.Command {
 					if err != nil {
 						util.Fatal(err.Error())
 					}
-					utaskObj.Status.Phase = apis.UpgradeSuccess
+					utaskObj.Status.Phase = v1Alpha1API.UpgradeSuccess
 					utaskObj.Status.CompletedTime = metav1.Now()
 					_, err = client.OpenebsV1alpha1().UpgradeTasks(openebsNamespace).
 						Update(utaskObj)
@@ -117,7 +117,7 @@ func NewUpgradeResourceJob() *cobra.Command {
 
 // InitializeFromUpgradeTaskResource will populate the UpgradeOptions from given UpgradeTask
 func (u *UpgradeOptions) InitializeFromUpgradeTaskResource(
-	upgradeTaskCRObj apis.UpgradeTask) error {
+	upgradeTaskCRObj v1Alpha1API.UpgradeTask) error {
 
 	if len(strings.TrimSpace(u.openebsNamespace)) == 0 {
 		return errors.Errorf("Cannot execute upgrade job: namespace is missing")

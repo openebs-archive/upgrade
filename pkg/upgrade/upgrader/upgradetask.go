@@ -19,16 +19,16 @@ package upgrader
 import (
 	"os"
 
-	apis "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
+	v1Alpha1API "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	"github.com/pkg/errors"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func updateUpgradeDetailedStatus(utaskObj *apis.UpgradeTask,
-	uStatusObj apis.UpgradeDetailedStatuses,
+func updateUpgradeDetailedStatus(utaskObj *v1Alpha1API.UpgradeTask,
+	uStatusObj v1Alpha1API.UpgradeDetailedStatuses,
 	openebsNamespace string, client *Client,
-) (*apis.UpgradeTask, error) {
+) (*v1Alpha1API.UpgradeTask, error) {
 	var err error
 	if !isValidStatus(uStatusObj) {
 		return nil, errors.Errorf(
@@ -37,7 +37,7 @@ func updateUpgradeDetailedStatus(utaskObj *apis.UpgradeTask,
 		)
 	}
 	uStatusObj.LastUpdatedTime = metav1.Now()
-	if uStatusObj.Phase == apis.StepWaiting {
+	if uStatusObj.Phase == v1Alpha1API.StepWaiting {
 		uStatusObj.StartTime = uStatusObj.LastUpdatedTime
 		utaskObj.Status.UpgradeDetailedStatuses = append(
 			utaskObj.Status.UpgradeDetailedStatuses,
@@ -57,25 +57,25 @@ func updateUpgradeDetailedStatus(utaskObj *apis.UpgradeTask,
 }
 
 // isValidStatus is used to validate IsValidStatus
-func isValidStatus(o apis.UpgradeDetailedStatuses) bool {
+func isValidStatus(o v1Alpha1API.UpgradeDetailedStatuses) bool {
 	if o.Step == "" {
 		return false
 	}
 	if o.Phase == "" {
 		return false
 	}
-	if o.Message == "" && o.Phase != apis.StepWaiting {
+	if o.Message == "" && o.Phase != v1Alpha1API.StepWaiting {
 		return false
 	}
-	if o.Reason == "" && o.Phase == apis.StepErrored {
+	if o.Reason == "" && o.Phase == v1Alpha1API.StepErrored {
 		return false
 	}
 	return true
 }
 
 // getOrCreateUpgradeTask fetches upgrade task if provided or creates a new upgradetask CR
-func getOrCreateUpgradeTask(kind string, r *ResourcePatch, client *Client) (*apis.UpgradeTask, error) {
-	var utaskObj *apis.UpgradeTask
+func getOrCreateUpgradeTask(kind string, r *ResourcePatch, client *Client) (*v1Alpha1API.UpgradeTask, error) {
+	var utaskObj *v1Alpha1API.UpgradeTask
 	var err error
 	if r.OpenebsNamespace == "" {
 		return nil, errors.Errorf("missing openebsNamespace")
@@ -107,11 +107,11 @@ func getOrCreateUpgradeTask(kind string, r *ResourcePatch, client *Client) (*api
 	}
 
 	if utaskObj.Status.StartTime.IsZero() {
-		utaskObj.Status.Phase = apis.UpgradeStarted
+		utaskObj.Status.Phase = v1Alpha1API.UpgradeStarted
 		utaskObj.Status.StartTime = metav1.Now()
 	}
 
-	utaskObj.Status.UpgradeDetailedStatuses = []apis.UpgradeDetailedStatuses{}
+	utaskObj.Status.UpgradeDetailedStatuses = []v1Alpha1API.UpgradeDetailedStatuses{}
 	utaskObj, err = client.OpenebsClientset.OpenebsV1alpha1().
 		UpgradeTasks(r.OpenebsNamespace).
 		Update(utaskObj)
@@ -121,35 +121,35 @@ func getOrCreateUpgradeTask(kind string, r *ResourcePatch, client *Client) (*api
 	return utaskObj, nil
 }
 
-func buildUpgradeTask(kind string, r *ResourcePatch) *apis.UpgradeTask {
+func buildUpgradeTask(kind string, r *ResourcePatch) *v1Alpha1API.UpgradeTask {
 	// TODO builder
-	utaskObj := &apis.UpgradeTask{
+	utaskObj := &v1Alpha1API.UpgradeTask{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.OpenebsNamespace,
 		},
-		Spec: apis.UpgradeTaskSpec{
+		Spec: v1Alpha1API.UpgradeTaskSpec{
 			FromVersion: r.From,
 			ToVersion:   r.To,
 			ImageTag:    r.ImageTag,
 			ImagePrefix: r.BaseURL,
 		},
-		Status: apis.UpgradeTaskStatus{
-			Phase:     apis.UpgradeStarted,
+		Status: v1Alpha1API.UpgradeTaskStatus{
+			Phase:     v1Alpha1API.UpgradeStarted,
 			StartTime: metav1.Now(),
 		},
 	}
 	switch kind {
 	case "cstorpoolinstance":
 		utaskObj.Name = "upgrade-cstor-cspi-" + r.Name
-		utaskObj.Spec.ResourceSpec = apis.ResourceSpec{
-			CStorPoolInstance: &apis.CStorPoolInstance{
+		utaskObj.Spec.ResourceSpec = v1Alpha1API.ResourceSpec{
+			CStorPoolInstance: &v1Alpha1API.CStorPoolInstance{
 				CSPIName: r.Name,
 			},
 		}
 	case "cstorVolume":
 		utaskObj.Name = "upgrade-cstor-csi-volume-" + r.Name
-		utaskObj.Spec.ResourceSpec = apis.ResourceSpec{
-			CStorVolume: &apis.CStorVolume{
+		utaskObj.Spec.ResourceSpec = v1Alpha1API.ResourceSpec{
+			CStorVolume: &v1Alpha1API.CStorVolume{
 				PVName: r.Name,
 			},
 		}
