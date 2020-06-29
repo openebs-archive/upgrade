@@ -882,7 +882,7 @@ func (v *VolumeMigrator) createTempPolicy() error {
 				case "Luworkers":
 					tempPolicy.Spec.Target.IOWorkers, err = strconv.ParseInt(env.Value, 10, 64)
 					if err != nil {
-						klog.Info("failed to set Luworkers on cvc: ", err.Error())
+						return errors.Wrap(err, "failed to set Luworkers on cvc")
 					}
 				}
 			}
