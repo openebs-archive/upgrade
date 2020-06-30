@@ -185,7 +185,7 @@ func (obj *CSPIPatch) Upgrade() error {
 		return errors.Wrap(err, msg)
 	}
 	statusObj.Phase = v1Alpha1API.StepCompleted
-	statusObj.Message = "Pre-upgrade steps were successful"
+	statusObj.Message = "Pool instance upgrade was successful"
 	statusObj.Reason = ""
 	obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
 	if uerr != nil && isUpgradeTaskJob {
