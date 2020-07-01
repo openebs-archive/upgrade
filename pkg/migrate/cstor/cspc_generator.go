@@ -74,11 +74,12 @@ func (c *CSPCMigrator) getCSPCSpecForSPC() (*cstor.CStorPoolCluster, error) {
 		return nil, err
 	}
 	cspcObj := &cstor.CStorPoolCluster{}
-	cspcObj.Name = c.SPCObj.Name
+	cspcObj.Name = c.CSPCName
 	cspcObj.Annotations = map[string]string{
 		// This annotation will be used to disable reconciliation on the dependants.
 		// In this case that will be CSPI
 		types.OpenEBSDisableDependantsReconcileKey: "true",
+		"openebs.io/migrated":                      "true",
 	}
 	for _, cspObj := range cspList.Items {
 		cspDeployList, err := deploy.NewKubeClient().WithNamespace(c.OpenebsNamespace).
@@ -133,7 +134,7 @@ func getCSPAuxResources(cspDeploy appsv1.Deployment) *corev1.ResourceRequirement
 func (c *CSPCMigrator) generateCSPC() (
 	*cstor.CStorPoolCluster, error) {
 	cspcObj, err := c.OpenebsClientset.CstorV1().
-		CStorPoolClusters(c.OpenebsNamespace).Get(c.SPCObj.Name, metav1.GetOptions{})
+		CStorPoolClusters(c.OpenebsNamespace).Get(c.CSPCName, metav1.GetOptions{})
 	if !k8serrors.IsNotFound(err) && err != nil {
 		return nil, err
 	}
@@ -176,7 +177,7 @@ func (c *CSPCMigrator) generateCSPC() (
 		return nil, err
 	}
 	cspcObj, err = c.OpenebsClientset.CstorV1().
-		CStorPoolClusters(c.OpenebsNamespace).Get(c.SPCObj.Name, metav1.GetOptions{})
+		CStorPoolClusters(c.OpenebsNamespace).Get(c.CSPCName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

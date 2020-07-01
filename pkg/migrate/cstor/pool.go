@@ -65,6 +65,12 @@ type CSPCMigrator struct {
 	CSPCObj          *cstor.CStorPoolCluster
 	SPCObj           *apis.StoragePoolClaim
 	OpenebsNamespace string
+	CSPCName         string
+}
+
+// SetCSPCName is used to initialize custom name if provided
+func (c *CSPCMigrator) SetCSPCName(name string) {
+	c.CSPCName = name
 }
 
 // Migrate ...
@@ -83,6 +89,13 @@ func (c *CSPCMigrator) Migrate(name, namespace string) error {
 		return errors.Wrap(err, "error building openebs clientset")
 	}
 	err = c.validateCSPCOperator()
+	if err != nil {
+		return err
+	}
+	if c.CSPCName == "" {
+		c.CSPCName = name
+	}
+	err = c.checkForExistingCSPC()
 	if err != nil {
 		return err
 	}
@@ -133,11 +146,11 @@ func (c *CSPCMigrator) migrate(spcName string) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to validate spc %s", spcName)
 	}
-	err = c.updateBDCLabels(spcName)
+	err = c.updateBDCLabels()
 	if err != nil {
 		return errors.Wrapf(err, "failed to update bdc labels for spc %s", spcName)
 	}
-	klog.Infof("Creating equivalent cspc for spc %s", spcName)
+	klog.Infof("Creating equivalent cspc %s for spc %s", c.CSPCName, spcName)
 	c.CSPCObj, err = c.generateCSPC()
 	if err != nil {
 		return err
@@ -176,6 +189,22 @@ func (c *CSPCMigrator) migrate(spcName string) error {
 		return err
 	}
 	return nil
+}
+
+func (c *CSPCMigrator) checkForExistingCSPC() error {
+	cspc, err := c.OpenebsClientset.CstorV1().
+		CStorPoolClusters(c.OpenebsNamespace).
+		Get(c.CSPCName, metav1.GetOptions{})
+	if k8serrors.IsNotFound(err) {
+		return nil
+	}
+	if err == nil {
+		if cspc.Annotations == nil || cspc.Annotations["openebs.io/migrated"] != "true" {
+			return errors.Errorf("cspc with same name %s already exists. Use the flag \"--cspc-name\" to rename the spc during migration", c.CSPCName)
+		}
+		return nil
+	}
+	return err
 }
 
 // validateSPC determines that if the spc is allowed to migrate or not.
@@ -232,9 +261,9 @@ func (c *CSPCMigrator) getSPCWithMigrationStatus(spcName string) (*apis.StorageP
 	if k8serrors.IsNotFound(err) {
 		klog.Infof("spc %s not found.", spcName)
 		_, err = c.OpenebsClientset.CstorV1().
-			CStorPoolClusters(c.OpenebsNamespace).Get(spcName, metav1.GetOptions{})
+			CStorPoolClusters(c.OpenebsNamespace).Get(c.CSPCName, metav1.GetOptions{})
 		if err != nil {
-			return nil, false, errors.Wrapf(err, "failed to get equivalent cspc for spc %s", spcName)
+			return nil, false, errors.Wrapf(err, "failed to get equivalent cspc %s for spc %s", c.CSPCName, spcName)
 		}
 		return nil, true, nil
 	}
@@ -248,7 +277,7 @@ func (c *CSPCMigrator) getSPCWithMigrationStatus(spcName string) (*apis.StorageP
 func (c *CSPCMigrator) cspTocspi(cspiObj *cstor.CStorPoolInstance) error {
 	var err1 error
 	hostnameLabel := types.HostNameLabelKey + "=" + cspiObj.Labels[types.HostNameLabelKey]
-	spcLabel := string(apis.StoragePoolClaimCPK) + "=" + c.CSPCObj.Name
+	spcLabel := string(apis.StoragePoolClaimCPK) + "=" + c.SPCObj.Name
 	cspLabel := hostnameLabel + "," + spcLabel
 	cspObj, err := getCSP(cspLabel)
 	if err != nil {
@@ -374,9 +403,9 @@ func (c *CSPCMigrator) scaleDownDeployment(cspObj *apis.CStorPool, openebsNamesp
 
 // Update the bdc with the cspc labels instead of spc labels to allow
 // filtering of bds claimed by the migrated cspc.
-func (c *CSPCMigrator) updateBDCLabels(cspcName string) error {
+func (c *CSPCMigrator) updateBDCLabels() error {
 	bdcList, err := c.OpenebsClientset.OpenebsV1alpha1().BlockDeviceClaims(c.OpenebsNamespace).List(metav1.ListOptions{
-		LabelSelector: string(apis.StoragePoolClaimCPK) + "=" + cspcName,
+		LabelSelector: string(apis.StoragePoolClaimCPK) + "=" + c.SPCObj.Name,
 	})
 	if err != nil {
 		return err
@@ -387,7 +416,7 @@ func (c *CSPCMigrator) updateBDCLabels(cspcName string) error {
 			bdcObj := &bdcItem
 			klog.Infof("Updating bdc %s with cspc labels & finalizer.", bdcObj.Name)
 			delete(bdcObj.Labels, string(apis.StoragePoolClaimCPK))
-			bdcObj.Labels[types.CStorPoolClusterLabelKey] = cspcName
+			bdcObj.Labels[types.CStorPoolClusterLabelKey] = c.CSPCName
 			for i, finalizer := range bdcObj.Finalizers {
 				if finalizer == spcFinalizer {
 					bdcObj.Finalizers[i] = cspcFinalizer
