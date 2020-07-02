@@ -17,10 +17,16 @@ limitations under the License.
 package upgrader
 
 import (
+	"os"
+
 	openebsclientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+)
+
+var (
+	isUpgradeTaskJob = false
 )
 
 // UpgradeOptions ...
@@ -64,5 +70,8 @@ func NewUpgrade() *Upgrade {
 	}
 	u.initClient()
 	u.RegisterAll()
+	if os.Getenv("UPGRADE_TASK_LABEL") != "" {
+		isUpgradeTaskJob = true
+	}
 	return u
 }

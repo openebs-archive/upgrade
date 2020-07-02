@@ -19,7 +19,8 @@ package upgrader
 import (
 	"time"
 
-	apis "github.com/openebs/api/pkg/apis/cstor/v1"
+	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
+	v1Alpha1API "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/upgrade/pkg/upgrade/patch"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -93,7 +94,7 @@ func getCSPCPatchData(obj *CSPCPatch) error {
 	return err
 }
 
-func transformCSPC(c *apis.CStorPoolCluster, res *ResourcePatch) error {
+func transformCSPC(c *cstor.CStorPoolCluster, res *ResourcePatch) error {
 	c.VersionDetails.Desired = res.To
 	return nil
 }
@@ -135,7 +136,39 @@ func (obj *CSPCPatch) Upgrade() error {
 		)
 		err = dependant.Upgrade()
 		if err != nil {
+			utaskObj, uerr := obj.OpenebsClientset.OpenebsV1alpha1().
+				UpgradeTasks(obj.OpenebsNamespace).
+				Get("upgrade-cstor-cspi-"+cspiObj.Name, metav1.GetOptions{})
+			if uerr != nil && isUpgradeTaskJob {
+				return uerr
+			}
+			backoffLimit, uerr := getBackoffLimit(obj.OpenebsNamespace, obj.Client)
+			if uerr != nil && isUpgradeTaskJob {
+				return uerr
+			}
+			utaskObj.Status.Retries = utaskObj.Status.Retries + 1
+			if utaskObj.Status.Retries == backoffLimit {
+				utaskObj.Status.Phase = v1Alpha1API.UpgradeError
+				utaskObj.Status.CompletedTime = metav1.Now()
+			}
+			_, uerr = obj.OpenebsClientset.OpenebsV1alpha1().UpgradeTasks(obj.OpenebsNamespace).
+				Update(utaskObj)
+			if uerr != nil && isUpgradeTaskJob {
+				return uerr
+			}
 			return err
+		}
+		utaskObj, uerr := obj.OpenebsClientset.OpenebsV1alpha1().UpgradeTasks(obj.OpenebsNamespace).
+			Get("upgrade-cstor-cspi-"+cspiObj.Name, metav1.GetOptions{})
+		if uerr != nil && isUpgradeTaskJob {
+			return uerr
+		}
+		utaskObj.Status.Phase = v1Alpha1API.UpgradeSuccess
+		utaskObj.Status.CompletedTime = metav1.Now()
+		_, uerr = obj.OpenebsClientset.OpenebsV1alpha1().UpgradeTasks(obj.OpenebsNamespace).
+			Update(utaskObj)
+		if uerr != nil && isUpgradeTaskJob {
+			return uerr
 		}
 	}
 	err = obj.CSPCUpgrade()

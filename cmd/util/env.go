@@ -22,10 +22,17 @@ import (
 
 const (
 	openebsNamespaceEnv = "OPENEBS_NAMESPACE"
+	upgradeTaskLabel    = "UPGRADE_TASK_LABEL"
 )
 
 // GetOpenEBSNamespace gets the openebs namespace set to
 // the OPENEBS_NAMESPACE env
 func GetOpenEBSNamespace() string {
 	return os.Getenv(openebsNamespaceEnv)
+}
+
+// GetUpgradeTaskLabel gets the upgradeTask label set to
+// the UPGRADE_TASK_LABEL env
+func GetUpgradeTaskLabel() string {
+	return os.Getenv(upgradeTaskLabel)
 }

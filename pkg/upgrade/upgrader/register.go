@@ -23,8 +23,8 @@ func (u *Upgrade) registerUpgrade(kind string, obj UpgradeOptions) *Upgrade {
 
 // RegisterAll ...
 func (u *Upgrade) RegisterAll() *Upgrade {
-	u.registerUpgrade("cstorpoolinstance", RegisterCstorPoolInstance)
-	u.registerUpgrade("cstorpoolcluster", RegisterCstorPoolCluster)
+	u.registerUpgrade("cstorPoolInstance", RegisterCstorPoolInstance)
+	u.registerUpgrade("cstorPoolCluster", RegisterCstorPoolCluster)
 	u.registerUpgrade("cstorVolume", RegisterCstorVolume)
 	// u.registerUpgrade("jivaVolume", RegisterJivaVolume)
 	return u
