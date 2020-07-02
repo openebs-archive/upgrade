@@ -57,11 +57,6 @@ func (s *SnapshotMigrator) migrate(pvName string) error {
 }
 
 func (s *SnapshotMigrator) migrateSnapshots() error {
-	_, err := s.snapClient.SnapshotV1beta1().VolumeSnapshotClasses().
-		Get(snapClass, metav1.GetOptions{})
-	if err != nil {
-		return errors.Wrapf(err, "failed to get snapshotclass %s", snapClass)
-	}
 	snapshotList, err := snap.NewKubeClient().
 		WithNamespace("").
 		List(metav1.ListOptions{
@@ -69,6 +64,14 @@ func (s *SnapshotMigrator) migrateSnapshots() error {
 		})
 	if err != nil {
 		return err
+	}
+	if len(snapshotList.Items) == 0 {
+		return nil
+	}
+	_, err = s.snapClient.SnapshotV1beta1().VolumeSnapshotClasses().
+		Get(snapClass, metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "failed to get snapshotclass %s", snapClass)
 	}
 	for _, snapshot := range snapshotList.Items {
 		snapshot := snapshot // pin it
