@@ -566,6 +566,10 @@ func (v *VolumeMigrator) updateStorageClass(pvName, scName string) error {
 			"replicaCount":     replicaCount,
 			"cstorPoolCluster": cspcName,
 		}
+		err = v.createCVPforConfig(csiSC)
+		if err != nil {
+			return err
+		}
 		if scObj != nil {
 			err = v.KubeClientset.StorageV1().
 				StorageClasses().Delete(scObj.Name, &metav1.DeleteOptions{})
