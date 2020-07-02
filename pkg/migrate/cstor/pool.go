@@ -95,7 +95,7 @@ func (c *CSPCMigrator) Migrate(name, namespace string) error {
 	if c.CSPCName == "" {
 		c.CSPCName = name
 	}
-	err = c.checkForExistingCSPC()
+	err = c.checkForExistingCSPC(name)
 	if err != nil {
 		return err
 	}
@@ -191,7 +191,30 @@ func (c *CSPCMigrator) migrate(spcName string) error {
 	return nil
 }
 
-func (c *CSPCMigrator) checkForExistingCSPC() error {
+func (c *CSPCMigrator) checkForExistingCSPC(spcName string) error {
+	spcObj, err := spc.NewKubeClient().Get(spcName, metav1.GetOptions{})
+	if err == nil {
+		if spcObj.Annotations == nil || spcObj.Annotations[types.CStorPoolClusterLabelKey] == "" {
+			if spcObj.Annotations == nil {
+				spcObj.Annotations = map[string]string{}
+			}
+			spcObj.Annotations[types.CStorPoolClusterLabelKey] = c.CSPCName
+			_, err := spc.NewKubeClient().Update(spcObj)
+			if err != nil {
+				return err
+			}
+		} else {
+			if spcObj.Annotations[types.CStorPoolClusterLabelKey] != c.CSPCName {
+				return errors.Errorf("invalid cspc-name: the spc %s already set to be renamed as %s",
+					spcName,
+					spcObj.Annotations[types.CStorPoolClusterLabelKey],
+				)
+			}
+		}
+	}
+	if !k8serrors.IsNotFound(err) {
+		return err
+	}
 	cspc, err := c.OpenebsClientset.CstorV1().
 		CStorPoolClusters(c.OpenebsNamespace).
 		Get(c.CSPCName, metav1.GetOptions{})
