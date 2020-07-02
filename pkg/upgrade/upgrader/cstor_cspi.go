@@ -105,7 +105,7 @@ func (obj *CSPIPatch) CSPIUpgrade() (string, error) {
 func (obj *CSPIPatch) Upgrade() error {
 	var err, uerr error
 	obj.Utask, err = getOrCreateUpgradeTask(
-		"cstorpoolinstance",
+		"cstorPoolInstance",
 		obj.ResourcePatch,
 		obj.Client,
 	)

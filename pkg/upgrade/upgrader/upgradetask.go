@@ -139,7 +139,7 @@ func buildUpgradeTask(kind string, r *ResourcePatch) *v1Alpha1API.UpgradeTask {
 		},
 	}
 	switch kind {
-	case "cstorpoolinstance":
+	case "cstorPoolInstance":
 		utaskObj.Name = "upgrade-cstor-cspi-" + r.Name
 		utaskObj.Spec.ResourceSpec = v1Alpha1API.ResourceSpec{
 			CStorPoolInstance: &v1Alpha1API.CStorPoolInstance{

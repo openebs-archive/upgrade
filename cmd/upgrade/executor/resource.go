@@ -140,11 +140,11 @@ func (u *UpgradeOptions) InitializeFromUpgradeTaskResource(
 
 	switch {
 	case upgradeTaskCRObj.Spec.ResourceSpec.CStorPoolInstance != nil:
-		u.resourceKind = "cstorpoolinstance"
+		u.resourceKind = "cstorPoolInstance"
 		u.name = upgradeTaskCRObj.Spec.ResourceSpec.CStorPoolInstance.CSPIName
 
 	case upgradeTaskCRObj.Spec.ResourceSpec.CStorPoolCluster != nil:
-		u.resourceKind = "cstorpoolcluster"
+		u.resourceKind = "cstorPoolCluster"
 		u.name = upgradeTaskCRObj.Spec.ResourceSpec.CStorPoolCluster.CSPCName
 
 	case upgradeTaskCRObj.Spec.ResourceSpec.CStorVolume != nil:

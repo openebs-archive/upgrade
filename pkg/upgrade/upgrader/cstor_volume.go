@@ -134,11 +134,11 @@ func (obj *CStorVolumePatch) Init() (string, error) {
 	}
 	err = getCVDeployPatchData(obj)
 	if err != nil {
-		return "failed to target deploy patch for volume" + obj.Name, err
+		return "failed to create target deploy patch for volume" + obj.Name, err
 	}
 	err = getCVServicePatchData(obj)
 	if err != nil {
-		return "failed to target svc patch for volume" + obj.Name, err
+		return "failed to create target svc patch for volume" + obj.Name, err
 	}
 	return "", nil
 }

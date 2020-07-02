@@ -47,7 +47,7 @@ func NewUpgradeCStorCSPCJob() *cobra.Command {
 				util.Fatal("failed to upgrade: no cspc name provided")
 			}
 			for _, name := range args {
-				options.resourceKind = "cstorpoolcluster"
+				options.resourceKind = "cstorPoolCluster"
 				util.CheckErr(options.RunPreFlightChecks(cmd), util.Fatal)
 				util.CheckErr(options.InitializeDefaults(cmd), util.Fatal)
 				util.CheckErr(options.RunCStorCSPCUpgrade(cmd, name), util.Fatal)
