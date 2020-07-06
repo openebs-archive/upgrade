@@ -191,55 +191,61 @@ func (c *CSPCMigrator) migrate(spcName string) error {
 	return nil
 }
 
+// checkForExistingCSPC verifies the migration as follows:
+// spc = getSPC
+// 1. if spc does not exist
+// 	return nil (getSPCWithMigrationStatus will handle it)
+// cspc = getCSPC(from flag or same as spc)
+// 2. if cspc exist &&
+// 	a. spc has anno with cspc-name && cspc has migration anno with spc-name
+// 		return nil
+// 	b. else
+// 		return err cspc already exists
+// 3. if cspc does not exist &&
+// 	a. spc has no anno
+// 		patch spc with anno
+// 	b. spc has diff anno than current cspc-name
+// 		return err
 func (c *CSPCMigrator) checkForExistingCSPC(spcName string) error {
 	spcObj, err := spc.NewKubeClient().Get(spcName, metav1.GetOptions{})
-	if err == nil {
-		// if cspc-name flag is used and the spc does not have the cspc
-		// annotation add the cspc annotation
-		if spcObj.Annotations == nil || spcObj.Annotations[types.CStorPoolClusterLabelKey] == "" {
-			if spcName != c.CSPCName {
-				err = addCSPCAnnotationToSPC(spcObj, c.CSPCName)
-				if err != nil {
-					return err
-				}
-			}
-		} else {
-			// if the first attempt at using cspc-name flag fails check for the new cspc
-			// name proivded and if no cspc exists update the annotation
-			if spcObj.Annotations[types.CStorPoolClusterLabelKey] != c.CSPCName {
-				_, err := c.OpenebsClientset.CstorV1().
-					CStorPoolClusters(c.OpenebsNamespace).
-					Get(c.CSPCName, metav1.GetOptions{})
-				if k8serrors.IsNotFound(err) {
-					err = addCSPCAnnotationToSPC(spcObj, c.CSPCName)
-					return err
-				}
-				if err != nil {
-					return err
-				}
-				return errors.Errorf("invalid cspc-name: the spc %s already set to be renamed as %s",
-					spcName,
-					spcObj.Annotations[types.CStorPoolClusterLabelKey],
-				)
-			}
-		}
-	}
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
+	}
+	if k8serrors.IsNotFound(err) {
+		return nil
 	}
 	cspc, err := c.OpenebsClientset.CstorV1().
 		CStorPoolClusters(c.OpenebsNamespace).
 		Get(c.CSPCName, metav1.GetOptions{})
-	if k8serrors.IsNotFound(err) {
-		return nil
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return err
 	}
 	if err == nil {
-		if cspc.Annotations == nil || cspc.Annotations["openebs.io/migrated-from"] != spcName {
-			return errors.Errorf("cspc with same name %s already exists. Use the flag \"--cspc-name\" to rename the spc during migration", c.CSPCName)
+		if spcObj.Annotations[types.CStorPoolClusterLabelKey] == c.CSPCName &&
+			cspc.Annotations["openebs.io/migrated-from"] == spcName {
+			return nil
 		}
-		return nil
+		return errors.Errorf(
+			"failed to validate migration: the spc %s is set to be renamed as %s, but got cspc-name %s instead",
+			spcName,
+			spcObj.Annotations[types.CStorPoolClusterLabelKey],
+			c.CSPCName,
+		)
 	}
-	return err
+	if k8serrors.IsNotFound(err) {
+		if spcObj.Annotations == nil || spcObj.Annotations[types.CStorPoolClusterLabelKey] == "" {
+			return addCSPCAnnotationToSPC(spcObj, c.CSPCName)
+		}
+		if spcObj.Annotations[types.CStorPoolClusterLabelKey] != c.CSPCName {
+			return errors.Errorf(
+				"failed to validate migration: the spc %s is set to be renamed as %s, but got cspc-name %s instead",
+				spcName,
+				spcObj.Annotations[types.CStorPoolClusterLabelKey],
+				c.CSPCName,
+			)
+		}
+	}
+	return nil
 }
 
 // validateSPC determines that if the spc is allowed to migrate or not.
