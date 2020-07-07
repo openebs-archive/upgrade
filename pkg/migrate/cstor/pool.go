@@ -65,6 +65,12 @@ type CSPCMigrator struct {
 	CSPCObj          *cstor.CStorPoolCluster
 	SPCObj           *apis.StoragePoolClaim
 	OpenebsNamespace string
+	CSPCName         string
+}
+
+// SetCSPCName is used to initialize custom name if provided
+func (c *CSPCMigrator) SetCSPCName(name string) {
+	c.CSPCName = name
 }
 
 // Migrate ...
@@ -83,6 +89,13 @@ func (c *CSPCMigrator) Migrate(name, namespace string) error {
 		return errors.Wrap(err, "error building openebs clientset")
 	}
 	err = c.validateCSPCOperator()
+	if err != nil {
+		return err
+	}
+	if c.CSPCName == "" {
+		c.CSPCName = name
+	}
+	err = c.checkForExistingCSPC(name)
 	if err != nil {
 		return err
 	}
@@ -133,12 +146,12 @@ func (c *CSPCMigrator) migrate(spcName string) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to validate spc %s", spcName)
 	}
-	err = c.updateBDCLabels(spcName)
+	err = c.updateBDCLabels()
 	if err != nil {
 		return errors.Wrapf(err, "failed to update bdc labels for spc %s", spcName)
 	}
-	klog.Infof("Creating equivalent cspc for spc %s", spcName)
-	c.CSPCObj, err = c.generateCSPC()
+	klog.Infof("Creating equivalent cspc %s for spc %s", c.CSPCName, spcName)
+	c.CSPCObj, err = c.generateCSPC(spcName)
 	if err != nil {
 		return err
 	}
@@ -174,6 +187,63 @@ func (c *CSPCMigrator) migrate(spcName string) error {
 		Delete(spcName, &metav1.DeleteOptions{})
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+// checkForExistingCSPC verifies the migration as follows:
+// spc = getSPC
+// 1. if spc does not exist
+// 	return nil (getSPCWithMigrationStatus will handle it)
+// cspc = getCSPC(from flag or same as spc)
+// 2. if cspc exist &&
+// 	a. spc has anno with cspc-name && cspc has migration anno with spc-name
+// 		return nil
+// 	b. else
+// 		return err cspc already exists
+// 3. if cspc does not exist &&
+// 	a. spc has no anno
+// 		patch spc with anno
+// 	b. spc has diff anno than current cspc-name
+// 		return err
+func (c *CSPCMigrator) checkForExistingCSPC(spcName string) error {
+	spcObj, err := spc.NewKubeClient().Get(spcName, metav1.GetOptions{})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return err
+	}
+	if k8serrors.IsNotFound(err) {
+		return nil
+	}
+	cspc, err := c.OpenebsClientset.CstorV1().
+		CStorPoolClusters(c.OpenebsNamespace).
+		Get(c.CSPCName, metav1.GetOptions{})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return err
+	}
+	if err == nil {
+		if spcObj.Annotations[types.CStorPoolClusterLabelKey] == c.CSPCName &&
+			cspc.Annotations["openebs.io/migrated-from"] == spcName {
+			return nil
+		}
+		return errors.Errorf(
+			"failed to validate migration: the spc %s is set to be renamed as %s, but got cspc-name %s instead",
+			spcName,
+			spcObj.Annotations[types.CStorPoolClusterLabelKey],
+			c.CSPCName,
+		)
+	}
+	if k8serrors.IsNotFound(err) {
+		if spcObj.Annotations == nil || spcObj.Annotations[types.CStorPoolClusterLabelKey] == "" {
+			return addCSPCAnnotationToSPC(spcObj, c.CSPCName)
+		}
+		if spcObj.Annotations[types.CStorPoolClusterLabelKey] != c.CSPCName {
+			return errors.Errorf(
+				"failed to validate migration: the spc %s is set to be renamed as %s, but got cspc-name %s instead",
+				spcName,
+				spcObj.Annotations[types.CStorPoolClusterLabelKey],
+				c.CSPCName,
+			)
+		}
 	}
 	return nil
 }
@@ -232,9 +302,9 @@ func (c *CSPCMigrator) getSPCWithMigrationStatus(spcName string) (*apis.StorageP
 	if k8serrors.IsNotFound(err) {
 		klog.Infof("spc %s not found.", spcName)
 		_, err = c.OpenebsClientset.CstorV1().
-			CStorPoolClusters(c.OpenebsNamespace).Get(spcName, metav1.GetOptions{})
+			CStorPoolClusters(c.OpenebsNamespace).Get(c.CSPCName, metav1.GetOptions{})
 		if err != nil {
-			return nil, false, errors.Wrapf(err, "failed to get equivalent cspc for spc %s", spcName)
+			return nil, false, errors.Wrapf(err, "failed to get equivalent cspc %s for spc %s", c.CSPCName, spcName)
 		}
 		return nil, true, nil
 	}
@@ -248,7 +318,7 @@ func (c *CSPCMigrator) getSPCWithMigrationStatus(spcName string) (*apis.StorageP
 func (c *CSPCMigrator) cspTocspi(cspiObj *cstor.CStorPoolInstance) error {
 	var err1 error
 	hostnameLabel := types.HostNameLabelKey + "=" + cspiObj.Labels[types.HostNameLabelKey]
-	spcLabel := string(apis.StoragePoolClaimCPK) + "=" + c.CSPCObj.Name
+	spcLabel := string(apis.StoragePoolClaimCPK) + "=" + c.SPCObj.Name
 	cspLabel := hostnameLabel + "," + spcLabel
 	cspObj, err := getCSP(cspLabel)
 	if err != nil {
@@ -374,9 +444,9 @@ func (c *CSPCMigrator) scaleDownDeployment(cspObj *apis.CStorPool, openebsNamesp
 
 // Update the bdc with the cspc labels instead of spc labels to allow
 // filtering of bds claimed by the migrated cspc.
-func (c *CSPCMigrator) updateBDCLabels(cspcName string) error {
+func (c *CSPCMigrator) updateBDCLabels() error {
 	bdcList, err := c.OpenebsClientset.OpenebsV1alpha1().BlockDeviceClaims(c.OpenebsNamespace).List(metav1.ListOptions{
-		LabelSelector: string(apis.StoragePoolClaimCPK) + "=" + cspcName,
+		LabelSelector: string(apis.StoragePoolClaimCPK) + "=" + c.SPCObj.Name,
 	})
 	if err != nil {
 		return err
@@ -387,7 +457,7 @@ func (c *CSPCMigrator) updateBDCLabels(cspcName string) error {
 			bdcObj := &bdcItem
 			klog.Infof("Updating bdc %s with cspc labels & finalizer.", bdcObj.Name)
 			delete(bdcObj.Labels, string(apis.StoragePoolClaimCPK))
-			bdcObj.Labels[types.CStorPoolClusterLabelKey] = cspcName
+			bdcObj.Labels[types.CStorPoolClusterLabelKey] = c.CSPCName
 			for i, finalizer := range bdcObj.Finalizers {
 				if finalizer == spcFinalizer {
 					bdcObj.Finalizers[i] = cspcFinalizer
@@ -466,12 +536,27 @@ func (c *CSPCMigrator) updateCVRsLabels(cspObj *apis.CStorPool, cspiObj *cstor.C
 
 func addSkipAnnotationToSPC(spcObj *apis.StoragePoolClaim) error {
 retry:
-	spcObj.Annotations = map[string]string{
-		"openebs.io/skip-validations": "true",
+	if spcObj.Annotations == nil {
+		spcObj.Annotations = map[string]string{}
 	}
+	spcObj.Annotations["openebs.io/skip-validations"] = "true"
 	_, err := spc.NewKubeClient().Update(spcObj)
 	if k8serrors.IsConflict(err) {
 		klog.Errorf("failed to update spc with skip-validation annotation due to conflict error")
+		goto retry
+	}
+	return err
+}
+
+func addCSPCAnnotationToSPC(spcObj *apis.StoragePoolClaim, cspcName string) error {
+retry:
+	if spcObj.Annotations == nil {
+		spcObj.Annotations = map[string]string{}
+	}
+	spcObj.Annotations[types.CStorPoolClusterLabelKey] = cspcName
+	_, err := spc.NewKubeClient().Update(spcObj)
+	if k8serrors.IsConflict(err) {
+		klog.Errorf("failed to update spc with cspc annotation due to conflict error")
 		goto retry
 	}
 	return err

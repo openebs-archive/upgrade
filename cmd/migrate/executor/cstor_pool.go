@@ -55,6 +55,11 @@ func NewMigratePoolJob() *cobra.Command {
 		options.spcName,
 		"cstor SPC name to be migrated. Run \"kubectl get spc\", to get spc-name")
 
+	cmd.Flags().StringVarP(&options.cspcName,
+		"cspc-name", "",
+		options.cspcName,
+		"[optional] custom cspc name. By default cspc is created with same name as spc")
+
 	return cmd
 }
 
@@ -72,6 +77,10 @@ func (m *MigrateOptions) RunCStorSPCMigrate() error {
 
 	klog.Infof("Migrating spc %s to cspc", m.spcName)
 	migrator := cstor.CSPCMigrator{}
+	if m.cspcName != "" {
+		klog.Infof("using custom cspc name as %s", m.cspcName)
+		migrator.SetCSPCName(m.cspcName)
+	}
 	err := migrator.Migrate(m.spcName, m.openebsNamespace)
 	if err != nil {
 		klog.Error(err)
