@@ -19,6 +19,8 @@ spec:
         - "cstor-spc"
         # name of the spc that is to be migrated
         - "--spc-name=sparse-claim"
+        # optional flag to rename the spc to a specific name
+        # - "--cspc-name=sparse-claim-migrated"
 
         #Following are optional parameters
         #Log Level
