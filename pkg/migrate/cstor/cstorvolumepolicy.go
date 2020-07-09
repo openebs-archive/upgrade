@@ -39,6 +39,8 @@ type quantity struct {
 	CPU    string `yaml:"cpu,omitempty"`
 }
 
+// createCVPforConfig creates an equivalent CVP
+// for the cas config annotation set on old SC
 func (v *VolumeMigrator) createCVPforConfig(sc *storagev1.StorageClass) error {
 	_, err := v.OpenebsClientset.CstorV1().
 		CStorVolumePolicies(v.OpenebsNamespace).
@@ -132,7 +134,6 @@ func (v *VolumeMigrator) createCVPforConfig(sc *storagev1.StorageClass) error {
 			sc.Parameters["fsType"] = config.Value
 		}
 	}
-	sc.Parameters["cstorVolumePolicy"] = cvp.Name
 	if !found {
 		_, err = v.OpenebsClientset.CstorV1().
 			CStorVolumePolicies(v.OpenebsNamespace).
@@ -141,6 +142,7 @@ func (v *VolumeMigrator) createCVPforConfig(sc *storagev1.StorageClass) error {
 			return err
 		}
 	}
+	sc.Parameters["cstorVolumePolicy"] = cvp.Name
 	return nil
 }
 
