@@ -478,14 +478,6 @@ func (v *VolumeMigrator) createCVC(pvName string) error {
 		}
 		cvcObj.Spec.Provision.ReplicaCount = cvObj.Spec.ReplicationFactor
 		cvcObj.Status.Phase = cstor.CStorVolumeConfigPhasePending
-		cvcObj.VersionDetails = cstor.VersionDetails{
-			Desired:     version.Current(),
-			AutoUpgrade: false,
-			Status: cstor.VersionStatus{
-				Current:            version.Current(),
-				DependentsUpgraded: true,
-			},
-		}
 		if len(cvObj.Labels["openebs.io/source-volume"]) != 0 {
 			cvcObj.Spec.CStorVolumeSource = cvObj.Labels["openebs.io/source-volume"] + "@" + cvObj.Annotations["openebs.io/snapshot"]
 		}
