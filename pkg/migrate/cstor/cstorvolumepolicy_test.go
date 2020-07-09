@@ -106,9 +106,8 @@ func TestVolumeMigrator_createCVPforConfig(t *testing.T) {
 		expect  *cstor.CStorVolumePolicy
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
-			name: "positive",
+			name: "when cas config annotation is present on the storageclass",
 			args: args{
 				sc: &storagev1.StorageClass{
 					ObjectMeta: metav1.ObjectMeta{
@@ -173,6 +172,24 @@ func TestVolumeMigrator_createCVPforConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "when no cas config annotation is present on the storageclass",
+			args: args{
+				sc: &storagev1.StorageClass{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "openebs-cstor-default",
+					},
+					Parameters: map[string]string{},
+				},
+			},
+			wantErr: false,
+			expect: &cstor.CStorVolumePolicy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "openebs-cstor-default",
+					Namespace: "openebs",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -181,11 +198,12 @@ func TestVolumeMigrator_createCVPforConfig(t *testing.T) {
 			}
 			cvp, err := f.v.OpenebsClientset.CstorV1().CStorVolumePolicies(f.v.OpenebsNamespace).Get(tt.args.sc.Name, metav1.GetOptions{})
 			if err != nil {
-				t.Errorf("VolumeMigrator.createCVPforConfig() failed to create CVP = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("VolumeMigrator.createCVPforConfig() failed to get CVP = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !reflect.DeepEqual(cvp, tt.expect) {
 				t.Errorf("VolumeMigrator.createCVPforConfig() translation failed \nexpected : %+v\ngot : %+v", tt.expect, cvp)
 			}
+
 		})
 	}
 }
