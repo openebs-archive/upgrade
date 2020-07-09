@@ -901,6 +901,10 @@ retry:
 		time.Sleep(10 * time.Second)
 		goto retry
 	}
+	err = v.removePodAffinity()
+	if err != nil {
+		return err
+	}
 	policy, err := v.OpenebsClientset.CstorV1().
 		CStorVolumePolicies(v.OpenebsNamespace).
 		Get(v.PVName, metav1.GetOptions{})
@@ -954,6 +958,38 @@ retry:
 		errors.Wrap(err, "failed to patch cvc owner ref to target svc")
 	}
 	return nil
+}
+
+// removePodAffinity removes the affinity from target deployment
+// to verify volume health as the application is scaled down and pod
+// can be schedules according to the rules
+func (v *VolumeMigrator) removePodAffinity() error {
+	cvp, err := v.OpenebsClientset.CstorV1().
+		CStorVolumePolicies(v.OpenebsNamespace).
+		Get(v.PVName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	if cvp.Spec.Target.PodAffinity == nil {
+		return nil
+	}
+	klog.Info("Patching target pod with no affinity rules to verify volume health")
+	targetDeploy, err := v.KubeClientset.AppsV1().
+		Deployments(v.OpenebsNamespace).
+		Get(v.PVName+"-target", metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	newTargetDeploy := targetDeploy.DeepCopy()
+	newTargetDeploy.Spec.Template.Spec.Affinity = nil
+	data, err := GetPatchData(targetDeploy, newTargetDeploy)
+	if err != nil {
+		return err
+	}
+	_, err = v.KubeClientset.AppsV1().
+		Deployments(v.OpenebsNamespace).
+		Patch(v.PVName+"-target", k8stypes.StrategicMergePatchType, data)
+	return err
 }
 
 func (v *VolumeMigrator) patchTargetPodAffinity() error {
