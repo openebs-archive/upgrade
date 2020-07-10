@@ -77,7 +77,7 @@ func (m *MigrateOptions) RunCStorVolumeMigrate() error {
 		klog.Error(err)
 		return errors.Errorf("Failed to migrate cStor Volume : %s", m.pvName)
 	}
-	klog.Infof("Successfully migrated volume %s", m.pvName)
+	klog.Infof("Successfully migrated volume %s, scale up the application to verify the migration", m.pvName)
 
 	return nil
 }

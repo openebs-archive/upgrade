@@ -204,7 +204,7 @@ func (v *VolumeMigrator) migrate() error {
 	if err != nil {
 		return err
 	}
-	_, err = v.migratePV(pvcObj)
+	pvObj, err = v.migratePV(pvcObj)
 	if err != nil {
 		return errors.Wrapf(err, "failed to migrate pv to csi spec")
 	}
@@ -213,7 +213,7 @@ func (v *VolumeMigrator) migrate() error {
 		return errors.Wrapf(err, "failed to remove old target deployment")
 	}
 	klog.Infof("Creating CVC to bound the volume and trigger CSI driver")
-	err = v.createCVC(v.PVName)
+	err = v.createCVC(pvObj)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create cvc")
 	}
@@ -426,20 +426,20 @@ func (v *VolumeMigrator) generateCSIPVFromCV(
 	return csiPV, nil
 }
 
-func (v *VolumeMigrator) createCVC(pvName string) error {
+func (v *VolumeMigrator) createCVC(pvObj *corev1.PersistentVolume) error {
 	var (
 		err    error
 		cvcObj *cstor.CStorVolumeConfig
 		cvObj  *apis.CStorVolume
 	)
 	cvcObj, err = v.OpenebsClientset.CstorV1().CStorVolumeConfigs(v.OpenebsNamespace).
-		Get(pvName, metav1.GetOptions{})
+		Get(v.PVName, metav1.GetOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
 	if k8serrors.IsNotFound(err) {
 		cvObj, err = cv.NewKubeclient().WithNamespace(v.CVNamespace).
-			Get(pvName, metav1.GetOptions{})
+			Get(v.PVName, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -454,8 +454,9 @@ func (v *VolumeMigrator) createCVC(pvName string) error {
 			return errors.Errorf("failed to get cvrs for volume %s", v.PVName)
 		}
 		annotations := map[string]string{
-			"openebs.io/volumeID":      pvName,
-			"openebs.io/volume-policy": pvName,
+			"openebs.io/volumeID":                v.PVName,
+			"openebs.io/volume-policy":           v.PVName,
+			"openebs.io/persistent-volume-claim": pvObj.Spec.ClaimRef.Name,
 		}
 		labels := map[string]string{
 			"openebs.io/cstor-pool-cluster": v.StorageClass.Parameters["cstorPoolCluster"],
@@ -478,14 +479,6 @@ func (v *VolumeMigrator) createCVC(pvName string) error {
 		}
 		cvcObj.Spec.Provision.ReplicaCount = cvObj.Spec.ReplicationFactor
 		cvcObj.Status.Phase = cstor.CStorVolumeConfigPhasePending
-		cvcObj.VersionDetails = cstor.VersionDetails{
-			Desired:     version.Current(),
-			AutoUpgrade: false,
-			Status: cstor.VersionStatus{
-				Current:            version.Current(),
-				DependentsUpgraded: true,
-			},
-		}
 		if len(cvObj.Labels["openebs.io/source-volume"]) != 0 {
 			cvcObj.Spec.CStorVolumeSource = cvObj.Labels["openebs.io/source-volume"] + "@" + cvObj.Annotations["openebs.io/snapshot"]
 		}
@@ -909,6 +902,10 @@ retry:
 		time.Sleep(10 * time.Second)
 		goto retry
 	}
+	err = v.removePodAffinity()
+	if err != nil {
+		return err
+	}
 	policy, err := v.OpenebsClientset.CstorV1().
 		CStorVolumePolicies(v.OpenebsNamespace).
 		Get(v.PVName, metav1.GetOptions{})
@@ -962,6 +959,38 @@ retry:
 		errors.Wrap(err, "failed to patch cvc owner ref to target svc")
 	}
 	return nil
+}
+
+// removePodAffinity removes the affinity from target deployment
+// to verify volume health as the application is scaled down and pod
+// can be schedules according to the rules
+func (v *VolumeMigrator) removePodAffinity() error {
+	cvp, err := v.OpenebsClientset.CstorV1().
+		CStorVolumePolicies(v.OpenebsNamespace).
+		Get(v.PVName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	if cvp.Spec.Target.PodAffinity == nil {
+		return nil
+	}
+	klog.Info("Patching target pod with no affinity rules to verify volume health")
+	targetDeploy, err := v.KubeClientset.AppsV1().
+		Deployments(v.OpenebsNamespace).
+		Get(v.PVName+"-target", metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	newTargetDeploy := targetDeploy.DeepCopy()
+	newTargetDeploy.Spec.Template.Spec.Affinity = nil
+	data, err := GetPatchData(targetDeploy, newTargetDeploy)
+	if err != nil {
+		return err
+	}
+	_, err = v.KubeClientset.AppsV1().
+		Deployments(v.OpenebsNamespace).
+		Patch(v.PVName+"-target", k8stypes.StrategicMergePatchType, data)
+	return err
 }
 
 func (v *VolumeMigrator) patchTargetPodAffinity() error {
