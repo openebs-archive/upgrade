@@ -134,6 +134,9 @@ func (v *VolumeMigrator) createCVPforConfig(sc *storagev1.StorageClass) error {
 			sc.Parameters["fsType"] = config.Value
 		}
 	}
+	if sc.Labels != nil && sc.Labels["openebs.io/sts-target-affinity"] != "" {
+		cvp.Spec.Provision.ReplicaAffinity = true
+	}
 	if !found {
 		_, err = v.OpenebsClientset.CstorV1().
 			CStorVolumePolicies(v.OpenebsNamespace).
