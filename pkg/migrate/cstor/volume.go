@@ -204,7 +204,7 @@ func (v *VolumeMigrator) migrate() error {
 	if err != nil {
 		return err
 	}
-	_, err = v.migratePV(pvcObj)
+	pvObj, err = v.migratePV(pvcObj)
 	if err != nil {
 		return errors.Wrapf(err, "failed to migrate pv to csi spec")
 	}
@@ -213,7 +213,7 @@ func (v *VolumeMigrator) migrate() error {
 		return errors.Wrapf(err, "failed to remove old target deployment")
 	}
 	klog.Infof("Creating CVC to bound the volume and trigger CSI driver")
-	err = v.createCVC(v.PVName)
+	err = v.createCVC(pvObj)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create cvc")
 	}
@@ -426,20 +426,20 @@ func (v *VolumeMigrator) generateCSIPVFromCV(
 	return csiPV, nil
 }
 
-func (v *VolumeMigrator) createCVC(pvName string) error {
+func (v *VolumeMigrator) createCVC(pvObj *corev1.PersistentVolume) error {
 	var (
 		err    error
 		cvcObj *cstor.CStorVolumeConfig
 		cvObj  *apis.CStorVolume
 	)
 	cvcObj, err = v.OpenebsClientset.CstorV1().CStorVolumeConfigs(v.OpenebsNamespace).
-		Get(pvName, metav1.GetOptions{})
+		Get(v.PVName, metav1.GetOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
 	if k8serrors.IsNotFound(err) {
 		cvObj, err = cv.NewKubeclient().WithNamespace(v.CVNamespace).
-			Get(pvName, metav1.GetOptions{})
+			Get(v.PVName, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -454,8 +454,9 @@ func (v *VolumeMigrator) createCVC(pvName string) error {
 			return errors.Errorf("failed to get cvrs for volume %s", v.PVName)
 		}
 		annotations := map[string]string{
-			"openebs.io/volumeID":      pvName,
-			"openebs.io/volume-policy": pvName,
+			"openebs.io/volumeID":                v.PVName,
+			"openebs.io/volume-policy":           v.PVName,
+			"openebs.io/persistent-volume-claim": pvObj.Spec.ClaimRef.Name,
 		}
 		labels := map[string]string{
 			"openebs.io/cstor-pool-cluster": v.StorageClass.Parameters["cstorPoolCluster"],
