@@ -124,15 +124,15 @@ func (obj *CStorVolumePatch) Init() (string, error) {
 	if err != nil {
 		return "failed to get target svc for volume" + obj.Name, err
 	}
-	err = getCVCPatchData(obj)
+	err = obj.getCVCPatchData()
 	if err != nil {
 		return "failed to create CVC patch for volume" + obj.Name, err
 	}
-	err = getCVPatchData(obj)
+	err = obj.getCVPatchData()
 	if err != nil {
 		return "failed to create CV patch for volume" + obj.Name, err
 	}
-	err = getCVDeployPatchData(obj)
+	err = obj.getCVDeployPatchData()
 	if err != nil {
 		return "failed to create target deploy patch for volume" + obj.Name, err
 	}
@@ -143,9 +143,9 @@ func (obj *CStorVolumePatch) Init() (string, error) {
 	return "", nil
 }
 
-func getCVCPatchData(obj *CStorVolumePatch) error {
+func (obj *CStorVolumePatch) getCVCPatchData() error {
 	newCVC := obj.CVC.Object.DeepCopy()
-	err := transformCVC(newCVC, obj.ResourcePatch)
+	err := obj.transformCVC(newCVC, obj.ResourcePatch)
 	if err != nil {
 		return err
 	}
@@ -153,14 +153,20 @@ func getCVCPatchData(obj *CStorVolumePatch) error {
 	return err
 }
 
-func transformCVC(c *cstor.CStorVolumeConfig, res *ResourcePatch) error {
+func (obj *CStorVolumePatch) transformCVC(c *cstor.CStorVolumeConfig, res *ResourcePatch) error {
+	pvObj, err := obj.KubeClientset.CoreV1().PersistentVolumes().
+		Get(obj.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	c.Annotations["openebs.io/persistent-volume-claim"] = pvObj.Spec.ClaimRef.Name
 	c.VersionDetails.Desired = res.To
 	return nil
 }
 
-func getCVPatchData(obj *CStorVolumePatch) error {
+func (obj *CStorVolumePatch) getCVPatchData() error {
 	newCV := obj.CV.Object.DeepCopy()
-	err := transformCV(newCV, obj.ResourcePatch)
+	err := obj.transformCV(newCV, obj.ResourcePatch)
 	if err != nil {
 		return err
 	}
@@ -168,14 +174,20 @@ func getCVPatchData(obj *CStorVolumePatch) error {
 	return err
 }
 
-func transformCV(c *cstor.CStorVolume, res *ResourcePatch) error {
+func (obj *CStorVolumePatch) transformCV(c *cstor.CStorVolume, res *ResourcePatch) error {
+	pvObj, err := obj.KubeClientset.CoreV1().PersistentVolumes().
+		Get(obj.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	c.Labels["openebs.io/persistent-volume-claim"] = pvObj.Spec.ClaimRef.Name
 	c.VersionDetails.Desired = res.To
 	return nil
 }
 
-func getCVDeployPatchData(obj *CStorVolumePatch) error {
+func (obj *CStorVolumePatch) getCVDeployPatchData() error {
 	newDeploy := obj.Deploy.Object.DeepCopy()
-	err := transformCVDeploy(newDeploy, obj.ResourcePatch)
+	err := obj.transformCVDeploy(newDeploy, obj.ResourcePatch)
 	if err != nil {
 		return err
 	}
@@ -183,7 +195,7 @@ func getCVDeployPatchData(obj *CStorVolumePatch) error {
 	return err
 }
 
-func transformCVDeploy(d *appsv1.Deployment, res *ResourcePatch) error {
+func (obj *CStorVolumePatch) transformCVDeploy(d *appsv1.Deployment, res *ResourcePatch) error {
 	// update deployment images
 	tag := res.To
 	if res.ImageTag != "" {
@@ -200,6 +212,13 @@ func transformCVDeploy(d *appsv1.Deployment, res *ResourcePatch) error {
 		}
 		d.Spec.Template.Spec.Containers[i].Image = url + ":" + tag
 	}
+	pvObj, err := obj.KubeClientset.CoreV1().PersistentVolumes().
+		Get(obj.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	d.Labels["openebs.io/persistent-volume-claim"] = pvObj.Spec.ClaimRef.Name
+	d.Spec.Template.Labels["openebs.io/persistent-volume-claim"] = pvObj.Spec.ClaimRef.Name
 	d.Labels["openebs.io/version"] = res.To
 	d.Spec.Template.Labels["openebs.io/version"] = res.To
 	return nil
