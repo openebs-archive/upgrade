@@ -551,6 +551,7 @@ func (v *VolumeMigrator) updateStorageClass(pvName, scName string) error {
 		csiSC.ObjectMeta = metav1.ObjectMeta{
 			Name:        scName,
 			Annotations: tmpSCObj.Annotations,
+			Labels:      tmpSCObj.Labels,
 		}
 		csiSC.Provisioner = cstorCSIDriver
 		csiSC.AllowVolumeExpansion = &trueBool
@@ -558,6 +559,10 @@ func (v *VolumeMigrator) updateStorageClass(pvName, scName string) error {
 			"cas-type":         "cstor",
 			"replicaCount":     replicaCount,
 			"cstorPoolCluster": cspcName,
+		}
+		err = v.createCVPforConfig(csiSC)
+		if err != nil {
+			return err
 		}
 		if scObj != nil {
 			err = v.KubeClientset.StorageV1().
@@ -599,6 +604,7 @@ func (v *VolumeMigrator) createTmpSC(scName string) (*storagev1.StorageClass, er
 		tmpSCObj.ObjectMeta = metav1.ObjectMeta{
 			Name:        tmpSCName,
 			Annotations: scObj.Annotations,
+			Labels:      scObj.Labels,
 		}
 		tmpSCObj, err = v.KubeClientset.StorageV1().
 			StorageClasses().Create(tmpSCObj)
