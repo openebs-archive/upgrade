@@ -32,11 +32,11 @@ migrate:
 migrate-image.amd64: migrate
 	@echo "-----------------------------------------------"
 	@echo "--> ${MIGRATE} image                           "
-	@echo "${HUB_USER}/${MIGRATE_REPO_NAME_AMD64}:${IMAGE_TAG}"
+	@echo "${IMAGE_ORG}/${MIGRATE_REPO_NAME_AMD64}:${IMAGE_TAG}"
 	@echo "-----------------------------------------------"
 	@cp bin/${MIGRATE}/${MIGRATE} build/${MIGRATE}/
 	@cd build/${MIGRATE} && \
-	 sudo docker build -t "${HUB_USER}/${MIGRATE_REPO_NAME_AMD64}:${IMAGE_TAG}" ${DBUILD_ARGS} .
+	 sudo docker build -t "${IMAGE_ORG}/${MIGRATE_REPO_NAME_AMD64}:${IMAGE_TAG}" ${DBUILD_ARGS} .
 	@rm build/${MIGRATE}/${MIGRATE}
 
 # build migrate image
@@ -44,11 +44,11 @@ migrate-image.amd64: migrate
 migrate-image.arm64: migrate
 	@echo "-----------------------------------------------"
 	@echo "--> ${MIGRATE} image                           "
-	@echo "${HUB_USER}/${MIGRATE_REPO_NAME_ARM64}:${IMAGE_TAG}"
+	@echo "${IMAGE_ORG}/${MIGRATE_REPO_NAME_ARM64}:${IMAGE_TAG}"
 	@echo "-----------------------------------------------"
 	@cp bin/${MIGRATE}/${MIGRATE} build/${MIGRATE}/
 	@cd build/${MIGRATE} && \
-	 sudo docker build -t "${HUB_USER}/${MIGRATE_REPO_NAME_ARM64}:${IMAGE_TAG}" ${DBUILD_ARGS} .
+	 sudo docker build -t "${IMAGE_ORG}/${MIGRATE_REPO_NAME_ARM64}:${IMAGE_TAG}" ${DBUILD_ARGS} .
 	@rm build/${MIGRATE}/${MIGRATE}
 
 # cleanup migrate build
