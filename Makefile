@@ -86,9 +86,6 @@ upgrade:
 	@# A copy of the binary will also be placed under: ./bin/${PNAME}/${CTLNAME}
 	@PNAME=${UPGRADE} CTLNAME=${UPGRADE} CGO_ENABLED=0 sh -c "'$(PWD)/build/build.sh'"
 
-# docker hub username
-HUB_USER?=openebs
-
 ifeq (${IMAGE_TAG}, )
   IMAGE_TAG = ci
   export IMAGE_TAG
@@ -100,22 +97,22 @@ endif
 upgrade-image.amd64: upgrade
 	@echo "-----------------------------------------------"
 	@echo "--> ${UPGRADE} image                           "
-	@echo "${HUB_USER}/${UPGRADE_REPO_NAME}:${IMAGE_TAG}"
+	@echo "${IMAGE_ORG}/${UPGRADE_REPO_NAME}:${IMAGE_TAG}"
 	@echo "-----------------------------------------------"
 	@cp bin/${UPGRADE}/${UPGRADE} build/${UPGRADE}
 	@cd build/${UPGRADE} && \
-	 sudo docker build -t "${HUB_USER}/${UPGRADE_REPO_NAME_AMD64}:${IMAGE_TAG}" ${DBUILD_ARGS} .
+	 sudo docker build -t "${IMAGE_ORG}/${UPGRADE_REPO_NAME_AMD64}:${IMAGE_TAG}" ${DBUILD_ARGS} .
 	@rm build/${UPGRADE}/${UPGRADE}
 
 .PHONY: upgrade-image.arm64
 upgrade-image.arm64: upgrade
 	@echo "-----------------------------------------------"
 	@echo "--> ${UPGRADE} image                           "
-	@echo "${HUB_USER}/${UPGRADE_REPO_NAME_ARM64}:${IMAGE_TAG}"
+	@echo "${IMAGE_ORG}/${UPGRADE_REPO_NAME_ARM64}:${IMAGE_TAG}"
 	@echo "-----------------------------------------------"
 	@cp bin/${UPGRADE}/${UPGRADE} build/${UPGRADE}
 	@cd build/${UPGRADE} && \
-	 sudo docker build -t "${HUB_USER}/${UPGRADE_REPO_NAME_ARM64}:${IMAGE_TAG}" ${DBUILD_ARGS} .
+	 sudo docker build -t "${IMAGE_ORG}/${UPGRADE_REPO_NAME_ARM64}:${IMAGE_TAG}" ${DBUILD_ARGS} .
 	@rm build/${UPGRADE}/${UPGRADE}
 
 
