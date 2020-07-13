@@ -32,7 +32,9 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         tty: true
-        image: openebs/migrate-amd64:ci
+        # the version of the image should be same the 
+        # version of cstor-operator installed.
+        image: openebs/migrate-amd64:1.12.0
       restartPolicy: Never
 ---
 
