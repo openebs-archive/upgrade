@@ -29,10 +29,10 @@ spec:
         - "cstor-volume"
 
         # --from-version is the current version of the volume
-        - "--from-version=1.10.0"
+        - "--from-version=1.11.0"
 
         # --to-version is the version desired upgrade version
-        - "--to-version=1.11.0"
+        - "--to-version=1.12.0"
         # if required the image prefix of the volume deployments can be
         # changed using the flag below, defaults to whatever was present on old
         # deployments.
@@ -58,7 +58,7 @@ spec:
 
         # the image version should be same as the --to-version mentioned above
         # in the args of the job
-        image: openebs/upgrade-amd64:1.11.0
+        image: openebs/upgrade-amd64:1.12.0
         imagePullPolicy: IfNotPresent
       restartPolicy: OnFailure
 ---

@@ -7,7 +7,7 @@ This document describes the steps for migrating the following OpenEBS reources:
 
 ## SPC pools to CSPC pools
 
-These instructions will guide you through the process of migrating cstor pools from the old v1apha1 SPC spec to v1 CSPC spec. 
+These instructions will guide you through the process of migrating cStor pools from the old v1apha1 SPC spec to v1 CSPC spec. 
 
 ### Prerequisites
 
@@ -121,6 +121,8 @@ I0520 10:01:25.798889       1 pool.go:80] Successfully migrated spc sparse-claim
 ```
 
 ## cStor External Provisioned volumes to cStor CSI volumes
+
+These instructions will guide you through the process of migrating cStor volumes from the old v1apha1 external provisioned spec to v1 CSI spec. 
 
 ### Prerequisites
 
