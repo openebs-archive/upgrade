@@ -3,7 +3,7 @@
 This document describes the steps for migrating the following OpenEBS reources:
 
 - [SPC pools to CSPC pools](#spc-pools-to-cspc-pools)
-- [CStor External Provisioned volumes to CStor CSI volumes](#cstor-external-provisioned-volumes-to-cstor-csi-volumes)
+- [cStor External Provisioned volumes to cStor CSI volumes](#cstor-external-provisioned-volumes-to-cstor-csi-volumes)
 
 ## SPC pools to CSPC pools
 
@@ -42,7 +42,7 @@ Before migrating the pools make sure the following prerequisites are taken care 
     ```
     For example if spc-name is `sparse-claim` then the output will be:
     ```sh
-    $ kubspc sparse-claim -o jsonpath="{.versionDetails.status.current}"
+    $ kubectl get spc sparse-claim -o jsonpath="{.versionDetails.status.current}"
     1.12.0
     ```
  - **Also make sure no bad block is present on the nodes before migrating to prevent any  import failures during migration.** To do so list all the CSPs for the SPC and find the nodes on which the CSP is provisioned using the command:
@@ -102,7 +102,7 @@ You can get the above yaml from [here](../examples/migrate/spc-migration.yaml).
 
 The status of the job can be verified by looking at the logs of the job pod. To get the job pod use the command:
 ```sh
-$ k get pods -l job-name=migrate-spc-sparse-claim
+$ kubectl -n openebs get pods -l job-name=migrate-spc-sparse-claim
 NAME                               READY   STATUS   RESTARTS   AGE
 migrate-spc-sparse-claim-2x4bv     1/1     Running    0          34s
 ```
@@ -120,14 +120,14 @@ I0520 10:01:25.674512       1 pool.go:395] Updating cvr pvc-9cf5a405-12c0-4522-b
 I0520 10:01:25.798889       1 pool.go:80] Successfully migrated spc sparse-claim to cspc
 ```
 
-## CStor External Provisioned volumes to CStor CSI volumes
+## cStor External Provisioned volumes to cStor CSI volumes
 
 ### Prerequisites
 
 Before migrating the volumes make sure the following prerequisites are taken care of:
 
  - The first two prerequisites for [pool](#spc-pools-to-cspc-pools) are required for volumes as well.
- - The csi-operator should be installed with version 1.12.0 or above. You can install the correct version of csi-operator from charts. Get the csi-operator yaml within the correct versioned folder and install. The version should be same as the cstor-operator installed.
+ - The csi-operator should be installed with version 1.12.0 or above. You can install the correct version of csi-operator from [charts](https://github.com/openebs/charts/tree/gh-pages). Get the csi-operator yaml within the correct versioned folder and install. The version should be same as the cstor-operator installed.
  - **The application needs to be scaled down before migrating.** This is required as the PVC and PV spec needs to be modified for migration.
  - If the volume has snapshots then make sure the VolumeSnapshotClass `csi-cstor-snapshotclass` is installed. You can get the VolumeSnapshotClass from [here](https://github.com/openebs/cstor-csi/blob/master/deploy/snapshot-class.yaml).
 
@@ -179,7 +179,7 @@ You can get the above yaml from [here](../examples/migrate/cstor-volume-migratio
 
 The status of the job can be verified by looking at the logs of the job pod. To get the job pod use the command:
 ```sh
-$ k get pods -l job-name=migrate-cstor-pvc-7ac10812-cc83-4fc5-a2e0-7d24f785e93d
+$ kubectl -n openebs get pods -l job-name=migrate-cstor-pvc-7ac10812-cc83-4fc5-a2e0-7d24f785e93d
 NAME                                                             READY   STATUS   RESTARTS   AGE
 migrate-cstor-pvc-7ac10812-cc83-4fc5-a2e0-7d24f785e93d-52w98     1/1     Running    0          34s
 ```
@@ -208,4 +208,4 @@ I0713 12:53:31.242181       1 volume.go:956] Patching the target svc with cvc ow
 I0713 12:53:31.336819       1 volume.go:1029] Cleaning up old volume resources
 I0713 12:53:31.714056       1 cstor_volume.go:80] Successfully migrated volume pvc-7ac10812-cc83-4fc5-a2e0-7d24f785e93d, scale up the application to verify the migration
 ```
-**Note:** If target affinity was set old volume the target pod will go into `pending` state after the migration is completed. Once the application is scaled up the target pod should automatically reschedule to the same node as application.
+**Note:** If target affinity was set to the old volume, the target pod will go into `pending` state after the migration is completed. Once the application is scaled up the target pod should automatically reschedule to the same node as application.
