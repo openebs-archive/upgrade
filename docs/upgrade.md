@@ -138,7 +138,8 @@ Before upgrading the volumes make sure the following prerequisites are taken car
 
  - Make sure the CSPC pools are upgraded to desired version using the steps [above](#cspc-pools).
  - Upgrade the cStor csi driver to desired version(same as the cStor CSPC pool) by applying the csi-driver from the [charts](https://github.com/openebs/charts/tree/gh-pages).
- 
+ - Check for the `REMOUNT` env in `openebs-cstor-csi-node` daemonset, if disabled then scaling down the application before upgrading the volume is recommended to avoid any read-only issues.
+
 ### Running the upgrade job
 
 To upgrade a cStor CSI volume a jobs needs to be launched that automates all the steps required. Below is the sample yaml for the job:
