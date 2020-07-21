@@ -7,7 +7,7 @@ This document describes the steps for upgrading the following OpenEBS reources:
 
 ## CSPC pools
 
-These instructions will guide you through the process of upgrading cStor CSPC pools from `1.11.0` or later to a newer release up to `1.12.0`.
+These instructions will guide you through the process of upgrading cStor CSPC pools from `1.10.0` or later to a newer release up to `1.12.0`.
 
 ### Prerequisites
 
@@ -63,7 +63,7 @@ spec:
         - "cstor-cspc"
 
         # --from-version is the current version of the pool
-        - "--from-version=1.11.0"
+        - "--from-version=1.10.0"
 
         # --to-version is the version desired upgrade version
         - "--to-version=1.12.0"
@@ -130,7 +130,7 @@ I0714 12:40:31.701881       1 cstor_cspc.go:76] Successfully upgraded cspc-strip
 
 ## cStor CSI volumes
 
-These instructions will guide you through the process of upgrading cStor CSI volumes from `1.11.0` or later to a newer release up to `1.12.0`.
+These instructions will guide you through the process of upgrading cStor CSI volumes from `1.10.0` or later to a newer release up to `1.12.0`.
 
 ### Prerequisites
 
@@ -176,7 +176,7 @@ spec:
         - "cstor-volume"
 
         # --from-version is the current version of the volume
-        - "--from-version=1.11.0"
+        - "--from-version=1.10.0"
 
         # --to-version is the version desired upgrade version
         - "--to-version=1.12.0"
