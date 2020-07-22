@@ -211,3 +211,64 @@ I0713 12:53:31.336819       1 volume.go:1029] Cleaning up old volume resources
 I0713 12:53:31.714056       1 cstor_volume.go:80] Successfully migrated volume pvc-7ac10812-cc83-4fc5-a2e0-7d24f785e93d, scale up the application to verify the migration
 ```
 **Note:** If target affinity was set to the old volume, the target pod will go into `pending` state after the migration is completed. Once the application is scaled up the target pod should automatically reschedule to the same node as application.
+
+**Note:** For each migrated StorageClass a cStorVolumePolicy is created with the same name as StorageClass during the migration. To configure replica and target affinity for new volumes provisioned using the migrated StorageClass make the below configurations on the cStorVolumePolicy:
+
+#### Replica Affinity
+
+For StatefulSet applications, to distribute single replica volume on separate nodes.
+
+```yaml
+apiVersion: cstor.openebs.io/v1
+kind: CStorVolumePolicy
+metadata:
+  name: csi-volume-policy
+  namespace: openebs
+spec:
+  provision:
+    replicaAffinity: true
+```
+
+
+#### Volume Target Pod Affinity
+
+The Stateful workloads access the OpenEBS storage volume by connecting to the Volume Target Pod. 
+Target Pod Affinity policy can be used to co-locate volume target pod on the same node as workload.
+This feature makes use of the Kubernetes Pod Affinity feature that is dependent on the Pod labels. 
+User will need to add the following label to both Application and volume Policy.
+
+Configured Policy having target-affinity label for example, using `kubernetes.io/hostname` as a topologyKey in CStorVolumePolicy:
+
+```yaml
+apiVersion: cstor.openebs.io/v1
+kind: CStorVolumePolicy
+metadata:
+  name: csi-volume-policy
+  namespace: openebs
+spec:
+  target:
+    affinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: openebs.io/target-affinity
+            operator: In
+            values:
+            - fio-cstor                              // application-unique-label
+        topologyKey: kubernetes.io/hostname
+        namespaces: ["default"]                      // application namespace
+```
+
+
+Set the label configured in volume policy created above `openebs.io/target-affinity: fio-cstor` on the app pod which will be used to find pods, by label, within the domain defined by topologyKey.
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fio-cstor
+  namespace: default
+  labels:
+    name: fio-cstor
+    openebs.io/target-affinity: fio-cstor
+```
