@@ -59,7 +59,7 @@ func (c *CVR) PreChecks(from, to string) error {
 		return errors.Errorf("nil cvr object")
 	}
 	version := strings.Split(c.Object.VersionDetails.Status.Current, "-")[0]
-	if version != from && version != to {
+	if version != strings.Split(from, "-")[0] && version != strings.Split(to, "-")[0] {
 		return errors.Errorf(
 			"cvr version %s is neither %s nor %s",
 			version,

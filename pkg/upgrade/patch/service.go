@@ -17,6 +17,8 @@ limitations under the License.
 package patch
 
 import (
+	"strings"
+
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,8 +59,8 @@ func (s *Service) PreChecks(from, to string) error {
 	if name == "" {
 		return errors.Errorf("missing service name")
 	}
-	version := s.Object.Labels["openebs.io/version"]
-	if version != from && version != to {
+	version := strings.Split(s.Object.Labels["openebs.io/version"], "-")[0]
+	if version != strings.Split(from, "-")[0] && version != strings.Split(to, "-")[0] {
 		return errors.Errorf(
 			"service version %s is neither %s nor %s",
 			version,

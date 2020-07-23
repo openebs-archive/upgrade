@@ -17,6 +17,7 @@ limitations under the License.
 package patch
 
 import (
+	"strings"
 	"time"
 
 	deploy "github.com/openebs/maya/pkg/kubernetes/deployment/appsv1/v1alpha1"
@@ -60,8 +61,8 @@ func (d *Deployment) PreChecks(from, to string) error {
 	if d.Object == nil {
 		return errors.Errorf("nil deployment object")
 	}
-	version := d.Object.Labels["openebs.io/version"]
-	if version != from && version != to {
+	version := strings.Split(d.Object.Labels["openebs.io/version"], "-")[0]
+	if version != strings.Split(from, "-")[0] && version != strings.Split(to, "-")[0] {
 		return errors.Errorf(
 			"deployment version %s is neither %s nor %s",
 			version,

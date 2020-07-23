@@ -17,6 +17,8 @@ limitations under the License.
 package patch
 
 import (
+	"strings"
+
 	apis "github.com/openebs/api/pkg/apis/cstor/v1"
 	clientset "github.com/openebs/api/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
@@ -56,8 +58,8 @@ func (c *CSPI) PreChecks(from, to string) error {
 	if c.Object == nil {
 		return errors.Errorf("nil cspi object")
 	}
-	version := c.Object.Labels["openebs.io/version"]
-	if version != from && version != to {
+	version := strings.Split(c.Object.Labels["openebs.io/version"], "-")[0]
+	if version != strings.Split(from, "-")[0] && version != strings.Split(to, "-")[0] {
 		return errors.Errorf(
 			"cspi version %s is neither %s nor %s",
 			version,

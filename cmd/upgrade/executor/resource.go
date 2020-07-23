@@ -76,37 +76,38 @@ func NewUpgradeResourceJob() *cobra.Command {
 				util.CheckErr(options.InitializeDefaults(cmd), util.Fatal)
 				err := options.RunResourceUpgrade(cmd)
 				if err != nil {
-					utaskObj, err := client.OpenebsV1alpha1().UpgradeTasks(openebsNamespace).
+					utaskObj, uerr := client.OpenebsV1alpha1().UpgradeTasks(openebsNamespace).
 						Get(cr.Name, metav1.GetOptions{})
-					if err != nil {
-						util.Fatal(err.Error())
+					if uerr != nil {
+						util.Fatal(uerr.Error())
 					}
-					backoffLimit, err := getBackoffLimit(openebsNamespace)
-					if err != nil {
-						util.Fatal(err.Error())
+					backoffLimit, uerr := getBackoffLimit(openebsNamespace)
+					if uerr != nil {
+						util.Fatal(uerr.Error())
 					}
 					utaskObj.Status.Retries = utaskObj.Status.Retries + 1
 					if utaskObj.Status.Retries == backoffLimit {
 						utaskObj.Status.Phase = v1Alpha1API.UpgradeError
 						utaskObj.Status.CompletedTime = metav1.Now()
 					}
-					_, err = client.OpenebsV1alpha1().UpgradeTasks(openebsNamespace).
+					_, uerr = client.OpenebsV1alpha1().UpgradeTasks(openebsNamespace).
 						Update(utaskObj)
-					if err != nil {
-						util.Fatal(err.Error())
+					if uerr != nil {
+						util.Fatal(uerr.Error())
 					}
+					util.Fatal(err.Error())
 				} else {
-					utaskObj, err := client.OpenebsV1alpha1().UpgradeTasks(openebsNamespace).
+					utaskObj, uerr := client.OpenebsV1alpha1().UpgradeTasks(openebsNamespace).
 						Get(cr.Name, metav1.GetOptions{})
-					if err != nil {
-						util.Fatal(err.Error())
+					if uerr != nil {
+						util.Fatal(uerr.Error())
 					}
 					utaskObj.Status.Phase = v1Alpha1API.UpgradeSuccess
 					utaskObj.Status.CompletedTime = metav1.Now()
-					_, err = client.OpenebsV1alpha1().UpgradeTasks(openebsNamespace).
+					_, uerr = client.OpenebsV1alpha1().UpgradeTasks(openebsNamespace).
 						Update(utaskObj)
-					if err != nil {
-						util.Fatal(err.Error())
+					if uerr != nil {
+						util.Fatal(uerr.Error())
 					}
 				}
 			}
@@ -167,7 +168,7 @@ func (u *UpgradeOptions) RunResourceUpgradeChecks(cmd *cobra.Command) error {
 // RunResourceUpgrade upgrades the given upgradeTask
 func (u *UpgradeOptions) RunResourceUpgrade(cmd *cobra.Command) error {
 	if version.IsCurrentVersionValid(u.fromVersion) && version.IsDesiredVersionValid(u.toVersion) {
-		klog.Infof("Upgrading to %s", u.toVersion)
+		klog.Infof("Upgrading %s to %s", u.resourceKind, u.toVersion)
 		err := upgrade.Exec(u.fromVersion, u.toVersion,
 			u.resourceKind,
 			u.name,
