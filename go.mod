@@ -3,6 +3,7 @@ module github.com/openebs/upgrade
 go 1.13
 
 require (
+	github.com/google/go-cmp v0.4.0
 	github.com/hashicorp/go-version v1.2.0
 	github.com/kubernetes-csi/external-snapshotter/v2 v2.1.1
 	github.com/openebs/api v1.11.1-0.20200625121525-4ef7efa4b876
