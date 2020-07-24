@@ -1,0 +1,38 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  # the name can be of the form migrate-cstor-<pv-name> 
+  name: migrate-volume
+  namespace: openebs
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      #VERIFY the value of serviceAccountName is pointing to service account
+      # created within openebs namespace. Use the non-default account.
+      # by running `kubectl get sa -n <openebs-namespace>`
+      serviceAccountName: openebs-maya-operator
+      containers:
+      - name:  migrate
+        args:
+        - "cstor-volume"
+        # name of the pv that is to be migrated
+        - "--pv-name=PVNAME"
+
+        #Following are optional parameters
+        #Log Level
+        - "--v=4"
+        #DO NOT CHANGE BELOW PARAMETERS
+        env:
+        - name: OPENEBS_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        tty: true
+        # the version of the image should be same the 
+        # version of cstor-operator installed.
+        image: openebs/migrate-amd64:ci
+      restartPolicy: OnFailure
+---
+
