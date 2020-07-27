@@ -2,6 +2,8 @@
 
 #!/usr/bin/env bash
 
+make migrate-image.amd64
+
 # setup openebs & cstor v1 for migration 
 ./ci/migrate/setup.sh
 # run migration tests

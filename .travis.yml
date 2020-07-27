@@ -22,8 +22,23 @@ services:
 
 jobs:
   include:
+    - stage: "Tests"
+      os: linux
+      arch: amd64
+      script: make test
+      name: "Unit tests"
     - os: linux
       arch: amd64
+      script: ./ci/migrate/sanity.sh
+      name: "Migrate Sanity"
+    - os: linux
+      arch: amd64
+      script: echo "TODO Upgrade Sanity tests"
+      name: "Upgrade Sanity"
+    - stage: "Deploy Images"
+      os: linux
+      arch: amd64
+      script: make all.amd64 deploy-images
 
 addons:
   apt:
@@ -48,18 +63,6 @@ before_script: # TODO add golangci yaml config
     sudo chown -R travis /home/travis/.minikube/;
     JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; done;
     fi
-
-script:
-  - make test
-  - if [ "$TRAVIS_CPU_ARCH" == "amd64" ]; then
-      make all.amd64 || exit 1;
-    fi
-  # run cstor v1 migration sanity test
-  - ./ci/migrate/sanity.sh
-  
-
-after_success:
-  - make deploy-images
 
 notifications:
   email:
