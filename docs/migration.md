@@ -5,6 +5,8 @@ This document describes the steps for migrating the following OpenEBS reources:
 - [SPC pools to CSPC pools](#spc-pools-to-cspc-pools)
 - [cStor External Provisioned volumes to cStor CSI volumes](#cstor-external-provisioned-volumes-to-cstor-csi-volumes)
 
+**Note:** If the Kubernetes cluster is on rancher and iscsi is running inside the kubelet container then it is mandatory to install iscsi service on the nodes and add extra binds to the kubelet container as mentioned [here](https://docs.openebs.io/docs/next/prerequisites.html#rancher).
+
 ## SPC pools to CSPC pools
 
 These instructions will guide you through the process of migrating cStor pools from the old v1apha1 SPC spec to v1 CSPC spec. 
