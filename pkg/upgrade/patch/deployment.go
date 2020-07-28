@@ -65,7 +65,7 @@ func (d *Deployment) PreChecks(from, to string) error {
 	if version != strings.Split(from, "-")[0] && version != strings.Split(to, "-")[0] {
 		return errors.Errorf(
 			"deployment version %s is neither %s nor %s",
-			version,
+			d.Object.Labels["openebs.io/version"],
 			from,
 			to,
 		)
