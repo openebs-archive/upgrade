@@ -63,7 +63,7 @@ func (s *Service) PreChecks(from, to string) error {
 	if version != strings.Split(from, "-")[0] && version != strings.Split(to, "-")[0] {
 		return errors.Errorf(
 			"service version %s is neither %s nor %s",
-			version,
+			s.Object.Labels["openebs.io/version"],
 			from,
 			to,
 		)

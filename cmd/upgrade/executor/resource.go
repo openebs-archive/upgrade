@@ -168,7 +168,7 @@ func (u *UpgradeOptions) RunResourceUpgradeChecks(cmd *cobra.Command) error {
 // RunResourceUpgrade upgrades the given upgradeTask
 func (u *UpgradeOptions) RunResourceUpgrade(cmd *cobra.Command) error {
 	if version.IsCurrentVersionValid(u.fromVersion) && version.IsDesiredVersionValid(u.toVersion) {
-		klog.Infof("Upgrading %s to %s", u.resourceKind, u.toVersion)
+		klog.Infof("Upgrading %s from %s to %s", u.resourceKind, u.fromVersion, u.toVersion)
 		err := upgrade.Exec(u.fromVersion, u.toVersion,
 			u.resourceKind,
 			u.name,
