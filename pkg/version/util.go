@@ -7,8 +7,9 @@ import (
 var (
 	validCurrentVersions = map[string]bool{
 		"1.9.0": true, "1.10.0": true, "1.11.0": true, "1.12.0": true,
+		"1.13.0": true,
 	}
-	validDesiredVersion = GetVersion()
+	validDesiredVersion = strings.Split(GetVersion(), "-")[0]
 )
 
 // IsCurrentVersionValid verifies if the  current version is valid or not

@@ -14,7 +14,7 @@ echo "Migrating pool to cspc"
 kubectl apply -f ./ci/migrate/pool.yaml
 sleep 5
 kubectl wait --for=condition=complete job/migrate-pool -n openebs --timeout=800s
-kubectl logs -l job-name=migrate-pool -n openebs
+kubectl logs --tail=50 -l job-name=migrate-pool -n openebs
 
 echo "Migrating extetnal volume to csi volume"
 
@@ -23,7 +23,7 @@ sed "s/PVNAME/$pvname/" ./ci/migrate/volume.tmp.yaml > ./ci/migrate/volume.yaml
 kubectl apply -f ./ci/migrate/volume.yaml
 sleep 5
 kubectl wait --for=condition=complete job/migrate-volume -n openebs --timeout=800s
-kubectl logs -l job-name=migrate-volume -n openebs
+kubectl logs --tail=50 -l  job-name=migrate-volume -n openebs
 
 echo "Scaling up application after migration"
 

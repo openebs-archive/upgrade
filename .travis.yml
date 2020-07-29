@@ -33,7 +33,7 @@ jobs:
       name: "Migrate Sanity"
     - os: linux
       arch: amd64
-      script: echo "TODO Upgrade Sanity tests"
+      script: ./ci/upgrade/sanity.sh
       name: "Upgrade Sanity"
     - stage: "Deploy Images"
       os: linux

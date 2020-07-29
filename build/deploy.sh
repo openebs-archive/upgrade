@@ -26,6 +26,9 @@ elif [ "${ARCH}" = "aarch64" ]; then
   MIGRATE_IMG="${IMAGE_ORG}/migrate-arm64"
 fi
 
+curl https://raw.githubusercontent.com/openebs/charts/gh-pages/scripts/release/buildscripts/push > ./build/push
+chmod +x ./build/push
+
 # tag and push all the images
 DIMAGE="${UPGRADE_IMG}" ./build/push
 DIMAGE="${MIGRATE_IMG}" ./build/push
