@@ -19,7 +19,6 @@ kubectl wait --for=condition=available --timeout=600s deployment/cspc-operator -
 
 echo "Create application with cStor volume on CSPC"
 
-kubectl get nodes --show-labels
 nodename=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
 bdname=$(kubectl -n openebs get blockdevices -o jsonpath='{.items[*].metadata.name}')
 sed "s|CSPCBD|$bdname|g" ./ci/upgrade/application.tmp.yaml | sed "s|NODENAME|$nodename|g" > ./ci/upgrade/application.yaml
