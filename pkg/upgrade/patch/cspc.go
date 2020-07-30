@@ -59,10 +59,10 @@ func (c *CSPC) PreChecks(from, to string) error {
 		return errors.Errorf("nil cspc object")
 	}
 	version := strings.Split(c.Object.VersionDetails.Status.Current, "-")[0]
-	if version != from && version != to {
+	if version != strings.Split(from, "-")[0] && version != strings.Split(to, "-")[0] {
 		return errors.Errorf(
 			"cspc version %s is neither %s nor %s",
-			version,
+			c.Object.VersionDetails.Status.Current,
 			from,
 			to,
 		)
