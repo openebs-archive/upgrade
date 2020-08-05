@@ -6,7 +6,7 @@ This document describes the steps for upgrading the following OpenEBS reources:
 - [cStor CSI volumes](#cstor-csi-volumes)
 
 **Note:** 
- - If current version of ndm-operator is 1.12.0 or below and using virtual disks for blockdevices in cStor please refer this [doc](virtual-disk-troubleshoot.md) before proceeding.
+ - If current version of ndm-operator is 1.12.0 or below and using virtual disks as blockdevices for provisioning cStor pool please refer this [doc](virtual-disk-troubleshoot.md) before proceeding.
 
 ## CSPC pools
 

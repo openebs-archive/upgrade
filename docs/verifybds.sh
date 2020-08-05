@@ -7,7 +7,7 @@ bdList=$(kubectl -n $ns get blockdevices -o jsonpath='{.items[*].metadata.name}'
 
 for csp in $cspList
 do
-        echo $csp
+        echo "Verifying blockdevices on $csp"
         pod=$(kubectl -n $ns get pods -l openebs.io/cstor-pool=$csp -o jsonpath='{.items[*].metadata.name}')
         devlinks=$(kubectl -n $ns exec -it $pod -c cstor-pool -- zpool status -P | grep dev | awk '{print $1}')
         for devlink in $devlinks
@@ -32,7 +32,7 @@ do
                         done
                 done
                 if [[ $oldbd != "" ]]; then
-                        echo "$oldbd --> $newbd"
+                        echo "Please update $csp blockdevice from $oldbd --> $newbd by follwoing doc link"
                 fi
         done
 done

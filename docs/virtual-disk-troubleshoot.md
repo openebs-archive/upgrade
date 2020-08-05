@@ -75,7 +75,7 @@ When using OpenEBS with virtual disks for blockdevices, there can be scenarios w
   
   ```
 
-- Update the CSP with correct blockdevice details. Replace the old blockdevices with new blockdevices.
+- Update the CSP with correct blockdevice details. Replace the old blockdevices with new blockdevices and dev links also needs to be updated.
   ```sh
   $ kubectl edit csp cstor-pool-yfn3 
   apiVersion: openebs.io/v1alpha1

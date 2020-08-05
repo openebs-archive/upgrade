@@ -6,9 +6,9 @@ This document describes the steps for migrating the following OpenEBS reources:
 - [cStor External Provisioned volumes to cStor CSI volumes](#cstor-external-provisioned-volumes-to-cstor-csi-volumes)
 
 **Note:** 
- - If the Kubernetes cluster is on rancher and iscsi is running inside the kubelet container then it is mandatory to install iscsi service on the nodes and add extra binds to the kubelet container as mentioned [here](https://docs.openebs.io/docs/next/prerequisites.html#rancher).
+ - If the Kubernetes cluster is on rancher and iscsi is running inside the kubelet container then it is mandatory to install iscsi service on the nodes and add extra binds to the kubelet container as mentioned [here](https://github.com/openebs/cstor-operators/blob/master/docs/troubleshooting/rancher_prerequisite.md).
  - Minimum version of Kubernetes to migrate to CSPC pools / CSI volumes is 1.17.0.
- - If using virtual disks for blockdevices in cStor please refer this [doc](virtual-disk-troubleshoot.md) before proceeding.
+ - If using virtual disks as blockdevices for provisioning cStorpool please refer this [doc](virtual-disk-troubleshoot.md) before proceeding.
 
 ## SPC pools to CSPC pools
 
