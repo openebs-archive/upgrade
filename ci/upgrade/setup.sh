@@ -30,7 +30,7 @@ echo "Upgrade control plane to latest version"
 
 sed "s|testimage|$TEST_IMAGE_TAG|g" ./ci/upgrade/cstor-operator.tmp.yaml | sed "s|testversion|$TEST_VERSION|g" > ./ci/upgrade/cstor-operator.yaml
 
-kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/csi-operator-ubuntu-18.04.yaml \
+kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/csi-operator.yaml \
  -f ./ci/upgrade/cstor-operator.yaml
 sleep 10
 kubectl wait --for=condition=available --timeout=600s deployment/cspc-operator -n openebs
