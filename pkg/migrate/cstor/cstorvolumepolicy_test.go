@@ -17,9 +17,9 @@ limitations under the License.
 package migrate
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	openebsFakeClientset "github.com/openebs/api/pkg/client/clientset/versioned/fake"
 	v1 "k8s.io/api/core/v1"
@@ -200,7 +200,7 @@ func TestVolumeMigrator_createCVPforConfig(t *testing.T) {
 			if err != nil {
 				t.Errorf("VolumeMigrator.createCVPforConfig() failed to get CVP = %v, wantErr %v", err, tt.wantErr)
 			}
-			if !reflect.DeepEqual(cvp, tt.expect) {
+			if !cmp.Equal(cvp, tt.expect) {
 				t.Errorf("VolumeMigrator.createCVPforConfig() translation failed \nexpected : %+v\ngot : %+v", tt.expect, cvp)
 			}
 

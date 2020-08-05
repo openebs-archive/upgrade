@@ -1,0 +1,126 @@
+---
+#Use the following YAMLs to create a cStor Storage Pool.
+apiVersion: openebs.io/v1alpha1
+kind: StoragePoolClaim
+metadata:
+  name: sparse-claim
+  annotations:
+    cas.openebs.io/config: |
+      - name: PoolResourceRequests
+        value: |-
+            memory: 2Gi
+      - name: PoolResourceLimits
+        value: |-
+            memory: 4Gi
+spec:
+  name: sparse-claim
+  type: sparse
+  poolSpec:
+    poolType: striped
+  blockDevices:
+    blockDeviceList:
+    - SPCBD
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: openebs-cstor-sparse
+  annotations:
+    openebs.io/cas-type: cstor
+    cas.openebs.io/config: |
+      - name: StoragePoolClaim
+        value: "sparse-claim"
+      - name: ReplicaCount
+        value: "1"
+      - name: TargetResourceLimits
+        value: |-
+            memory: 1Gi
+            cpu: 200m
+      - name: TargetResourceRequests
+        value: |-
+            memory: 500Mi
+            cpu: 100m
+      - name: AuxResourceLimits
+        value: |-
+            memory: 1Gi
+            cpu: 200m
+      - name: AuxResourceRequests
+        value: |-
+            memory: 500Mi
+            cpu: 100m
+      - name: TargetTolerations
+        value: |-
+            t1:
+              key: "key1"
+              operator: "Equal"
+              value: "value1"
+              effect: "NoSchedule"
+            t2:
+              key: "key1"
+              operator: "Equal"
+              value: "value1"
+              effect: "NoExecute"
+      - name: TargetNodeSelector
+        value: |-
+            nodetype: storage
+      - name: QueueDepth
+        value: "32"
+      - name: Luworkers
+        value: "6"
+      - name: ZvolWorkers
+        value: "1"
+provisioner: openebs.io/provisioner-iscsi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    lkey: lvalue
+  name: busybox
+spec:
+  clusterIP: None
+  selector:
+    lkey: lvalue
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: busybox
+  labels:
+    lkey: lvalue
+spec:
+  serviceName: busybox
+  replicas: 1
+  selector:
+    matchLabels:
+      lkey: lvalue
+      #The Label "openebs.io/replica-anti-affinity" 
+      #needs to be added in order to distribute volume replicas.
+      affinity_label: busybox
+  template:
+    metadata:
+      labels:
+        lkey: lvalue
+        affinity_label: busybox
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        imagePullPolicy: IfNotPresent
+        command:
+           - sh
+           - -c
+           - 'date > /busybox/date.txt; sync; sleep 5; sync; tail -f /dev/null;'
+        volumeMounts:
+        - name: testclaim
+          mountPath: /busybox
+  volumeClaimTemplates:
+  - metadata:
+      name: testclaim
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: openebs-cstor-sparse
+      resources:
+        requests:
+          storage: 2G
+

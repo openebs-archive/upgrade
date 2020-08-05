@@ -8,6 +8,12 @@ go:
 env:
   global:
    - ARCH=$(go env GOARCH)
+   - CHANGE_MINIKUBE_NONE_USER=true
+   - MINIKUBE_WANTUPDATENOTIFICATION=false
+   - MINIKUBE_WANTREPORTERRORPROMPT=false
+   - MINIKUBE_HOME=$HOME
+   - CHANGE_MINIKUBE_NONE_USER=true
+   - KUBECONFIG=$HOME/.kube/config
 
 sudo: required
 
@@ -16,8 +22,23 @@ services:
 
 jobs:
   include:
+    - stage: "Tests"
+      os: linux
+      arch: amd64
+      script: make test
+      name: "Unit tests"
     - os: linux
       arch: amd64
+      script: ./ci/migrate/sanity.sh
+      name: "Migrate Sanity"
+    - os: linux
+      arch: amd64
+      script: ./ci/upgrade/sanity.sh
+      name: "Upgrade Sanity"
+    - stage: "Deploy Images"
+      os: linux
+      arch: amd64
+      script: make all.amd64 deploy-images
 
 addons:
   apt:
@@ -33,15 +54,15 @@ install:
 
 before_script: # TODO add golangci yaml config
   - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.25.0
-
-script:
-  - make test
   - if [ "$TRAVIS_CPU_ARCH" == "amd64" ]; then
-      make all.amd64;
+    curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.18.1/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/;
+    curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.8.1/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/;
+    mkdir -p $HOME/.kube $HOME/.minikube;
+    touch $KUBECONFIG;
+    sudo minikube start --vm-driver=none --kubernetes-version=v1.16.0;
+    sudo chown -R travis /home/travis/.minikube/;
+    JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; done;
     fi
-
-after_success:
-  - make deploy-images
 
 notifications:
   email:
