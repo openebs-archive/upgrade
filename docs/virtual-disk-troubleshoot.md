@@ -28,6 +28,7 @@ When using OpenEBS with virtual disks for blockdevices, there can be scenarios w
     - storagepoolclaim.openebs.io/finalizer
     labels:
       openebs.io/storage-pool-claim: <spc-name>
+      openebs.io/block-device-tag: cstor
     name: bdc-<bd-name>
     namespace: <openebs-namespace>
     ownerReferences:
@@ -43,6 +44,7 @@ When using OpenEBS with virtual disks for blockdevices, there can be scenarios w
       hostName: <host-name>
     hostName: <host-name>
   ```
+  If the BD is not claimed automatically then check the BD for the `internal.openebs.io/uuid-scheme` annotation. If it is set to `legacy` add the label `openebs.io/block-device-tag: cstor` and remove the annotation `internal.openebs.io/uuid-scheme`. This should allow automatic claim for BD for above created BDC.
 
 - Disable reconciliation on SPC. This is required so that the spc controller does not process SPC while we are trying to edit (SPC and CSP) resources. The reconciliation will be diabled for the current SPC only and others SPCs in the system will reconcile as usual.
   ```sh
