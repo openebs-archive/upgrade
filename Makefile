@@ -53,6 +53,29 @@ export ARCH
 
 export DBUILD_ARGS=--build-arg DBUILD_DATE=${DBUILD_DATE} --build-arg DBUILD_REPO_URL=${DBUILD_REPO_URL} --build-arg DBUILD_SITE_URL=${DBUILD_SITE_URL} --build-arg ARCH=${ARCH}
 
+# Specify the name for the binaries
+UPGRADE=upgrade
+
+# If there are any external tools need to be used, they can be added by defining a EXTERNAL_TOOLS variable 
+# Bootstrap the build by downloading additional tools
+.PHONY: bootstrap
+bootstrap:
+	@for tool in  $(EXTERNAL_TOOLS) ; do \
+		echo "Installing $$tool" ; \
+		go get -u $$tool; \
+	done
+
+.PHONY: clean
+clean: 
+	@echo '--> Cleaning directory...'
+	rm -rf bin
+	rm -rf ${GOPATH}/bin/${UPGRADE}
+	rm -rf ${GOPATH}/bin/${MIGRATE}
+	rm -rf Dockerfile.upgarde
+	rm -rf Dockerfile.migrate
+	@echo '--> Done cleaning.'
+	@echo
+
 # deps ensures fresh go.mod and go.sum.
 .PHONY: deps
 deps:
@@ -62,9 +85,6 @@ deps:
 .PHONY: test
 test:
 	go test ./...
-
-# Specify the name for the binaries
-UPGRADE=upgrade
 
 # Specify the name of the docker repo for amd64
 UPGRADE_REPO_NAME_AMD64="upgrade-amd64"
@@ -115,14 +135,10 @@ upgrade-image.arm64: upgrade
 	 sudo docker build -t "${IMAGE_ORG}/${UPGRADE_REPO_NAME_ARM64}:${IMAGE_TAG}" ${DBUILD_ARGS} .
 	@rm build/${UPGRADE}/${UPGRADE}
 
-
-
-
 # cleanup upgrade build
 .PHONY: cleanup-upgrade
 cleanup-upgrade: 
 	rm -rf ${GOPATH}/bin/${UPGRADE}
-
 
 include ./build/migrate/Makefile.mk
 
@@ -144,3 +160,5 @@ check-license:
                echo "license header checking failed:"; echo "$${licRes}"; \
                exit 1; \
        fi
+
+include Makefile.buildx.mk
