@@ -1,5 +1,19 @@
 # Changelog
 
+## [v2.0.0-RC1](https://github.com/openebs/upgrade/tree/v2.0.0-RC1) (2020-08-05)
+
+**Merged pull requests:**
+
+- chore\(migrate\): add travis sanity test [\#29](https://github.com/openebs/upgrade/pull/29) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- chore\(docs\): add example yamls and docs for cstor upgrades/migration [\#7](https://github.com/openebs/upgrade/pull/7) ([shubham14bajpai](https://github.com/shubham14bajpai))
+
+## [v1.12.1](https://github.com/openebs/upgrade/tree/v1.12.1) (2020-07-30)
+
+**Merged pull requests:**
+
+- fix\(version\): fix version checks of resources [\#28](https://github.com/openebs/upgrade/pull/28) ([shubham14bajpai](https://github.com/shubham14bajpai))
+
+
 ## [v1.12.0](https://github.com/openebs/upgrade/tree/v1.12.0) (2020-07-12)
 
 **Merged pull requests:**
