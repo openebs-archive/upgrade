@@ -1,6 +1,6 @@
 # Troubleshooting Virtual Disk Blockdevices
 
-When using OpenEBS with virtual disks for blockdevices, there can be scenarios where the disk is detached and reattached to the node. This may result in the creation of new blockdevices but the underlying disk remains the same. This issue is fixed in OpenEBS 1.13.0 onwards. Before migrating SPC to CSPC or upgrading OpenEBS from 1.12.0 or below to 1.13.0 or above follow the steps below.
+When using OpenEBS with virtual disks for blockdevices, there can be scenarios where the disk is detached and reattached to the node. This may result in the creation of new blockdevices but the underlying disk remains the same. This issue is fixed in OpenEBS 2.0.0 onwards. Before migrating SPC to CSPC or upgrading OpenEBS from 1.12.0 or below to 2.0.0 or above follow the steps below.
 
 ## Steps to update CStor pool with correct blockdevices
 
