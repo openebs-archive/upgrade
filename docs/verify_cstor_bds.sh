@@ -49,6 +49,11 @@ do
         fi
         devlinks=$(kubectl -n $ns exec -it $pod -c cstor-pool -- zpool status -P | grep \/dev | awk '{print $1}')
         cspBDs=$(kubectl get csp $csp -o jsonpath="{.spec.group[*].blockDevice[*].name}")
+        # verify if the number of blockdevices in CSP spec and devlinks in pool are same
+        if [[ $(echo $devlinks | wc -w) != $(echo $cspBDs | wc -w) ]]; then
+                echo "The CSP $csp spec has different number of blockdevices than the number disks in the pool. This can happen if pool was expanded by adding a disk to the pool and blockdevice was not added to CSP. Please make sure both are equal in number."
+                exit 1
+        fi
         bdIndex="0"
         for bd in $cspBDs
         do

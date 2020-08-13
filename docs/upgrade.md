@@ -10,7 +10,7 @@ This document describes the steps for upgrading the following OpenEBS reources:
 
 ## CSPC pools
 
-These instructions will guide you through the process of upgrading cStor CSPC pools from `1.10.0` or later to a newer release up to `1.12.0`.
+These instructions will guide you through the process of upgrading cStor CSPC pools from `1.10.0` or later to a newer release up to `2.0.0`.
 
 ### Prerequisites
 
@@ -119,7 +119,7 @@ cstor-cspc-upgrade-2x4bv     1/1     Running    0          34s
  
 ```sh
 $ kubectl -n openebs logs -f cstor-cspc-upgrade-2x4bv
-I0714 12:37:09.747331       1 cstor_cspc.go:65] Upgrading cspc-stripe to 1.12.0-RC2
+I0714 12:37:09.747331       1 cstor_cspc.go:65] Upgrading cspc-stripe to 1.12.0
 I0714 12:37:10.062861       1 deployment.go:77] patching deployment cspc-stripe-k7cc
 I0714 12:40:11.493424       1 deployment.go:114] deployment cspc-stripe-k7cc patched successfully
 I0714 12:40:11.493476       1 cspi.go:73] patching cspi cspc-stripe-k7cc
@@ -128,12 +128,12 @@ I0714 12:40:11.527764       1 cstor_cspi.go:285] Verifying the reconciliation of
 I0714 12:40:21.632513       1 cspc.go:75] patching cspc cspc-stripe
 I0714 12:40:21.682353       1 cspc.go:95] cspc cspc-stripe patched
 I0714 12:40:21.693266       1 cstor_cspc.go:190] Verifying the reconciliation of version for cspc-stripe
-I0714 12:40:31.701881       1 cstor_cspc.go:76] Successfully upgraded cspc-stripe to 1.12.0-RC2
+I0714 12:40:31.701881       1 cstor_cspc.go:76] Successfully upgraded cspc-stripe to 1.12.0
 ```
 
 ## cStor CSI volumes
 
-These instructions will guide you through the process of upgrading cStor CSI volumes from `1.10.0` or later to a newer release up to `1.12.0`.
+These instructions will guide you through the process of upgrading cStor CSI volumes from `1.10.0` or later to a newer release up to `2.0.0`.
 
 ### Prerequisites
 
@@ -141,6 +141,14 @@ Before upgrading the volumes make sure the following prerequisites are taken car
 
  - Make sure the CSPC pools are upgraded to desired version using the steps [above](#cspc-pools).
  - Upgrade the cStor csi driver to desired version(same as the cStor CSPC pool) by applying the csi-driver from the [charts](https://github.com/openebs/charts/tree/gh-pages).
+  
+   **Note:** If the csi-driver is upgraded from 1.12.0 or below then the csi driver sts and deployments are moved to openebs namespace from kube-system namespace. Once the control plane is upgraded remove the old sts and deployments from kube-system namespace.
+   ```sh
+   $ kubectl -n kube-system delete sts openebs-cstor-csi-controller
+   $ kubectl -n kube-system delete ds openebs-cstor-csi-node
+   $ kubectl -n kube-system delete sa openebs-cstor-csi-controller-sa,openebs-cstor-csi-node-sa
+   ```
+
  - Check for the `REMOUNT` env in `openebs-cstor-csi-node` daemonset, if disabled then scaling down the application before upgrading the volume is recommended to avoid any read-only issues.
 
 ### Running the upgrade job
@@ -231,7 +239,7 @@ cstor-cspc-upgrade-jd747     1/1     Running    0          34s
 ```
 ```sh
 $ kubectl -n openebs logs -f cstor-volume-upgrade-jd747
-I0714 14:00:53.309707       1 cstor_volume.go:67] Upgrading pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49 to 1.12.0-RC2
+I0714 14:00:53.309707       1 cstor_volume.go:67] Upgrading pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49 to 1.12.0
 I0714 14:00:53.818666       1 cvr.go:75] patching cvr pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49-cspc-stripe-k7cc
 I0714 14:00:53.863867       1 cvr.go:95] cvr pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49-cspc-stripe-k7cc patched
 I0714 14:00:53.923339       1 cstor_cvr.go:138] Verifying the reconciliation of version for pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49-cspc-stripe-k7cc
@@ -246,5 +254,5 @@ I0714 14:03:05.890751       1 cstor_volume.go:401] Verifying the reconciliation 
 I0714 14:03:15.897696       1 cvc.go:75] patching cvc pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49
 I0714 14:03:15.929871       1 cvc.go:95] cvc pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49 patched
 I0714 14:03:16.030782       1 cstor_volume.go:423] Verifying the reconciliation of version for pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49
-I0714 14:03:26.046950       1 cstor_volume.go:78] Successfully upgraded pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49 to 1.12.0-RC2
+I0714 14:03:26.046950       1 cstor_volume.go:78] Successfully upgraded pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49 to 1.12.0
 ```
