@@ -4,9 +4,9 @@ When using OpenEBS with virtual disks for blockdevices, there can be scenarios w
 
 ## Steps to update CStor pool with correct blockdevices
 
-- Run the diagnostic [script](verifybds.sh) that will identify if any blockdevice is renamed after reattachment. The script takes `<openebs-namespace>` as the only input.
+- Run the diagnostic [script](verify_cstor_bds.sh) that will identify if any blockdevice is renamed after reattachment. The script takes `<openebs-namespace>` as the only input.
   ```sh
-  $ ./verifybds.sh openebs
+  $ ./verify_cstor_bds.sh openebs
   cstor-pool-yfn3
   blockdevice-0089038926179a1b8ca3ab91b9d0e782 --> blockdevice-8e782e6b47ed896a325870fc436e65f9
   blockdevice-0953b46938cfe608d235bb4cae47ff6d --> blockdevice-99596b3a4eb2396b8e45b334daeefccc
@@ -41,7 +41,6 @@ When using OpenEBS with virtual disks for blockdevices, there can be scenarios w
     blockDeviceName: <bd-name>
     blockDeviceNodeAttributes:
       hostName: <host-name>
-    hostName: <host-name>
   ```
   Check the BDC status using the command 
   ```sh
