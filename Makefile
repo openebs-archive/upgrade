@@ -55,6 +55,7 @@ export DBUILD_ARGS=--build-arg DBUILD_DATE=${DBUILD_DATE} --build-arg DBUILD_REP
 
 # Specify the name for the binaries
 UPGRADE=upgrade
+MIGRATE=migrate
 
 # If there are any external tools need to be used, they can be added by defining a EXTERNAL_TOOLS variable 
 # Bootstrap the build by downloading additional tools
@@ -90,9 +91,10 @@ test:
 UPGRADE_REPO_NAME_AMD64="upgrade-amd64"
 MIGRATE_REPO_NAME_AMD64="migrate-amd64"
 
-# Specify the name of the docker repo for arm64
-UPGRADE_REPO_NAME_ARM64="upgrade-arm64"
-MIGRATE_REPO_NAME_ARM64="migrate-arm64"
+ifeq (${IMAGE_TAG}, )
+  IMAGE_TAG = ci
+  export IMAGE_TAG
+endif
 
 # build upgrade binary
 .PHONY: upgrade
@@ -106,12 +108,6 @@ upgrade:
 	@# A copy of the binary will also be placed under: ./bin/${PNAME}/${CTLNAME}
 	@PNAME=${UPGRADE} CTLNAME=${UPGRADE} CGO_ENABLED=0 sh -c "'$(PWD)/build/build.sh'"
 
-ifeq (${IMAGE_TAG}, )
-  IMAGE_TAG = ci
-  export IMAGE_TAG
-endif
-
-
 # build upgrade image
 .PHONY: upgrade-image.amd64
 upgrade-image.amd64: upgrade
@@ -124,23 +120,39 @@ upgrade-image.amd64: upgrade
 	 sudo docker build -t "${IMAGE_ORG}/${UPGRADE_REPO_NAME_AMD64}:${IMAGE_TAG}" ${DBUILD_ARGS} .
 	@rm build/${UPGRADE}/${UPGRADE}
 
-.PHONY: upgrade-image.arm64
-upgrade-image.arm64: upgrade
-	@echo "-----------------------------------------------"
-	@echo "--> ${UPGRADE} image                           "
-	@echo "${IMAGE_ORG}/${UPGRADE_REPO_NAME_ARM64}:${IMAGE_TAG}"
-	@echo "-----------------------------------------------"
-	@cp bin/${UPGRADE}/${UPGRADE} build/${UPGRADE}
-	@cd build/${UPGRADE} && \
-	 sudo docker build -t "${IMAGE_ORG}/${UPGRADE_REPO_NAME_ARM64}:${IMAGE_TAG}" ${DBUILD_ARGS} .
-	@rm build/${UPGRADE}/${UPGRADE}
-
 # cleanup upgrade build
 .PHONY: cleanup-upgrade
 cleanup-upgrade: 
 	rm -rf ${GOPATH}/bin/${UPGRADE}
 
-include ./build/migrate/Makefile.mk
+# build migrate binary
+.PHONY: migrate
+migrate:
+	@echo "----------------------------"
+	@echo "--> ${MIGRATE}              "
+	@echo "----------------------------"
+	@# PNAME is the sub-folder in ./bin where binary will be placed. 
+	@# CTLNAME indicates the folder/pkg under cmd that needs to be built. 
+	@# The output binary will be: ./bin/${PNAME}/<os-arch>/${CTLNAME}
+	@# A copy of the binary will also be placed under: ./bin/${PNAME}/${CTLNAME}
+	@PNAME=${MIGRATE} CTLNAME=${MIGRATE} CGO_ENABLED=0 sh -c "'$(PWD)/build/build.sh'"
+
+# build migrate image
+.PHONY: migrate-image.amd64
+migrate-image.amd64: migrate
+	@echo "-----------------------------------------------"
+	@echo "--> ${MIGRATE} image                           "
+	@echo "${IMAGE_ORG}/${MIGRATE_REPO_NAME_AMD64}:${IMAGE_TAG}"
+	@echo "-----------------------------------------------"
+	@cp bin/${MIGRATE}/${MIGRATE} build/${MIGRATE}/
+	@cd build/${MIGRATE} && \
+	 sudo docker build -t "${IMAGE_ORG}/${MIGRATE_REPO_NAME_AMD64}:${IMAGE_TAG}" ${DBUILD_ARGS} .
+	@rm build/${MIGRATE}/${MIGRATE}
+
+# cleanup migrate build
+.PHONY: cleanup-migrate
+cleanup-migrate: 
+	rm -rf ${GOPATH}/bin/${MIGRATE}
 
 .PHONY: all.amd64
 all.amd64: upgrade-image.amd64 migrate-image.amd64
@@ -161,4 +173,5 @@ check-license:
                exit 1; \
        fi
 
+# include the buildx recipes
 include Makefile.buildx.mk

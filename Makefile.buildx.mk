@@ -44,6 +44,11 @@ DOCKERX_IMAGE_UPGRADE:=${IMAGE_ORG}/upgrade:${TAG}
 # Name of the multiarch image for migrate job
 DOCKERX_IMAGE_MIGRATE:=${IMAGE_ORG}/migrate:${TAG}
 
+
+# Build upgrade & migrate docker image with buildx
+# Experimental docker feature to build cross platform multi-architecture docker images
+# https://docs.docker.com/buildx/working-with-buildx/
+
 .PHONY: buildx.upgrade
 buildx.upgrade: bootstrap clean 
 	@echo '--> Building upgrade binary...'
@@ -52,9 +57,6 @@ buildx.upgrade: bootstrap clean
 	@echo '--> Built binary.'
 	@echo
 
-# Build upgrade & migrate docker image with buildx
-# Experimental docker feature to build cross platform multi-architecture docker images
-# https://docs.docker.com/buildx/working-with-buildx/
 .PHONY: docker.buildx.upgrade
 docker.buildx.upgrade:
 	export DOCKER_CLI_EXPERIMENTAL=enabled
@@ -62,7 +64,7 @@ docker.buildx.upgrade:
 		docker buildx create --platform ${PLATFORMS} --name container-builder --use;\
 	fi
 	@docker buildx build --platform ${PLATFORMS} \
-		-t "$(DOCKERX_IMAGE_UPGRADE)" ${DBUILD_ARGS} -f upgrade.Dockerfile \
+		-t "$(DOCKERX_IMAGE_UPGRADE)" ${DBUILD_ARGS} -f $(PWD)/build/$(UPGRADE)/upgrade.Dockerfile \
 		. ${PUSH_ARG}
 	@echo "--> Build docker image: $(DOCKERX_IMAGE_UPGRADE)"
 	@echo
@@ -82,7 +84,7 @@ docker.buildx.migrate:
 		docker buildx create --platform ${PLATFORMS} --name container-builder --use;\
 	fi
 	@docker buildx build --platform ${PLATFORMS} \
-		-t "$(DOCKERX_IMAGE_MIGRATE)" ${DBUILD_ARGS} -f migrate.Dockerfile \
+		-t "$(DOCKERX_IMAGE_MIGRATE)" ${DBUILD_ARGS} -f $(PWD)/build/$(MIGRATE)/migrate.Dockerfile \
 		. ${PUSH_ARG}
 	@echo "--> Build docker image: $(DOCKERX_IMAGE_MIGRATE)"
 	@echo
