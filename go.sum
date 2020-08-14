@@ -180,6 +180,8 @@ github.com/openebs/api v1.11.1-0.20200625121525-4ef7efa4b876 h1:c6HE7cROx9mC+yJ8
 github.com/openebs/api v1.11.1-0.20200625121525-4ef7efa4b876/go.mod h1:TASujm6H1LGdx43MN7Dab1xdAqR7MVU8bsS74Ywop5w=
 github.com/openebs/api v1.12.1-0.20200805040335-b9bd4809e80c h1:fZmO/A7BnxFAg9y1gjhtN6IG1ZBj0e0bLJTQtOI1Tk4=
 github.com/openebs/api v1.12.1-0.20200805040335-b9bd4809e80c/go.mod h1:TASujm6H1LGdx43MN7Dab1xdAqR7MVU8bsS74Ywop5w=
+github.com/openebs/api v1.12.1-0.20200813113856-a86aa610f932 h1:YzV1nspFTKrCa7c2XeWPcrU9KRvV9Ul9Yu9SLHqldas=
+github.com/openebs/api v1.12.1-0.20200813113856-a86aa610f932/go.mod h1:TASujm6H1LGdx43MN7Dab1xdAqR7MVU8bsS74Ywop5w=
 github.com/openebs/maya v0.0.0-20200602143918-71415115098d h1:o8RIc8RzeZkUlzYM+Sg07wRdekIHytCTMaAhFl8Yams=
 github.com/openebs/maya v0.0.0-20200602143918-71415115098d/go.mod h1:QQY9cOHKQwZ73qbv6O//UYUBLNV2S0MRDIfG7t5KOCk=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
