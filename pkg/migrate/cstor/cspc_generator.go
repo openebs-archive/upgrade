@@ -44,11 +44,20 @@ var (
 func getDataRaidGroups(cspObj apis.CStorPool) []cstor.RaidGroup {
 	dataRaidGroups := []cstor.RaidGroup{}
 	for _, rg := range cspObj.Spec.Group {
-		dataRaidGroups = append(dataRaidGroups,
-			cstor.RaidGroup{
-				CStorPoolInstanceBlockDevices: getBDList(rg),
-			},
-		)
+		// as the current spc provisioning stripe pool creates
+		// different raid groups
+		if cspObj.Spec.PoolSpec.PoolType == string(apis.PoolTypeStripedCPV) {
+			if len(dataRaidGroups) == 0 {
+				dataRaidGroups = append(dataRaidGroups, cstor.RaidGroup{})
+			}
+			dataRaidGroups[0].CStorPoolInstanceBlockDevices = append(dataRaidGroups[0].CStorPoolInstanceBlockDevices, getBDList(rg)...)
+		} else {
+			dataRaidGroups = append(dataRaidGroups,
+				cstor.RaidGroup{
+					CStorPoolInstanceBlockDevices: getBDList(rg),
+				},
+			)
+		}
 	}
 	return dataRaidGroups
 }
