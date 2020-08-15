@@ -1,6 +1,6 @@
-# Migrate OpenEBS
+# Migrate cStor pools and volumes from SPC to CSPC 
 
-This document describes the steps for migrating the following OpenEBS reources:
+This document describes the steps for migrating the following OpenEBS cStor custom reources:
 
 - [SPC pools to CSPC pools](#spc-pools-to-cspc-pools)
 - [cStor External Provisioned volumes to cStor CSI volumes](#cstor-external-provisioned-volumes-to-cstor-csi-volumes)
