@@ -34,7 +34,7 @@ func Test_getDataRaidGroups(t *testing.T) {
 		want []cstor.RaidGroup
 	}{
 		{
-			name: "striped",
+			name: "striped different raid groups",
 			args: args{
 				cspObj: apis.CStorPool{
 					Spec: apis.CStorPoolSpec{
@@ -58,6 +58,48 @@ func Test_getDataRaidGroups(t *testing.T) {
 							},
 							{
 								Item: []apis.CspBlockDevice{
+									{
+										Name: "sparse-5e508018b4dd2c8e2530fbdae8e44bb6",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: []cstor.RaidGroup{
+				{
+					CStorPoolInstanceBlockDevices: []cstor.CStorPoolInstanceBlockDevice{
+						{
+							BlockDeviceName: "sparse-37a7de580322f43a13338bf2467343f5",
+						},
+						{
+							BlockDeviceName: "sparse-5a92ced3e2ee21eac7b930f670b5eab5",
+						},
+						{
+							BlockDeviceName: "sparse-5e508018b4dd2c8e2530fbdae8e44bb6",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "striped same raid group",
+			args: args{
+				cspObj: apis.CStorPool{
+					Spec: apis.CStorPoolSpec{
+						PoolSpec: apis.CStorPoolAttr{
+							PoolType: "striped",
+						},
+						Group: []apis.BlockDeviceGroup{
+							{
+								Item: []apis.CspBlockDevice{
+									{
+										Name: "sparse-37a7de580322f43a13338bf2467343f5",
+									},
+									{
+										Name: "sparse-5a92ced3e2ee21eac7b930f670b5eab5",
+									},
 									{
 										Name: "sparse-5e508018b4dd2c8e2530fbdae8e44bb6",
 									},
