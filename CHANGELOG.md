@@ -1,5 +1,18 @@
 # Changelog
 
+## [v2.0.0](https://github.com/openebs/upgrade/tree/v2.0.0) (2020-08-15)
+
+**Merged pull requests:**
+
+- fix\(migration\): fix striped raid group config while migrating [\#39](https://github.com/openebs/upgrade/pull/39) ([shubham14bajpai](https://github.com/shubham14bajpai))
+
+## [v2.0.0-RC2](https://github.com/openebs/upgrade/tree/v2.0.0-RC2) (2020-08-14)
+
+**Merged pull requests:**
+
+- chore\(vendor\): update latest openebs/api vendor files [\#37](https://github.com/openebs/upgrade/pull/37) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- chore\(vendor\): update latest openebs/api vendor files [\#34](https://github.com/openebs/upgrade/pull/34) ([shubham14bajpai](https://github.com/shubham14bajpai))
+
 ## [v2.0.0-RC1](https://github.com/openebs/upgrade/tree/v2.0.0-RC1) (2020-08-05)
 
 **Merged pull requests:**
