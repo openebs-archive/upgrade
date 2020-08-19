@@ -21,6 +21,11 @@ ifeq (${TAG}, )
   export TAG=ci
 endif
 
+
+# Build upgrade & migrate docker image with buildx
+# Experimental docker feature to build cross platform multi-architecture docker images
+# https://docs.docker.com/buildx/working-with-buildx/
+
 # default list of platforms for which multiarch image is built
 ifeq (${PLATFORMS}, )
 	export PLATFORMS="linux/amd64,linux/arm64,linux/arm/v7,linux/ppc64le"
@@ -44,10 +49,17 @@ DOCKERX_IMAGE_UPGRADE:=${IMAGE_ORG}/upgrade:${TAG}
 # Name of the multiarch image for migrate job
 DOCKERX_IMAGE_MIGRATE:=${IMAGE_ORG}/migrate:${TAG}
 
-
-# Build upgrade & migrate docker image with buildx
-# Experimental docker feature to build cross platform multi-architecture docker images
-# https://docs.docker.com/buildx/working-with-buildx/
+.PHONY: docker.buildx
+docker.buildx:
+	export DOCKER_CLI_EXPERIMENTAL=enabled
+	@if ! docker buildx ls | grep -q container-builder; then\
+		docker buildx create --platform ${PLATFORMS} --name container-builder --use;\
+	fi
+	@docker buildx build --platform ${PLATFORMS} \
+		-t "$(DOCKERX_IMAGE_NAME)" ${DBUILD_ARGS} -f $(PWD)/build/$(COMPONENT)/$(COMPONENT).Dockerfile \
+		. ${PUSH_ARG}
+	@echo "--> Build docker image: $(DOCKERX_IMAGE_NAME)"
+	@echo
 
 .PHONY: buildx.upgrade
 buildx.upgrade: bootstrap clean 
@@ -58,16 +70,9 @@ buildx.upgrade: bootstrap clean
 	@echo
 
 .PHONY: docker.buildx.upgrade
-docker.buildx.upgrade:
-	export DOCKER_CLI_EXPERIMENTAL=enabled
-	@if ! docker buildx ls | grep -q container-builder; then\
-		docker buildx create --platform ${PLATFORMS} --name container-builder --use;\
-	fi
-	@docker buildx build --platform ${PLATFORMS} \
-		-t "$(DOCKERX_IMAGE_UPGRADE)" ${DBUILD_ARGS} -f $(PWD)/build/$(UPGRADE)/upgrade.Dockerfile \
-		. ${PUSH_ARG}
-	@echo "--> Build docker image: $(DOCKERX_IMAGE_UPGRADE)"
-	@echo
+docker.buildx.upgrade: DOCKERX_IMAGE_NAME=$(DOCKERX_IMAGE_UPGRADE)
+docker.buildx.upgrade: COMPONENT=$(UPGRADE)
+docker.buildx.upgrade: docker.buildx
 
 .PHONY: buildx.migrate
 buildx.migrate: bootstrap clean 
@@ -78,16 +83,9 @@ buildx.migrate: bootstrap clean
 	@echo
 
 .PHONY: docker.buildx.migrate
-docker.buildx.migrate:
-	export DOCKER_CLI_EXPERIMENTAL=enabled
-	@if ! docker buildx ls | grep -q container-builder; then\
-		docker buildx create --platform ${PLATFORMS} --name container-builder --use;\
-	fi
-	@docker buildx build --platform ${PLATFORMS} \
-		-t "$(DOCKERX_IMAGE_MIGRATE)" ${DBUILD_ARGS} -f $(PWD)/build/$(MIGRATE)/migrate.Dockerfile \
-		. ${PUSH_ARG}
-	@echo "--> Build docker image: $(DOCKERX_IMAGE_MIGRATE)"
-	@echo
+docker.buildx.migrate: DOCKERX_IMAGE_NAME=$(DOCKERX_IMAGE_MIGRATE)
+docker.buildx.migrate: COMPONENT=$(MIGRATE)
+docker.buildx.migrate: docker.buildx
 
 .PHONY: buildx.push.upgrade
 buildx.push.upgrade:

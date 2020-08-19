@@ -24,7 +24,7 @@ ENV GO111MODULE=on \
 
 WORKDIR /go/src/github.com/openebs/upgrade/
 
-RUN apt-get update && apt-get install -y make git zip
+RUN apt-get update && apt-get install -y make git
 
 COPY . .
 
@@ -35,7 +35,6 @@ RUN export GOOS=$(echo ${TARGETPLATFORM} | cut -d / -f1) && \
 
 FROM alpine:3.11.5
 
-ARG ARCH
 ARG DBUILD_DATE
 ARG DBUILD_REPO_URL
 ARG DBUILD_SITE_URL
