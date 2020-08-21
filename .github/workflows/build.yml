@@ -29,7 +29,7 @@ jobs:
           reporter: github-pr-review
           path: '.'
           pattern: '*.sh'
-          exclude: './.git/*,./vendor/*'
+          exclude: './vendor/*'
 
   upgrade:
     runs-on: ubuntu-latest
