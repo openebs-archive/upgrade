@@ -15,7 +15,7 @@ sleep 100
 
 echo "Wait for cspc-operator to start"
 
-kubectl wait --for=condition=available --timeout=600s deployment/cspc-operator -n openebs
+kubectl wait --for=condition=available --timeout=300s deployment/cspc-operator -n openebs
 
 echo "Create application with cStor volume on CSPC"
 
@@ -24,7 +24,7 @@ bdname=$(kubectl -n openebs get blockdevices -o jsonpath='{.items[*].metadata.na
 sed "s|CSPCBD|$bdname|g" ./ci/upgrade/application.tmp.yaml | sed "s|NODENAME|$nodename|g" > ./ci/upgrade/application.yaml
 kubectl apply -f ./ci/upgrade/application.yaml
 sleep 10
-kubectl wait --for=condition=available --timeout=600s deployment/percona
+kubectl wait --for=condition=available --timeout=300s deployment/percona
 
 echo "Upgrade control plane to latest version"
 
@@ -33,4 +33,4 @@ sed "s|testimage|$TEST_IMAGE_TAG|g" ./ci/upgrade/cstor-operator.tmp.yaml | sed "
 kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/csi-operator.yaml \
  -f ./ci/upgrade/cstor-operator.yaml
 sleep 10
-kubectl wait --for=condition=available --timeout=600s deployment/cspc-operator -n openebs
+kubectl wait --for=condition=available --timeout=300s deployment/cspc-operator -n openebs
