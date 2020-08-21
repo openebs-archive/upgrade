@@ -38,6 +38,11 @@ export TEST_VERSION=${TEST_VERSION#v}
 # setup openebs & cstor v1 for migration 
 ./ci/upgrade/setup.sh || exit 1
 # run migration tests
-./ci/upgrade/test.sh || exit 1
+./ci/upgrade/test.sh 
+if [[ $? != 0 ]]; then
+  kubectl logs --tail=50 -l job-name=upgrade-pool -n openebs
+  kubectl logs --tail=50 -l job-name=upgrade-volume -n openebs
+  exit 1
+fi
 
 rm ./ci/upgrade/volume.yaml ./ci/upgrade/application.yaml
