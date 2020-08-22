@@ -36,7 +36,7 @@ spec:
         # if required the image prefix of the volume deployments can be
         # changed using the flag below, defaults to whatever was present on old
         # deployments.
-        #- "--to-version-image-prefix=openebs/"
+        - "--to-version-image-prefix=imageorg/"
         # if required the image tags for volume deployments can be changed
         # to a custom image tag using the flag below, 
         # defaults to the --to-version mentioned above.
@@ -58,7 +58,7 @@ spec:
 
         # the image version should be same as the --to-version mentioned above
         # in the args of the job
-        image: openebs/upgrade-amd64:ci
+        image: imageorg/upgrade-amd64:ci
         imagePullPolicy: IfNotPresent
       restartPolicy: OnFailure
 ---
