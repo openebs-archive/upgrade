@@ -2,8 +2,17 @@
 
 #!/usr/bin/env bash
 
+set -ex
+
 # To enable dev upgardes in travis
 make upgrade-image.amd64
+
+# To test the sanity in different customized
+# image prefixes
+if [[ ${IMAGE_ORG} == "" ]]; then
+  IMAGE_ORG="openebs";
+  export IMAGE_ORG;
+fi
 
 # To test the sanity in different versioned branches 
 # and travis tags, get the travis version and corresponding
@@ -34,6 +43,8 @@ fi
 
 export TEST_IMAGE_TAG=${TEST_IMAGE_TAG#v}
 export TEST_VERSION=${TEST_VERSION#v}
+
+echo "Testing upgrade for org: $IMAGE_ORG version: $TEST_VERSION imagetag: $TEST_IMAGE_TAG"
 
 # setup openebs & cstor v1 for migration 
 ./ci/upgrade/setup.sh || exit 1
