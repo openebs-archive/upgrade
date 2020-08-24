@@ -28,7 +28,7 @@ kubectl wait --for=condition=available --timeout=300s deployment/percona
 
 echo "Upgrade control plane to latest version"
 
-sed "s|testimage|$TEST_IMAGE_TAG|g" ./ci/upgrade/cstor-operator.tmp.yaml | sed "s|testversion|$TEST_VERSION|g" > ./ci/upgrade/cstor-operator.yaml
+sed "s|testimage|$TEST_IMAGE_TAG|g" ./ci/upgrade/cstor-operator.tmp.yaml | sed "s|testversion|$TEST_VERSION|g" | sed "s|imageorg|$IMAGE_ORG|g" > ./ci/upgrade/cstor-operator.yaml
 
 kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/csi-operator.yaml \
  -f ./ci/upgrade/cstor-operator.yaml
