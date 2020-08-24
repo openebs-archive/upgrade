@@ -14,7 +14,7 @@
 #
 # This Dockerfile builds migrate
 #
-FROM golang:1.13 as build
+FROM golang:1.14.7 as build
 
 ARG TARGETPLATFORM
 
@@ -30,7 +30,7 @@ COPY . .
 
 RUN export GOOS=$(echo ${TARGETPLATFORM} | cut -d / -f1) && \
   export GOARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) && \
-  GOARM=$(echo ${TARGETPLATFORM} | cut -d / -f3 | cut -c2-) && \
+  export GOARM=$(echo ${TARGETPLATFORM} | cut -d / -f3 | cut -c2-) && \
   make buildx.migrate
 
 FROM alpine:3.11.5

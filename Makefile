@@ -72,8 +72,6 @@ clean:
 	rm -rf bin
 	rm -rf ${GOPATH}/bin/${UPGRADE}
 	rm -rf ${GOPATH}/bin/${MIGRATE}
-	rm -rf Dockerfile.upgarde
-	rm -rf Dockerfile.migrate
 	@echo '--> Done cleaning.'
 	@echo
 
