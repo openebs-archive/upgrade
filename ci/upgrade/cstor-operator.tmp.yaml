@@ -27,7 +27,7 @@ spec:
       containers:
       - name: cspc-operator
         imagePullPolicy: IfNotPresent
-        image: openebs/cspc-operator-amd64:testimage
+        image: imageorg/cspc-operator-amd64:testimage
         env:
         - name: OPENEBS_NAMESPACE
           valueFrom:
@@ -53,11 +53,11 @@ spec:
         #- name: OPENEBS_IO_CSTOR_POOL_SPARSE_DIR
         #  value: "/var/openebs/sparse"
         - name: OPENEBS_IO_CSPI_MGMT_IMAGE
-          value: "openebs/cstor-pool-manager-amd64:testimage"
+          value: "imageorg/cstor-pool-manager-amd64:testimage"
         - name: OPENEBS_IO_CSTOR_POOL_IMAGE
-          value: "openebs/cstor-pool:testimage"
+          value: "imageorg/cstor-pool:testimage"
         - name:  OPENEBS_IO_CSTOR_POOL_EXPORTER_IMAGE
-          value: "openebs/m-exporter:testimage"
+          value: "imageorg/m-exporter:testimage"
         - name: RESYNC_INTERVAL
           value: "30"
 ---
@@ -89,7 +89,7 @@ spec:
       containers:
       - name: cvc-operator
         imagePullPolicy: IfNotPresent
-        image: openebs/cvc-operator-amd64:testimage
+        image: imageorg/cvc-operator-amd64:testimage
         env:
         # OPENEBS_IO_BASE_DIR is used to configure base directory for openebs on host path.
         # Where OpenEBS can store required files. Default base path will be /var/openebs
@@ -109,11 +109,11 @@ spec:
             fieldRef:
               fieldPath: spec.serviceAccountName
         - name: OPENEBS_IO_CSTOR_TARGET_IMAGE
-          value: "openebs/cstor-istgt:testimage"
+          value: "imageorg/cstor-istgt:testimage"
         - name:  OPENEBS_IO_CSTOR_VOLUME_MGMT_IMAGE
-          value: "openebs/cstor-volume-manager-amd64:testimage"
+          value: "imageorg/cstor-volume-manager-amd64:testimage"
         - name:  OPENEBS_IO_VOLUME_MONITOR_IMAGE
-          value: "openebs/m-exporter:testimage"
+          value: "imageorg/m-exporter:testimage"
 ---
 apiVersion: v1
 kind: Service
@@ -159,7 +159,7 @@ spec:
       serviceAccountName: openebs-maya-operator
       containers:
         - name: admission-webhook
-          image: openebs/cstor-webhook-amd64:testimage
+          image: imageorg/cstor-webhook-amd64:testimage
           imagePullPolicy: IfNotPresent
           args:
             - -alsologtostderr
