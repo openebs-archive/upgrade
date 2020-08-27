@@ -134,3 +134,14 @@ all.amd64: upgrade-image.amd64 migrate-image.amd64
 deploy-images:
 	@./build/deploy.sh
 
+.PHONY: check_license
+check-license:
+	@echo ">> checking license header"
+	@licRes=$$(for file in $$(find . -type f ! -iname '*.md' ! -path './vendor/*' ! -path './bin/*' ! -path './.git/*' \
+	! -path './.gitignore' ! -path './LICENSE' ! -path './MAINTAINERS' ! -path './go.sum' ! -path './go.mod' ) ; do \
+               awk 'NR<=3' $$file | grep -Eq "(Copyright|generated|GENERATED)" || echo $$file; \
+       done); \
+       if [ -n "$${licRes}" ]; then \
+               echo "license header checking failed:"; echo "$${licRes}"; \
+               exit 1; \
+       fi
