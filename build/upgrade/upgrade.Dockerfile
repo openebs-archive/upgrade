@@ -26,6 +26,10 @@ WORKDIR /go/src/github.com/openebs/upgrade/
 
 RUN apt-get update && apt-get install -y make git
 
+COPY go.mod go.sum ./
+# Get dependancies - will also be cached if we won't change mod/sum
+RUN go mod download
+
 COPY . .
 
 RUN export GOOS=$(echo ${TARGETPLATFORM} | cut -d / -f1) && \
