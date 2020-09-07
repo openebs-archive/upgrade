@@ -137,8 +137,7 @@ deploy-images:
 .PHONY: check_license
 check-license:
 	@echo ">> checking license header"
-	@licRes=$$(for file in $$(find . -type f ! -iname '*.md' ! -path './vendor/*' ! -path './bin/*' ! -path './.git/*' \
-	! -path './.gitignore' ! -path './LICENSE' ! -path './MAINTAINERS' ! -path './go.sum' ! -path './go.mod' ) ; do \
+	@licRes=$$(for file in $$(find . -type f -regex '.*\.sh\|.*\.go\|.*Docker.*\|.*\Makefile*\|.*\yaml' ! -path './vendor/*' ) ; do \
                awk 'NR<=3' $$file | grep -Eq "(Copyright|generated|GENERATED)" || echo $$file; \
        done); \
        if [ -n "$${licRes}" ]; then \
