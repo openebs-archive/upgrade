@@ -16,6 +16,7 @@ github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
 # github.com/google/go-cmp v0.4.0
+## explicit
 github.com/google/go-cmp/cmp
 github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
@@ -28,6 +29,7 @@ github.com/googleapis/gnostic/OpenAPIv2
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
 # github.com/hashicorp/go-version v1.2.0
+## explicit
 github.com/hashicorp/go-version
 # github.com/imdario/mergo v0.3.7
 github.com/imdario/mergo
@@ -36,6 +38,7 @@ github.com/inconshreveable/mousetrap
 # github.com/json-iterator/go v1.1.9
 github.com/json-iterator/go
 # github.com/kubernetes-csi/external-snapshotter/v2 v2.1.1
+## explicit
 github.com/kubernetes-csi/external-snapshotter/v2/pkg/apis/volumesnapshot/v1beta1
 github.com/kubernetes-csi/external-snapshotter/v2/pkg/client/clientset/versioned
 github.com/kubernetes-csi/external-snapshotter/v2/pkg/client/clientset/versioned/scheme
@@ -47,6 +50,7 @@ github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
 # github.com/openebs/api v1.12.1-0.20200813113856-a86aa610f932
+## explicit
 github.com/openebs/api/pkg/apis/cstor
 github.com/openebs/api/pkg/apis/cstor/v1
 github.com/openebs/api/pkg/apis/openebs.io
@@ -61,6 +65,7 @@ github.com/openebs/api/pkg/client/clientset/versioned/typed/openebs.io/v1alpha1
 github.com/openebs/api/pkg/client/clientset/versioned/typed/openebs.io/v1alpha1/fake
 github.com/openebs/api/pkg/util
 # github.com/openebs/maya v0.0.0-20200602143918-71415115098d
+## explicit
 github.com/openebs/maya/pkg/apis/openebs.io
 github.com/openebs/maya/pkg/apis/openebs.io/ndm/v1alpha1
 github.com/openebs/maya/pkg/apis/openebs.io/snapshot/v1
@@ -94,6 +99,7 @@ github.com/openebs/maya/pkg/util
 github.com/openebs/maya/pkg/util/retry
 github.com/openebs/maya/pkg/version
 # github.com/pkg/errors v0.9.1
+## explicit
 github.com/pkg/errors
 # github.com/prometheus/client_golang v1.0.0
 github.com/prometheus/client_golang/prometheus
@@ -110,6 +116,7 @@ github.com/prometheus/procfs/internal/fs
 # github.com/ryanuber/columnize v2.1.0+incompatible
 github.com/ryanuber/columnize
 # github.com/spf13/cobra v1.0.0
+## explicit
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
@@ -146,10 +153,12 @@ google.golang.org/appengine/urlfetch
 # gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
 # gopkg.in/yaml.v1 v1.0.0-20140924161607-9f9df34309c0
+## explicit
 gopkg.in/yaml.v1
 # gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2
 # k8s.io/api v0.17.3
+## explicit
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1beta1
 k8s.io/api/apps/v1
@@ -191,6 +200,7 @@ k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
 # k8s.io/apimachinery v0.17.3
+## explicit
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/api/meta
 k8s.io/apimachinery/pkg/api/resource
@@ -230,6 +240,7 @@ k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/third_party/forked/golang/reflect
 # k8s.io/client-go v0.17.3
+## explicit
 k8s.io/client-go/discovery
 k8s.io/client-go/discovery/fake
 k8s.io/client-go/dynamic
@@ -338,6 +349,7 @@ k8s.io/client-go/util/flowcontrol
 k8s.io/client-go/util/homedir
 k8s.io/client-go/util/keyutil
 # k8s.io/klog v1.0.0
+## explicit
 k8s.io/klog
 # k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
 k8s.io/kube-openapi/pkg/util/proto
