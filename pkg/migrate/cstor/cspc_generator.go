@@ -90,6 +90,9 @@ func (c *CSPCMigrator) getCSPCSpecForSPC(spcName string) (*cstor.CStorPoolCluste
 		types.OpenEBSDisableDependantsReconcileKey: "true",
 		"openebs.io/migrated-from":                 spcName,
 	}
+	if c.SPCObj.Annotations[types.OpenEBSAllowedBDTagKey] != "" {
+		cspcObj.Annotations[types.OpenEBSAllowedBDTagKey] = c.SPCObj.Annotations[types.OpenEBSAllowedBDTagKey]
+	}
 	for _, cspObj := range cspList.Items {
 		cspDeployList, err := deploy.NewKubeClient().WithNamespace(c.OpenebsNamespace).
 			List(&metav1.ListOptions{
