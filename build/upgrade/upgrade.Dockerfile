@@ -19,8 +19,8 @@ FROM golang:1.14.7 as build
 ARG TARGETPLATFORM
 
 ENV GO111MODULE=on \
-  DEBIAN_FRONTEND=noninteractive \
-  PATH="/root/go/bin:${PATH}"
+    DEBIAN_FRONTEND=noninteractive \
+    PATH="/root/go/bin:${PATH}"
 
 WORKDIR /go/src/github.com/openebs/upgrade/
 
@@ -33,9 +33,9 @@ RUN go mod download
 COPY . .
 
 RUN export GOOS=$(echo ${TARGETPLATFORM} | cut -d / -f1) && \
-  export GOARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) && \
-  export GOARM=$(echo ${TARGETPLATFORM} | cut -d / -f3 | cut -c2-) && \
-  make buildx.upgrade
+    export GOARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) && \
+    export GOARM=$(echo ${TARGETPLATFORM} | cut -d / -f3 | cut -c2-) && \
+    make buildx.upgrade
 
 FROM alpine:3.11.5
 

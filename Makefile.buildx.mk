@@ -18,7 +18,7 @@
 export DBUILD_ARGS=--build-arg DBUILD_DATE=${DBUILD_DATE} --build-arg DBUILD_REPO_URL=${DBUILD_REPO_URL} --build-arg DBUILD_SITE_URL=${DBUILD_SITE_URL}
 
 ifeq (${TAG}, )
-  export TAG=ci
+	export TAG=ci
 endif
 
 
@@ -34,8 +34,8 @@ endif
 # if IMG_RESULT is unspecified, by default the image will be pushed to registry
 ifeq (${IMG_RESULT}, load)
 	export PUSH_ARG="--load"
-    # if load is specified, image will be built only for the build machine architecture.
-    export PLATFORMS="local"
+	# if load is specified, image will be built only for the build machine architecture.
+	export PLATFORMS="local"
 else ifeq (${IMG_RESULT}, cache)
 	# if cache is specified, image will only be available in the build cache, it won't be pushed or loaded
 	# therefore no PUSH_ARG will be specified
