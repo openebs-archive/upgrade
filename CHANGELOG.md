@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased](https://github.com/openebs/upgrade/tree/HEAD)
+
+**Merged pull requests:**
+
+- chore\(upgrade\): add valid current versions for 2.1.0 upgrades [\#48](https://github.com/openebs/upgrade/pull/48) ([shubham14bajpai](https://github.com/shubham14bajpai))
+
+## [v2.1.0-RC1](https://github.com/openebs/upgrade/tree/v2.1.0-RC1) (2020-09-08)
+
+**Merged pull requests:**
+
+- refact\(cstor-pool\): add bd-tag to cspc while migration [\#47](https://github.com/openebs/upgrade/pull/47) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- chore\(docs\): add repo related documents [\#46](https://github.com/openebs/upgrade/pull/46) ([shubham14bajpai](https://github.com/shubham14bajpai))
+
+# Changelog
+
 ## [v2.0.0](https://github.com/openebs/upgrade/tree/v2.0.0) (2020-08-15)
 
 **Merged pull requests:**
