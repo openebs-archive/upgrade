@@ -525,7 +525,6 @@ func (v *VolumeMigrator) patchTargetSVCOwnerRef() error {
 // resources a temporary storageclass is created before deleting the original
 func (v *VolumeMigrator) updateStorageClass(pvName, scName string) error {
 	var tmpSCObj *storagev1.StorageClass
-	klog.Infof("Updating storageclass %s with csi parameters", scName)
 	scObj, err := v.KubeClientset.StorageV1().
 		StorageClasses().
 		Get(scName, metav1.GetOptions{})
@@ -534,9 +533,9 @@ func (v *VolumeMigrator) updateStorageClass(pvName, scName string) error {
 			return err
 		}
 	}
-	cond0, ret0 := isTmpSCValid(v, scName)
-	if cond0 {
-		return ret0
+	required, err := isSCMigrationRequired(v, scName)
+	if !required {
+		return err
 	}
 	if scObj == nil || scObj.Provisioner != cstorCSIDriver {
 		tmpSCObj, err = v.createTmpSC(scName)
@@ -546,6 +545,7 @@ func (v *VolumeMigrator) updateStorageClass(pvName, scName string) error {
 			}
 			return err
 		}
+		klog.Infof("Updating storageclass %s with csi parameters", scName)
 		replicaCount, err := v.getReplicaCount(pvName)
 		if err != nil {
 			return err
@@ -560,6 +560,7 @@ func (v *VolumeMigrator) updateStorageClass(pvName, scName string) error {
 			Annotations: tmpSCObj.Annotations,
 			Labels:      tmpSCObj.Labels,
 		}
+		delete(csiSC.Annotations, "pv-name")
 		csiSC.Provisioner = cstorCSIDriver
 		csiSC.AllowVolumeExpansion = &trueBool
 		csiSC.Parameters = map[string]string{
@@ -595,19 +596,25 @@ func (v *VolumeMigrator) updateStorageClass(pvName, scName string) error {
 }
 
 // While running multiple volume migration in parallel there can be
-// a race condition to update a common storageclass shared between
-// the volumes. This check makes sure that only one migration job which
+// a race condition to update a common storageclass  used to provisioned all
+// of the volumes. This check makes sure that only one migration job which
 // was able to create the temporary storageclass will update the storageclass
 // and other jobs will skip this step.
-func isTmpSCValid(v *VolumeMigrator, scName string) (bool, error) {
+func isSCMigrationRequired(v *VolumeMigrator, scName string) (bool, error) {
 	tmpSC, err := v.KubeClientset.StorageV1().StorageClasses().
 		Get("tmp-migrate-"+scName, metav1.GetOptions{})
-	if err == nil {
-		if tmpSC.Annotations["pv-name"] != v.PVName {
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
 			return true, nil
 		}
+		return false, err
 	}
-	return false, nil
+	if err == nil {
+		if tmpSC.Annotations["pv-name"] != v.PVName {
+			return false, nil
+		}
+	}
+	return true, nil
 }
 
 func (v *VolumeMigrator) createTmpSC(scName string) (*storagev1.StorageClass, error) {
