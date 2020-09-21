@@ -534,9 +534,16 @@ func (v *VolumeMigrator) updateStorageClass(pvName, scName string) error {
 			return err
 		}
 	}
+	cond0, ret0 := isTmpSCValid(v, scName)
+	if cond0 {
+		return ret0
+	}
 	if scObj == nil || scObj.Provisioner != cstorCSIDriver {
 		tmpSCObj, err = v.createTmpSC(scName)
 		if err != nil {
+			if k8serrors.IsAlreadyExists(err) {
+				return nil
+			}
 			return err
 		}
 		replicaCount, err := v.getReplicaCount(pvName)
@@ -587,6 +594,22 @@ func (v *VolumeMigrator) updateStorageClass(pvName, scName string) error {
 	return nil
 }
 
+// While running multiple volume migration in parallel there can be
+// a race condition to update a common storageclass shared between
+// the volumes. This check makes sure that only one migration job which
+// was able to create the temporary storageclass will update the storageclass
+// and other jobs will skip this step.
+func isTmpSCValid(v *VolumeMigrator, scName string) (bool, error) {
+	tmpSC, err := v.KubeClientset.StorageV1().StorageClasses().
+		Get("tmp-migrate-"+scName, metav1.GetOptions{})
+	if err == nil {
+		if tmpSC.Annotations["pv-name"] != v.PVName {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (v *VolumeMigrator) createTmpSC(scName string) (*storagev1.StorageClass, error) {
 	tmpSCName := "tmp-migrate-" + scName
 	tmpSCObj, err := v.KubeClientset.StorageV1().
@@ -606,9 +629,13 @@ func (v *VolumeMigrator) createTmpSC(scName string) (*storagev1.StorageClass, er
 			Annotations: scObj.Annotations,
 			Labels:      scObj.Labels,
 		}
+		tmpSCObj.Annotations["pv-name"] = v.PVName
 		tmpSCObj, err = v.KubeClientset.StorageV1().
 			StorageClasses().Create(tmpSCObj)
 		if err != nil {
+			if k8serrors.IsAlreadyExists(err) {
+				return nil, err
+			}
 			return nil, errors.Wrapf(err, "failed to create temporary storageclass")
 		}
 	}
