@@ -609,10 +609,8 @@ func isSCMigrationRequired(v *VolumeMigrator, scName string) (bool, error) {
 		}
 		return false, err
 	}
-	if err == nil {
-		if tmpSC.Annotations["pv-name"] != v.PVName {
-			return false, nil
-		}
+	if tmpSC.Annotations["pv-name"] != v.PVName {
+		return false, nil
 	}
 	return true, nil
 }
