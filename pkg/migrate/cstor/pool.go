@@ -99,6 +99,10 @@ func (c *CSPCMigrator) Migrate(name, namespace string) error {
 	if err != nil {
 		return err
 	}
+	err = c.correctBDs(name)
+	if err != nil {
+		return err
+	}
 	err = c.migrate(name)
 	return err
 }
