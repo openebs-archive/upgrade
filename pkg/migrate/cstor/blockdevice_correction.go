@@ -138,7 +138,7 @@ func (c *CSPCMigrator) correctCSPBDs(spcObj *apis.StoragePoolClaim, cspObj apis.
 	}
 
 	newCSPObj := cspObj.DeepCopy()
-	klog.Info("Correcting the following bd in csp %s \n %v", cspObj.Name, correctCSPBD)
+	klog.Infof("Correcting the following bd in csp %s \n %v", cspObj.Name, correctCSPBD)
 	for i, rg := range newCSPObj.Spec.Group {
 		for j, bd := range rg.Item {
 			if correctCSPBD[bd.Name] != "" {
