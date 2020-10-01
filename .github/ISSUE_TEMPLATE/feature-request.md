@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea to improve cstor-csi driver
+about: Suggest an idea to improve openebs upgrades
 labels: Enhancement
 
 ---
