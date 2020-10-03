@@ -184,7 +184,7 @@ func Test_getDataRaidGroups(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getDataRaidGroups(tt.args.cspObj); !reflect.DeepEqual(got, tt.want) {
+			if got := getDataRaidGroups(tt.args.cspObj); !cmp.Equal(got, tt.want) {
 				t.Errorf("getDataRaidGroups() = %v, want %v", got, tt.want)
 			}
 		})
