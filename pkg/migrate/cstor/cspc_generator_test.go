@@ -17,9 +17,9 @@ limitations under the License.
 package migrate
 
 import (
-	"reflect"
 	"testing"
-
+	
+	"github.com/google/go-cmp/cmp"
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	apis "github.com/openebs/maya/pkg/apis/openebs.io/v1alpha1"
 )
