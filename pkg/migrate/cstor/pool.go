@@ -25,7 +25,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog"
 
-	goversion "github.com/hashicorp/go-version"
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
 	openebsclientset "github.com/openebs/api/pkg/client/clientset/versioned"
@@ -105,7 +104,7 @@ func (c *CSPCMigrator) Migrate(name, namespace string) error {
 }
 
 func (c *CSPCMigrator) validateCSPCOperator() error {
-	currentVersion, _ := goversion.NewVersion(strings.Split(version.Current(), "-")[0])
+	currentVersion := strings.Split(version.Current(), "-")[0]
 	operatorPods, err := c.KubeClientset.CoreV1().
 		Pods(c.OpenebsNamespace).
 		List(metav1.ListOptions{
@@ -119,13 +118,12 @@ func (c *CSPCMigrator) validateCSPCOperator() error {
 	}
 	for _, pod := range operatorPods.Items {
 		operatorVersion := strings.Split(pod.Labels["openebs.io/version"], "-")[0]
-		vOperator, err := goversion.NewVersion(operatorVersion)
 		if err != nil {
 			return errors.Wrap(err, "failed to get operator version")
 		}
-		if !vOperator.Equal(currentVersion) {
-			return fmt.Errorf("cspc operator is in %s version, please upgrade it to %s version",
-				pod.Labels["openebs.io/version"], currentVersion.String())
+		if operatorVersion != currentVersion {
+			return fmt.Errorf("cspc operator is in %s version, please upgrade it to %s version or use migrate image with tag same as cspc operator",
+				pod.Labels["openebs.io/version"], currentVersion)
 		}
 	}
 	return nil

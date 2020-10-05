@@ -41,4 +41,9 @@ echo "Install cstor & csi operators"
 
 kubectl apply -f https://raw.githubusercontent.com/openebs/charts/gh-pages/cstor-operator.yaml
 sleep 5
+
+sed "s|testimage|$TEST_IMAGE_TAG|g" ./ci/upgrade/cstor-operator.tmp.yaml | sed "s|testversion|$TEST_VERSION|g" | sed "s|imageorg|$IMAGE_ORG|g" > ./ci/migrate/cstor-operator.yaml
+kubectl apply -f ./ci/migrate/cstor-operator.yaml
+sleep 10
+
 kubectl wait --for=condition=available --timeout=600s deployment/cspc-operator -n openebs
