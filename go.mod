@@ -6,7 +6,7 @@ require (
 	github.com/google/go-cmp v0.4.0
 	github.com/hashicorp/go-version v1.2.0
 	github.com/kubernetes-csi/external-snapshotter/v2 v2.1.1
-	github.com/openebs/api v1.12.1-0.20200908020958-c9b104663c7f
+	github.com/openebs/api v1.12.1-0.20200929170750-b9ef3e718ef4
 	github.com/openebs/maya v0.0.0-20200602143918-71415115098d
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.0.0
