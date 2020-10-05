@@ -134,7 +134,7 @@ func (v *VolumeMigrator) deleteTempPolicy() error {
 }
 
 func (v *VolumeMigrator) validateCVCOperator() error {
-	v1110, _ := goversion.NewVersion("1.11.0")
+	currentVersion, _ := goversion.NewVersion(strings.Split(version.Current(), "-")[0])
 	operatorPods, err := v.KubeClientset.CoreV1().
 		Pods(v.OpenebsNamespace).
 		List(metav1.ListOptions{
@@ -152,9 +152,9 @@ func (v *VolumeMigrator) validateCVCOperator() error {
 		if err != nil {
 			return errors.Wrap(err, "failed to get cvc operator version")
 		}
-		if vOperator.LessThan(v1110) {
-			return fmt.Errorf("cvc operator is in %s version, please upgrade it to 1.11.0 or above version",
-				pod.Labels["openebs.io/version"])
+		if !vOperator.Equal(currentVersion) {
+			return fmt.Errorf("cvc operator is in %s version, please upgrade it to %s version",
+				pod.Labels["openebs.io/version"], currentVersion.String())
 		}
 	}
 	return nil
