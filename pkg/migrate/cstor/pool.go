@@ -551,6 +551,7 @@ retry:
 	_, err = spc.NewKubeClient().Update(spcObj)
 	if k8serrors.IsConflict(err) {
 		klog.Errorf("failed to update spc with skip-validation annotation due to conflict error")
+		time.Sleep(2 * time.Second)
 		goto retry
 	}
 	return err
