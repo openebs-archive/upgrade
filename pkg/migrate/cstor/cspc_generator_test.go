@@ -17,9 +17,9 @@ limitations under the License.
 package migrate
 
 import (
-	"reflect"
 	"testing"
-
+	
+	"github.com/google/go-cmp/cmp"
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	apis "github.com/openebs/maya/pkg/apis/openebs.io/v1alpha1"
 )
@@ -184,7 +184,7 @@ func Test_getDataRaidGroups(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getDataRaidGroups(tt.args.cspObj); !reflect.DeepEqual(got, tt.want) {
+			if got := getDataRaidGroups(tt.args.cspObj); !cmp.Equal(got, tt.want) {
 				t.Errorf("getDataRaidGroups() = %v, want %v", got, tt.want)
 			}
 		})
