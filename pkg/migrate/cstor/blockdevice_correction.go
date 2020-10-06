@@ -237,14 +237,15 @@ func (c *CSPCMigrator) updateBDRefsAndlabels(spcObj *apis.StoragePoolClaim, oldB
 	// - if bdc already present:
 	//   - if ownerref already present: update the bdc with correct ownerref & label
 	//   - if ownerref not present: add the spc ownerref & label bdc
-	if newBDObj.Spec.ClaimRef.Name != spcObj.Name {
-		if newBDObj.Spec.ClaimRef != nil {
-			newBDCObj, err := c.OpenebsClientset.OpenebsV1alpha1().
-				BlockDeviceClaims(c.OpenebsNamespace).
-				Get(newBDObj.Spec.ClaimRef.Name, metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
+
+	if newBDObj.Spec.ClaimRef != nil {
+		newBDCObj, err := c.OpenebsClientset.OpenebsV1alpha1().
+			BlockDeviceClaims(c.OpenebsNamespace).
+			Get(newBDObj.Spec.ClaimRef.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		if newBDCObj.Labels["openebs.io/storage-pool-claim"] != spcObj.Name {
 			newBDCObj.OwnerReferences = []metav1.OwnerReference{
 				*metav1.NewControllerRef(spcObj,
 					apis.SchemeGroupVersion.WithKind(spcKind)),
@@ -255,61 +256,63 @@ func (c *CSPCMigrator) updateBDRefsAndlabels(spcObj *apis.StoragePoolClaim, oldB
 			newBDCObj.Labels["openebs.io/storage-pool-claim"] = spcObj.Name
 			newBDCObj, err = c.OpenebsClientset.OpenebsV1alpha1().
 				BlockDeviceClaims(c.OpenebsNamespace).Update(newBDCObj)
-		} else {
-			// - if bdc not present: remove legacy annotation on bd
-			// this will enable claiming of the bd
-			delete(newBDObj.Annotations, "internal.openebs.io/uuid-scheme")
-			newBDObj, err = c.OpenebsClientset.OpenebsV1alpha1().
-				BlockDevices(c.OpenebsNamespace).Update(newBDObj)
-			if err != nil {
-				return err
-			}
-			resourceList, err := getCapacity(byteCount(newBDObj.Spec.Capacity.Storage))
-			if err != nil {
-				return errors.Errorf("failed to get capacity from block device %s:%s",
-					newBDObj.Name, err)
-			}
-			// claim the bd immediately so no other resource can take it
-			newBDCObj := v1alpha1.NewBlockDeviceClaim().
-				WithName("bdc-cstor-" + string(newBDObj.UID)).
-				WithNamespace(c.OpenebsNamespace).
-				WithLabels(map[string]string{string(apis.StoragePoolClaimCPK): spcObj.Name}).
-				WithBlockDeviceName(newBDObj.Name).
-				WithHostName(newBDObj.Labels[openebstypes.HostNameLabelKey]).
-				WithCSPCOwnerReference(*metav1.NewControllerRef(spcObj,
-					apis.SchemeGroupVersion.WithKind(spcKind))).
-				WithCapacity(resourceList).
-				WithFinalizer("storagepoolclaim.openebs.io/finalizer")
+		}
+	} else {
+		// - if bdc not present: remove legacy annotation on bd
+		// this will enable claiming of the bd
+		delete(newBDObj.Annotations, "internal.openebs.io/uuid-scheme")
+		newBDObj, err = c.OpenebsClientset.OpenebsV1alpha1().
+			BlockDevices(c.OpenebsNamespace).Update(newBDObj)
+		if err != nil {
+			return err
+		}
+		resourceList, err := getCapacity(byteCount(newBDObj.Spec.Capacity.Storage))
+		if err != nil {
+			return errors.Errorf("failed to get capacity from block device %s:%s",
+				newBDObj.Name, err)
+		}
+		// claim the bd immediately so no other resource can take it
+		newBDCObj := v1alpha1.NewBlockDeviceClaim().
+			WithName("bdc-cstor-" + string(newBDObj.UID)).
+			WithNamespace(c.OpenebsNamespace).
+			WithLabels(map[string]string{string(apis.StoragePoolClaimCPK): spcObj.Name}).
+			WithBlockDeviceName(newBDObj.Name).
+			WithHostName(newBDObj.Labels[openebstypes.HostNameLabelKey]).
+			WithCSPCOwnerReference(*metav1.NewControllerRef(spcObj,
+				apis.SchemeGroupVersion.WithKind(spcKind))).
+			WithCapacity(resourceList).
+			WithFinalizer("storagepoolclaim.openebs.io/finalizer")
 
-			newBDCObj, err = c.OpenebsClientset.OpenebsV1alpha1().
-				BlockDeviceClaims(c.OpenebsNamespace).Create(newBDCObj)
+		newBDCObj, err = c.OpenebsClientset.OpenebsV1alpha1().
+			BlockDeviceClaims(c.OpenebsNamespace).Create(newBDCObj)
 
-		retryBDCStatus:
-			newBDCObj, err = c.OpenebsClientset.OpenebsV1alpha1().
-				BlockDeviceClaims(c.OpenebsNamespace).Get(newBDCObj.Name, metav1.GetOptions{})
-			if newBDCObj.Status.Phase != v1alpha1.BlockDeviceClaimStatusDone {
-				klog.Infof("waiting for bdc %s to get bound", newBDObj.Name)
-				time.Sleep(2 * time.Second)
-				goto retryBDCStatus
-			}
+	retryBDCStatus:
+		newBDCObj, err = c.OpenebsClientset.OpenebsV1alpha1().
+			BlockDeviceClaims(c.OpenebsNamespace).Get(newBDCObj.Name, metav1.GetOptions{})
+		if newBDCObj.Status.Phase != v1alpha1.BlockDeviceClaimStatusDone {
+			klog.Infof("waiting for bdc %s to get bound", newBDObj.Name)
+			time.Sleep(2 * time.Second)
+			goto retryBDCStatus
 		}
 	}
 	// For the old bd
 	// - if active: remove the ownerref & label from corresponding bd claim present
 	// - if inactive: leave it as it is
-	if oldBDObj.Status.State == "Active" && oldBDObj.Spec.ClaimRef.Name == spcObj.Name {
+	if oldBDObj.Status.State == "Active" {
 		oldBDCObj, err := c.OpenebsClientset.OpenebsV1alpha1().
 			BlockDeviceClaims(c.OpenebsNamespace).
 			Get(oldBDObj.Spec.ClaimRef.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
-		oldBDCObj.OwnerReferences = []metav1.OwnerReference{}
-		delete(oldBDCObj.Labels, "openebs.io/storage-pool-claim")
-		oldBDCObj, err = c.OpenebsClientset.OpenebsV1alpha1().
-			BlockDeviceClaims(c.OpenebsNamespace).Update(oldBDCObj)
-		if err != nil {
-			return err
+		if oldBDCObj.Labels["openebs.io/storage-pool-claim"] == spcObj.Name {
+			oldBDCObj.OwnerReferences = []metav1.OwnerReference{}
+			delete(oldBDCObj.Labels, "openebs.io/storage-pool-claim")
+			oldBDCObj, err = c.OpenebsClientset.OpenebsV1alpha1().
+				BlockDeviceClaims(c.OpenebsNamespace).Update(oldBDCObj)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
