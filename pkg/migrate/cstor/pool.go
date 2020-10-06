@@ -99,6 +99,10 @@ func (c *CSPCMigrator) Migrate(name, namespace string) error {
 	if err != nil {
 		return err
 	}
+	err = c.correctBDs(name)
+	if err != nil {
+		return err
+	}
 	err = c.migrate(name)
 	return err
 }
@@ -178,7 +182,7 @@ func (c *CSPCMigrator) migrate(spcName string) error {
 			return err
 		}
 	}
-	err = addSkipAnnotationToSPC(c.SPCObj)
+	err = c.addSkipAnnotationToSPC(c.SPCObj.Name)
 	if err != nil {
 		return errors.Wrap(err, "failed to add skip-validation annotation")
 	}
@@ -534,15 +538,20 @@ func (c *CSPCMigrator) updateCVRsLabels(cspObj *apis.CStorPool, cspiObj *cstor.C
 	return nil
 }
 
-func addSkipAnnotationToSPC(spcObj *apis.StoragePoolClaim) error {
+func (c *CSPCMigrator) addSkipAnnotationToSPC(spcName string) error {
 retry:
+	spcObj, err := spc.NewKubeClient().Get(spcName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
 	if spcObj.Annotations == nil {
 		spcObj.Annotations = map[string]string{}
 	}
 	spcObj.Annotations["openebs.io/skip-validations"] = "true"
-	_, err := spc.NewKubeClient().Update(spcObj)
+	_, err = spc.NewKubeClient().Update(spcObj)
 	if k8serrors.IsConflict(err) {
 		klog.Errorf("failed to update spc with skip-validation annotation due to conflict error")
+		time.Sleep(2 * time.Second)
 		goto retry
 	}
 	return err
