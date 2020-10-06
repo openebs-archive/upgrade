@@ -84,4 +84,7 @@ before_script: # TODO add golangci yaml config
 notifications:
   email:
     recipients:
+      - ashutosh.kumar@mayadata.io
+      - kiran.mova@mayadata.io
+      - prateek.pandey@mayadata.io
       - shubham.bajpai@mayadata.io
