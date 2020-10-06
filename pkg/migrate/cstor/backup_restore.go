@@ -26,35 +26,25 @@ import (
 )
 
 // TranslateBackupToV1 translates v1alpha resources to v1
-func TranslateBackupToV1(olBackup openebsio.CStorBackup) *cstor.CStorBackup {
+func TranslateBackupToV1(oldBackup openebsio.CStorBackup) *cstor.CStorBackup {
 	newBackup := &cstor.CStorBackup{}
-	newBackup.ObjectMeta = metav1.ObjectMeta{
-		Name:        olBackup.Name,
-		Namespace:   olBackup.Namespace,
-		Labels:      olBackup.Labels,
-		Annotations: olBackup.Annotations,
-	}
+	newBackup.ObjectMeta = oldBackup.ObjectMeta
 	newBackup.Spec = cstor.CStorBackupSpec{
-		BackupName:   olBackup.Spec.BackupName,
-		VolumeName:   olBackup.Spec.VolumeName,
-		SnapName:     olBackup.Spec.SnapName,
-		PrevSnapName: olBackup.Spec.PrevSnapName,
-		BackupDest:   olBackup.Spec.BackupDest,
-		LocalSnap:    olBackup.Spec.LocalSnap,
+		BackupName:   oldBackup.Spec.BackupName,
+		VolumeName:   oldBackup.Spec.VolumeName,
+		SnapName:     oldBackup.Spec.SnapName,
+		PrevSnapName: oldBackup.Spec.PrevSnapName,
+		BackupDest:   oldBackup.Spec.BackupDest,
+		LocalSnap:    oldBackup.Spec.LocalSnap,
 	}
-	newBackup.Status = cstor.CStorBackupStatus(olBackup.Status)
+	newBackup.Status = cstor.CStorBackupStatus(oldBackup.Status)
 	return newBackup
 }
 
 // TranslateRestoreToV1 translates v1alpha resources to v1
 func TranslateRestoreToV1(oldRestore openebsio.CStorRestore) *cstor.CStorRestore {
 	newRestore := &cstor.CStorRestore{}
-	newRestore.ObjectMeta = metav1.ObjectMeta{
-		Name:        oldRestore.Name,
-		Namespace:   oldRestore.Namespace,
-		Labels:      oldRestore.Labels,
-		Annotations: oldRestore.Annotations,
-	}
+	newRestore.ObjectMeta = oldRestore.ObjectMeta
 	newRestore.Spec = cstor.CStorRestoreSpec{
 		RestoreName:   oldRestore.Spec.RestoreName,
 		VolumeName:    oldRestore.Spec.VolumeName,
@@ -72,12 +62,7 @@ func TranslateRestoreToV1(oldRestore openebsio.CStorRestore) *cstor.CStorRestore
 // TranslateCompletedBackupToV1 translates v1alpha resources to v1
 func TranslateCompletedBackupToV1(oldCompletedBackup openebsio.CStorCompletedBackup) *cstor.CStorCompletedBackup {
 	newCompletedBackup := &cstor.CStorCompletedBackup{}
-	newCompletedBackup.ObjectMeta = metav1.ObjectMeta{
-		Name:        oldCompletedBackup.Name,
-		Namespace:   oldCompletedBackup.Namespace,
-		Labels:      oldCompletedBackup.Labels,
-		Annotations: oldCompletedBackup.Annotations,
-	}
+	newCompletedBackup.ObjectMeta = oldCompletedBackup.ObjectMeta
 	newCompletedBackup.Spec = cstor.CStorCompletedBackupSpec{
 		BackupName:         oldCompletedBackup.Spec.BackupName,
 		VolumeName:         oldCompletedBackup.Spec.VolumeName,
@@ -93,7 +78,7 @@ func (c *CSPCMigrator) upgradeBackupRestore(cspUID string, cspiObj *cstor.CStorP
 		CStorBackups(c.OpenebsNamespace).List(metav1.ListOptions{
 		LabelSelector: cspUIDLabel + "=" + cspUID,
 	})
-	if err != nil {
+	if err != nil && !k8serrors.IsNotFound(err) {
 		return errors.Wrapf(err, "failed to list v1alpha1 cstorbackups")
 	}
 	for _, oldBackup := range oldBackupList.Items {
@@ -114,7 +99,7 @@ func (c *CSPCMigrator) upgradeBackupRestore(cspUID string, cspiObj *cstor.CStorP
 			DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{
 				LabelSelector: cspUIDLabel + "=" + cspUID,
 			})
-		if err != nil {
+		if err != nil && !k8serrors.IsNotFound(err) {
 			return errors.Wrapf(err, "failed to delete v1alpha1 cstorbackups")
 		}
 	}
@@ -124,7 +109,7 @@ func (c *CSPCMigrator) upgradeBackupRestore(cspUID string, cspiObj *cstor.CStorP
 		CStorRestores(c.OpenebsNamespace).List(metav1.ListOptions{
 		LabelSelector: cspUIDLabel + "=" + cspUID,
 	})
-	if err != nil {
+	if err != nil && !k8serrors.IsNotFound(err) {
 		return errors.Wrapf(err, "failed to list v1alpha1 cstorrestores")
 	}
 	for _, oldRestore := range oldRestoreList.Items {
@@ -145,7 +130,7 @@ func (c *CSPCMigrator) upgradeBackupRestore(cspUID string, cspiObj *cstor.CStorP
 			DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{
 				LabelSelector: cspUIDLabel + "=" + cspUID,
 			})
-		if err != nil {
+		if err != nil && !k8serrors.IsNotFound(err) {
 			return errors.Wrapf(err, "failed to delete v1alpha1 cstorrestores")
 		}
 	}
@@ -155,7 +140,7 @@ func (c *CSPCMigrator) upgradeBackupRestore(cspUID string, cspiObj *cstor.CStorP
 		CStorCompletedBackups(c.OpenebsNamespace).List(metav1.ListOptions{
 		LabelSelector: cspUIDLabel + "=" + cspUID,
 	})
-	if err != nil {
+	if err != nil && !k8serrors.IsNotFound(err) {
 		return errors.Wrapf(err, "failed to list v1alpha1 cstorcompletedbackups")
 	}
 	for _, oldCompletedBackup := range oldCompletedBackupList.Items {
@@ -176,7 +161,7 @@ func (c *CSPCMigrator) upgradeBackupRestore(cspUID string, cspiObj *cstor.CStorP
 			DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{
 				LabelSelector: cspUIDLabel + "=" + cspUID,
 			})
-		if err != nil {
+		if err != nil && !k8serrors.IsNotFound(err) {
 			return errors.Wrapf(err, "failed to delete v1alpha1 cstorcompletedbackups")
 		}
 	}

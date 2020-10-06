@@ -178,7 +178,7 @@ func (obj *CSPIPatch) Upgrade() error {
 		}
 		return errors.Wrap(err, msg)
 	}
-	msg, err = obj.upgradeBackupRestore()
+	msg, err = obj.verifyCSPIVersionReconcile()
 	if err != nil {
 		statusObj.Message = msg
 		statusObj.Reason = err.Error()
@@ -188,7 +188,7 @@ func (obj *CSPIPatch) Upgrade() error {
 		}
 		return errors.Wrap(err, msg)
 	}
-	msg, err = obj.verifyCSPIVersionReconcile()
+	msg, err = obj.upgradeBackupRestore()
 	if err != nil {
 		statusObj.Message = msg
 		statusObj.Reason = err.Error()
@@ -316,7 +316,7 @@ func (obj *CSPIPatch) upgradeBackupRestore() (string, error) {
 		CStorBackups(obj.OpenebsNamespace).List(metav1.ListOptions{
 		LabelSelector: types.CStorPoolInstanceNameLabelKey + "=" + obj.Name,
 	})
-	if err != nil {
+	if err != nil && !k8serrors.IsNotFound(err) {
 		return "failed to list v1alpha1 cstorbackups", err
 	}
 	for _, oldBackup := range oldBackupList.Items {
@@ -334,7 +334,7 @@ func (obj *CSPIPatch) upgradeBackupRestore() (string, error) {
 			DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{
 				LabelSelector: types.CStorPoolInstanceNameLabelKey + "=" + obj.Name,
 			})
-		if err != nil {
+		if err != nil && !k8serrors.IsNotFound(err) {
 			return "failed to delete v1alpha1 cstorbackups", err
 		}
 	}
@@ -344,7 +344,7 @@ func (obj *CSPIPatch) upgradeBackupRestore() (string, error) {
 		CStorRestores(obj.OpenebsNamespace).List(metav1.ListOptions{
 		LabelSelector: types.CStorPoolInstanceNameLabelKey + "=" + obj.Name,
 	})
-	if err != nil {
+	if err != nil && !k8serrors.IsNotFound(err) {
 		return "failed to list v1alpha1 cstorrestores", err
 	}
 	for _, oldRestore := range oldRestoreList.Items {
@@ -362,7 +362,7 @@ func (obj *CSPIPatch) upgradeBackupRestore() (string, error) {
 			DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{
 				LabelSelector: types.CStorPoolInstanceNameLabelKey + "=" + obj.Name,
 			})
-		if err != nil {
+		if err != nil && !k8serrors.IsNotFound(err) {
 			return "failed to delete v1alpha1 cstorrestores", err
 		}
 	}
@@ -372,7 +372,7 @@ func (obj *CSPIPatch) upgradeBackupRestore() (string, error) {
 		CStorCompletedBackups(obj.OpenebsNamespace).List(metav1.ListOptions{
 		LabelSelector: types.CStorPoolInstanceNameLabelKey + "=" + obj.Name,
 	})
-	if err != nil {
+	if err != nil && !k8serrors.IsNotFound(err) {
 		return "failed to list v1alpha1 cstorcompletedbackups", err
 	}
 	for _, oldCompletedBackup := range oldCompletedBackupList.Items {
@@ -390,7 +390,7 @@ func (obj *CSPIPatch) upgradeBackupRestore() (string, error) {
 			DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{
 				LabelSelector: types.CStorPoolInstanceNameLabelKey + "=" + obj.Name,
 			})
-		if err != nil {
+		if err != nil && !k8serrors.IsNotFound(err) {
 			return "failed to delete v1alpha1 cstorcompletedbackups", err
 		}
 	}
