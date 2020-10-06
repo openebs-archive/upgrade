@@ -256,6 +256,9 @@ func (c *CSPCMigrator) updateBDRefsAndlabels(spcObj *apis.StoragePoolClaim, oldB
 			newBDCObj.Labels["openebs.io/storage-pool-claim"] = spcObj.Name
 			newBDCObj, err = c.OpenebsClientset.OpenebsV1alpha1().
 				BlockDeviceClaims(c.OpenebsNamespace).Update(newBDCObj)
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		// - if bdc not present: remove legacy annotation on bd
@@ -285,12 +288,15 @@ func (c *CSPCMigrator) updateBDRefsAndlabels(spcObj *apis.StoragePoolClaim, oldB
 
 		newBDCObj, err = c.OpenebsClientset.OpenebsV1alpha1().
 			BlockDeviceClaims(c.OpenebsNamespace).Create(newBDCObj)
+		if err != nil {
+			return err
+		}
 
 	retryBDCStatus:
 		newBDCObj, err = c.OpenebsClientset.OpenebsV1alpha1().
 			BlockDeviceClaims(c.OpenebsNamespace).Get(newBDCObj.Name, metav1.GetOptions{})
 		if newBDCObj.Status.Phase != v1alpha1.BlockDeviceClaimStatusDone {
-			klog.Infof("waiting for bdc %s to get bound", newBDObj.Name)
+			klog.Infof("waiting for bd %s to get bound", newBDObj.Name)
 			time.Sleep(2 * time.Second)
 			goto retryBDCStatus
 		}
