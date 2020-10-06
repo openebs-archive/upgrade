@@ -23,7 +23,6 @@ import (
 	"strings"
 	"time"
 
-	goversion "github.com/hashicorp/go-version"
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
 	openebsclientset "github.com/openebs/api/pkg/client/clientset/versioned"
@@ -134,7 +133,7 @@ func (v *VolumeMigrator) deleteTempPolicy() error {
 }
 
 func (v *VolumeMigrator) validateCVCOperator() error {
-	v1110, _ := goversion.NewVersion("1.11.0")
+	currentVersion := strings.Split(version.Current(), "-")[0]
 	operatorPods, err := v.KubeClientset.CoreV1().
 		Pods(v.OpenebsNamespace).
 		List(metav1.ListOptions{
@@ -148,13 +147,12 @@ func (v *VolumeMigrator) validateCVCOperator() error {
 	}
 	for _, pod := range operatorPods.Items {
 		operatorVersion := strings.Split(pod.Labels["openebs.io/version"], "-")[0]
-		vOperator, err := goversion.NewVersion(operatorVersion)
 		if err != nil {
 			return errors.Wrap(err, "failed to get cvc operator version")
 		}
-		if vOperator.LessThan(v1110) {
-			return fmt.Errorf("cvc operator is in %s version, please upgrade it to 1.11.0 or above version",
-				pod.Labels["openebs.io/version"])
+		if operatorVersion != currentVersion {
+			return fmt.Errorf("cvc operator is in %s version, please upgrade it to %s version or use migrate image with tag same as cvc operator",
+				pod.Labels["openebs.io/version"], currentVersion)
 		}
 	}
 	return nil

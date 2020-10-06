@@ -25,7 +25,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog"
 
-	version "github.com/hashicorp/go-version"
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	"github.com/openebs/api/pkg/apis/types"
 	openebsclientset "github.com/openebs/api/pkg/client/clientset/versioned"
@@ -33,6 +32,7 @@ import (
 	csp "github.com/openebs/maya/pkg/cstor/pool/v1alpha3"
 	cvr "github.com/openebs/maya/pkg/cstor/volumereplica/v1alpha1"
 	spc "github.com/openebs/maya/pkg/storagepoolclaim/v1alpha1"
+	"github.com/openebs/upgrade/pkg/version"
 	"github.com/pkg/errors"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -108,7 +108,7 @@ func (c *CSPCMigrator) Migrate(name, namespace string) error {
 }
 
 func (c *CSPCMigrator) validateCSPCOperator() error {
-	v1110, _ := version.NewVersion("1.11.0")
+	currentVersion := strings.Split(version.Current(), "-")[0]
 	operatorPods, err := c.KubeClientset.CoreV1().
 		Pods(c.OpenebsNamespace).
 		List(metav1.ListOptions{
@@ -122,13 +122,12 @@ func (c *CSPCMigrator) validateCSPCOperator() error {
 	}
 	for _, pod := range operatorPods.Items {
 		operatorVersion := strings.Split(pod.Labels["openebs.io/version"], "-")[0]
-		vOperator, err := version.NewVersion(operatorVersion)
 		if err != nil {
 			return errors.Wrap(err, "failed to get operator version")
 		}
-		if vOperator.LessThan(v1110) {
-			return fmt.Errorf("cspc operator is in %s version, please upgrade it to 1.11.0 or above version",
-				pod.Labels["openebs.io/version"])
+		if operatorVersion != currentVersion {
+			return fmt.Errorf("cspc operator is in %s version, please upgrade it to %s version or use migrate image with tag same as cspc operator",
+				pod.Labels["openebs.io/version"], currentVersion)
 		}
 	}
 	return nil
@@ -362,6 +361,10 @@ func (c *CSPCMigrator) cspTocspi(cspiObj *cstor.CStorPoolInstance) error {
 		time.Sleep(10 * time.Second)
 	}
 	err = c.updateCVRsLabels(cspObj, cspiObj)
+	if err != nil {
+		return err
+	}
+	err = c.upgradeBackupRestore(string(cspObj.UID), cspiObj)
 	if err != nil {
 		return err
 	}

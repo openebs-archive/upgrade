@@ -21,9 +21,13 @@ import (
 
 	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
 	v1Alpha1API "github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
+	"github.com/openebs/api/pkg/apis/types"
+	translate "github.com/openebs/upgrade/pkg/migrate/cstor"
 	"github.com/openebs/upgrade/pkg/upgrade/patch"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
 
@@ -184,6 +188,16 @@ func (obj *CSPIPatch) Upgrade() error {
 		}
 		return errors.Wrap(err, msg)
 	}
+	msg, err = obj.upgradeBackupRestore()
+	if err != nil {
+		statusObj.Message = msg
+		statusObj.Reason = err.Error()
+		obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+		if uerr != nil && isUpgradeTaskJob {
+			return uerr
+		}
+		return errors.Wrap(err, msg)
+	}
 	statusObj.Phase = v1Alpha1API.StepCompleted
 	statusObj.Message = "Pool instance upgrade was successful"
 	statusObj.Reason = ""
@@ -291,6 +305,93 @@ func (obj *CSPIPatch) verifyCSPIVersionReconcile() (string, error) {
 		}
 		if obj.CSPI.Object.VersionDetails.Status.Message != "" {
 			klog.Errorf("failed to reconcile: %s", obj.CSPI.Object.VersionDetails.Status.Reason)
+		}
+	}
+	return "", nil
+}
+
+func (obj *CSPIPatch) upgradeBackupRestore() (string, error) {
+	// Migrate backup to v1 version
+	oldBackupList, err := obj.OpenebsClientset.OpenebsV1alpha1().
+		CStorBackups(obj.OpenebsNamespace).List(metav1.ListOptions{
+		LabelSelector: types.CStorPoolInstanceNameLabelKey + "=" + obj.Name,
+	})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return "failed to list v1alpha1 cstorbackups", err
+	}
+	for _, oldBackup := range oldBackupList.Items {
+		newBackup := translate.TranslateBackupToV1(oldBackup)
+		_, err := obj.OpenebsClientset.CstorV1().
+			CStorBackups(obj.OpenebsNamespace).Create(newBackup)
+		if err != nil && !k8serrors.IsAlreadyExists(err) {
+			return "failed to create v1 cstorbackup for " + oldBackup.Name, err
+		}
+
+	}
+	if len(oldBackupList.Items) != 0 {
+		err = obj.OpenebsClientset.OpenebsV1alpha1().
+			CStorBackups(obj.OpenebsNamespace).
+			DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{
+				LabelSelector: types.CStorPoolInstanceNameLabelKey + "=" + obj.Name,
+			})
+		if err != nil && !k8serrors.IsNotFound(err) {
+			return "failed to delete v1alpha1 cstorbackups", err
+		}
+	}
+
+	// Migrate restore to v1 version
+	oldRestoreList, err := obj.OpenebsClientset.OpenebsV1alpha1().
+		CStorRestores(obj.OpenebsNamespace).List(metav1.ListOptions{
+		LabelSelector: types.CStorPoolInstanceNameLabelKey + "=" + obj.Name,
+	})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return "failed to list v1alpha1 cstorrestores", err
+	}
+	for _, oldRestore := range oldRestoreList.Items {
+		newRestore := translate.TranslateRestoreToV1(oldRestore)
+		_, err := obj.OpenebsClientset.CstorV1().
+			CStorRestores(obj.OpenebsNamespace).Create(newRestore)
+		if err != nil && !k8serrors.IsAlreadyExists(err) {
+			return "failed to create v1 cstorrestore for " + oldRestore.Name, err
+		}
+
+	}
+	if len(oldRestoreList.Items) != 0 {
+		err = obj.OpenebsClientset.OpenebsV1alpha1().
+			CStorRestores(obj.OpenebsNamespace).
+			DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{
+				LabelSelector: types.CStorPoolInstanceNameLabelKey + "=" + obj.Name,
+			})
+		if err != nil && !k8serrors.IsNotFound(err) {
+			return "failed to delete v1alpha1 cstorrestores", err
+		}
+	}
+
+	// Migrate completedbackup to v1 version
+	oldCompletedBackupList, err := obj.OpenebsClientset.OpenebsV1alpha1().
+		CStorCompletedBackups(obj.OpenebsNamespace).List(metav1.ListOptions{
+		LabelSelector: types.CStorPoolInstanceNameLabelKey + "=" + obj.Name,
+	})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return "failed to list v1alpha1 cstorcompletedbackups", err
+	}
+	for _, oldCompletedBackup := range oldCompletedBackupList.Items {
+		newCompletedBackup := translate.TranslateCompletedBackupToV1(oldCompletedBackup)
+		_, err := obj.OpenebsClientset.CstorV1().
+			CStorCompletedBackups(obj.OpenebsNamespace).Create(newCompletedBackup)
+		if err != nil && !k8serrors.IsAlreadyExists(err) {
+			return "failed to create v1 cstorcompletedbackup for " + oldCompletedBackup.Name, err
+		}
+
+	}
+	if len(oldCompletedBackupList.Items) != 0 {
+		err = obj.OpenebsClientset.OpenebsV1alpha1().
+			CStorCompletedBackups(obj.OpenebsNamespace).
+			DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{
+				LabelSelector: types.CStorPoolInstanceNameLabelKey + "=" + obj.Name,
+			})
+		if err != nil && !k8serrors.IsNotFound(err) {
+			return "failed to delete v1alpha1 cstorcompletedbackups", err
 		}
 	}
 	return "", nil
