@@ -41,4 +41,5 @@ echo "Install cstor & csi operators"
 
 kubectl apply -f https://raw.githubusercontent.com/openebs/charts/gh-pages/cstor-operator.yaml
 sleep 5
+
 kubectl wait --for=condition=available --timeout=600s deployment/cspc-operator -n openebs

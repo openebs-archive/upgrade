@@ -23,6 +23,7 @@ kubectl wait --for=delete pod -l lkey=lvalue --timeout=600s
 
 echo "Migrating pool to cspc"
 
+sed "s|imageorg|$IMAGE_ORG|g" ./ci/migrate/pool.tmp.yaml > ./ci/migrate/pool.yaml
 kubectl apply -f ./ci/migrate/pool.yaml
 sleep 5
 kubectl wait --for=condition=complete job/migrate-pool -n openebs --timeout=550s
@@ -31,7 +32,7 @@ kubectl logs --tail=50 -l job-name=migrate-pool -n openebs
 echo "Migrating extetnal volume to csi volume"
 
 pvname=$(kubectl get pvc testclaim-busybox-0 -o jsonpath="{.spec.volumeName}")
-sed "s/PVNAME/$pvname/" ./ci/migrate/volume.tmp.yaml > ./ci/migrate/volume.yaml
+sed "s|PVNAME|$pvname|g" ./ci/migrate/volume.tmp.yaml | sed "s|imageorg|$IMAGE_ORG|g" > ./ci/migrate/volume.yaml
 kubectl apply -f ./ci/migrate/volume.yaml
 sleep 5
 kubectl wait --for=condition=complete job/migrate-volume -n openebs --timeout=550s
