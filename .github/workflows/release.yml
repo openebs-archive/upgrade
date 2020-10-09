@@ -27,7 +27,8 @@ jobs:
 
       - name: Set Tag
         run: |
-          echo "::set-env name=TAG::${GITHUB_REF#refs/*/v}"
+          TAG="${GITHUB_REF#refs/*/v}"
+          echo "::set-env name=TAG::${TAG}"
           echo "::set-env name=RELEASE_TAG::${TAG}"
           echo "RELEASE_TAG ${TAG}"
 
@@ -44,6 +45,8 @@ jobs:
         run: echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
 
       - name: Build & Push Image
+        env:
+          IMAGE_ORG: ${{ secrets.IMAGE_ORG}}
         run: |
           make docker.buildx.upgrade
           make buildx.push.upgrade
@@ -56,7 +59,8 @@ jobs:
 
       - name: Set Tag
         run: |
-          echo "::set-env name=TAG::${GITHUB_REF#refs/*/v}"
+          TAG="${GITHUB_REF#refs/*/v}"
+          echo "::set-env name=TAG::${TAG}"
           echo "::set-env name=RELEASE_TAG::${TAG}"
           echo "RELEASE_TAG ${TAG}"
 
@@ -73,6 +77,8 @@ jobs:
           DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Build & Push Image
+        env:
+          IMAGE_ORG: ${{ secrets.IMAGE_ORG}}
         run: |
           make docker.buildx.migrate
           make buildx.push.migrate

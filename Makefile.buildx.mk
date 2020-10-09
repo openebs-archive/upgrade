@@ -89,8 +89,8 @@ docker.buildx.migrate: docker.buildx
 
 .PHONY: buildx.push.upgrade
 buildx.push.upgrade:
-	BUILDX=true DIMAGE=${IMAGE_ORG}/upgrade ./build/push
+	BUILDX=true DIMAGE=${IMAGE_ORG}/upgrade ./build/buildxpush.sh
 
 .PHONY: buildx.push.migrate
 buildx.push.migrate:
-	BUILDX=true DIMAGE=${IMAGE_ORG}/migrate ./build/push
+	BUILDX=true DIMAGE=${IMAGE_ORG}/migrate ./build/buildxpush.sh

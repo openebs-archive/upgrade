@@ -34,29 +34,29 @@ else
 fi
 
 # Set BUILDMETA based on travis tag
-if [[ -n "$TRAVIS_TAG" ]] && [[ $TRAVIS_TAG != *"RC"* ]]; then
+if [[ -n "$RELEASE_TAG" ]] && [[ $RELEASE_TAG != *"RC"* ]]; then
     echo "released" > BUILDMETA
 fi
 
 # Get the version details
 # Determine the current branch
 CURRENT_BRANCH=""
-if [ -z "${TRAVIS_BRANCH}" ];
+if [ -z "${BRANCH}" ];
 then
   CURRENT_BRANCH=$(git branch | grep "\*" | cut -d ' ' -f2)
 else
-  CURRENT_BRANCH="${TRAVIS_BRANCH}"
+  CURRENT_BRANCH="${BRANCH}"
 fi
 
 ## Populate the version based on release tag
 ## If travis tag is set then assign it as VERSION and
 ## if travis tag is empty then mark version as ci
-if [ -n "$TRAVIS_TAG" ]; then
-    # Trim the `v` from the TRAVIS_TAG if it exists
+if [ -n "$RELEASE_TAG" ]; then
+    # Trim the `v` from the RELEASE_TAG if it exists
     # Example: v1.10.0 maps to 1.10.0
     # Example: 1.10.0 maps to 1.10.0
     # Example: v1.10.0-custom maps to 1.10.0-custom
-    VERSION="${TRAVIS_TAG#v}"
+    VERSION="${RELEASE_TAG#v}"
 else
     ## Marking VERSION as current_branch-dev
     ## Example: master branch maps to master-dev

@@ -50,6 +50,6 @@ LABEL org.label-schema.vcs-url=$DBUILD_REPO_URL
 LABEL org.label-schema.url=$DBUILD_SITE_URL
 
 # copy the latest binary
-COPY --from=build /go/src/github.com/openebs/upgrade/bin/migrate /usr/local/bin/migrate
+COPY --from=build /go/src/github.com/openebs/upgrade/bin/migrate/migrate /usr/local/bin/migrate
 
 ENTRYPOINT ["migrate"]

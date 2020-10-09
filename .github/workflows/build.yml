@@ -46,7 +46,7 @@ jobs:
             CI_TAG="ci"
           fi
           echo "::set-env name=TAG::${CI_TAG}"
-          echo "::set-env name=BRANCH::{BRANCH}"
+          echo "::set-env name=BRANCH::${BRANCH}"
           echo "BRANCH: ${BRANCH}"
           echo "TAG: ${CI_TAG}"
 
@@ -63,6 +63,8 @@ jobs:
           DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Build & Push Image
+        env:
+          IMAGE_ORG: ${{ secrets.IMAGE_ORG}}
         run: |
           make docker.buildx.upgrade
           make buildx.push.upgrade
@@ -82,7 +84,7 @@ jobs:
             CI_TAG="ci"
           fi
           echo "::set-env name=TAG::${CI_TAG}"
-          echo "::set-env name=BRANCH::{BRANCH}"
+          echo "::set-env name=BRANCH::${BRANCH}"
           echo "BRANCH: ${BRANCH}"
           echo "TAG: ${CI_TAG}"
 
@@ -99,6 +101,8 @@ jobs:
           DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Build & Push Image
+        env:
+          IMAGE_ORG: ${{ secrets.IMAGE_ORG}}
         run: |
           make docker.buildx.migrate
           make buildx.push.migrate

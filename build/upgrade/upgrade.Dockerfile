@@ -50,6 +50,6 @@ LABEL org.label-schema.vcs-url=$DBUILD_REPO_URL
 LABEL org.label-schema.url=$DBUILD_SITE_URL
 
 # copy the latest binary
-COPY --from=build /go/src/github.com/openebs/upgrade/bin/upgrade /usr/local/bin/upgrade
+COPY --from=build /go/src/github.com/openebs/upgrade/bin/upgrade/upgrade /usr/local/bin/upgrade
 
 ENTRYPOINT ["upgrade"]
