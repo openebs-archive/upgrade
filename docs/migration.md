@@ -8,7 +8,7 @@ This document describes the steps for migrating the following OpenEBS cStor cust
 **Note:** 
  - If the Kubernetes cluster is on rancher and iscsi is running inside the kubelet container then it is mandatory to install iscsi service on the nodes and add extra binds to the kubelet container as mentioned [here](https://github.com/openebs/cstor-operators/blob/master/docs/troubleshooting/rancher_prerequisite.md).
  - Minimum version of Kubernetes to migrate to CSPC pools / CSI volumes is 1.17.0.
- - If using virtual disks as blockdevices for provisioning cStorpool please refer this [doc](virtual-disk-troubleshoot.md) before proceeding.
+ - If using virtual disks as blockdevices for provisioning cStorpool please refer this [doc](virtual-disk-troubleshoot.md) before proceeding. If you are migrating to OpenEBS 2.2.0 version or above, this step is not mandatory as this step is automated into the job itself.
 
 ## SPC pools to CSPC pools
 
@@ -98,7 +98,7 @@ spec:
         tty: true
         # the version of the image should be same the 
         # version of cstor-operator installed.
-        image: openebs/migrate-amd64:1.12.0
+        image: openebs/migrate-amd64:<same-as-cspc-operator>
       restartPolicy: Never
 ---
 ```
@@ -177,7 +177,7 @@ spec:
         tty: true
         # the version of the image should be same the 
         # version of cstor-operator installed.
-        image: openebs/migrate-amd64:1.12.0
+        image: openebs/migrate-amd64:<same-as-cvc-operator>
       restartPolicy: Never
 ---
 ```
