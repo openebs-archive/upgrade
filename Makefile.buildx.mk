@@ -62,7 +62,7 @@ docker.buildx:
 	@echo
 
 .PHONY: buildx.upgrade
-buildx.upgrade: bootstrap clean 
+buildx.upgrade: bootstrap clean-upgrade
 	@echo '--> Building upgrade binary...'
 	@pwd
 	@PNAME=${UPGRADE} CTLNAME=${UPGRADE} BUILDX=true sh -c "'$(PWD)/build/build.sh'"
@@ -75,7 +75,7 @@ docker.buildx.upgrade: COMPONENT=$(UPGRADE)
 docker.buildx.upgrade: docker.buildx
 
 .PHONY: buildx.migrate
-buildx.migrate: bootstrap clean 
+buildx.migrate: bootstrap clean-migrate
 	@echo '--> Building migrate binary...'
 	@pwd
 	@PNAME=${MIGRATE} CTLNAME=${MIGRATE} BUILDX=true sh -c "'$(PWD)/build/build.sh'"

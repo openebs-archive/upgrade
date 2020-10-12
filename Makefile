@@ -66,12 +66,19 @@ bootstrap:
 		go get -u $$tool; \
 	done
 
-.PHONY: clean
-clean: 
-	@echo '--> Cleaning directory...'
-	rm -rf bin
-	rm -rf ${GOPATH}/bin/${UPGRADE}
+.PHONY: clean-migrate
+clean-migrate:
+	@echo '--> Cleaning migrate directory...'
+	rm -rf bin/${MIGRATE}
 	rm -rf ${GOPATH}/bin/${MIGRATE}
+	@echo '--> Done cleaning.'
+	@echo
+
+.PHONY: clean-upgrade
+clean-upgrade:
+	@echo '--> Cleaning upgrade directory...'
+	rm -rf bin/${UPGRADE}
+	rm -rf ${GOPATH}/bin/${UPGRADE}
 	@echo '--> Done cleaning.'
 	@echo
 
