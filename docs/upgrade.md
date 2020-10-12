@@ -95,7 +95,7 @@ spec:
 
         # the image version should be same as the --to-version mentioned above
         # in the args of the job
-        image: openebs/upgrade-amd64:1.12.0
+        image: openebs/upgrade-amd64:<same-as-to-version>
         imagePullPolicy: IfNotPresent
       restartPolicy: OnFailure
 ---
@@ -216,7 +216,7 @@ spec:
 
         # the image version should be same as the --to-version mentioned above
         # in the args of the job
-        image: openebs/upgrade-amd64:1.12.0
+        image: openebs/upgrade-amd64:<same-as-to-version>
         imagePullPolicy: IfNotPresent
       restartPolicy: OnFailure
 ---
