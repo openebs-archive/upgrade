@@ -1,5 +1,17 @@
 # Changelog
 
+## [v2.2.0](https://github.com/openebs/upgrade/tree/v2.2.0-RC2) (2020-10-14)
+
+**Merged pull requests:**
+
+- feat\(cstor\): add support for backup/restore upgrade & migration [\#59](https://github.com/openebs/upgrade/pull/59) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- Replace reflect.DeepEqual\(\) with "github.com/google/go-cmp/cmp" [\#58](https://github.com/openebs/upgrade/pull/58) ([infiniteoverflow](https://github.com/infiniteoverflow))
+- Update the main README with info and link upgrade & migration docs \#3145 [\#57](https://github.com/openebs/upgrade/pull/57) ([Naveenkhasyap](https://github.com/Naveenkhasyap))
+- Added all the badges in upgrade [\#55](https://github.com/openebs/upgrade/pull/55) ([sparkingdark](https://github.com/sparkingdark))
+- chore : Added PR and Issue template [\#54](https://github.com/openebs/upgrade/pull/54) ([Hard-Coder05](https://github.com/Hard-Coder05))
+- feat\(migrate\): add support to correct blockdevices in spc before migration [\#53](https://github.com/openebs/upgrade/pull/53) ([shubham14bajpai](https://github.com/shubham14bajpai))
+- refact\(migration\): update volume migration to run in parallel [\#52](https://github.com/openebs/upgrade/pull/52) ([shubham14bajpai](https://github.com/shubham14bajpai))
+
 ## [v2.2.0-RC2](https://github.com/openebs/upgrade/tree/v2.2.0-RC2) (2020-10-12)
 
 - No changes
