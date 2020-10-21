@@ -26,6 +26,7 @@ import (
 	"k8s.io/klog"
 
 	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	v1Alpha1API "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/api/v2/pkg/apis/types"
 	openebsclientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
 	apis "github.com/openebs/maya/pkg/apis/openebs.io/v1alpha1"
@@ -88,23 +89,81 @@ func (c *CSPCMigrator) Migrate(name, namespace string) error {
 	if err != nil {
 		return errors.Wrap(err, "error building openebs clientset")
 	}
-	err = c.validateCSPCOperator()
+	mtask, err := getOrCreateMigrationTask("cstorPool", name, namespace, c, c.OpenebsClientset)
 	if err != nil {
 		return err
+	}
+	statusObj := v1Alpha1API.MigrationDetailedStatuses{Step: "Pre-migration"}
+	statusObj.Phase = v1Alpha1API.StepWaiting
+	mtask, uerr := updateMigrationDetailedStatus(mtask, statusObj, c.OpenebsNamespace, c.OpenebsClientset)
+	if uerr != nil && IsMigrationTaskJob {
+		return uerr
+	}
+	msg, err := c.preMigrate(name)
+	if err != nil {
+		statusObj.Message = msg
+		statusObj.Reason = err.Error()
+		mtask, uerr = updateMigrationDetailedStatus(mtask, statusObj, c.OpenebsNamespace, c.OpenebsClientset)
+		if uerr != nil && IsMigrationTaskJob {
+			return uerr
+		}
+		return errors.Wrap(err, msg)
+	}
+	statusObj.Phase = v1Alpha1API.StepCompleted
+	statusObj.Message = "Pre-migration steps were successful"
+	statusObj.Reason = ""
+	mtask, uerr = updateMigrationDetailedStatus(mtask, statusObj, c.OpenebsNamespace, c.OpenebsClientset)
+	if uerr != nil && IsMigrationTaskJob {
+		return uerr
+	}
+
+	statusObj = v1Alpha1API.MigrationDetailedStatuses{Step: "Migrate"}
+	statusObj.Phase = v1Alpha1API.StepWaiting
+	mtask, uerr = updateMigrationDetailedStatus(mtask, statusObj, c.OpenebsNamespace, c.OpenebsClientset)
+	if uerr != nil && IsMigrationTaskJob {
+		return uerr
+	}
+	msg, err = c.migrate(name)
+	if err != nil {
+		statusObj.Message = msg
+		statusObj.Reason = err.Error()
+		mtask, uerr = updateMigrationDetailedStatus(mtask, statusObj, c.OpenebsNamespace, c.OpenebsClientset)
+		if uerr != nil && IsMigrationTaskJob {
+			return uerr
+		}
+		return errors.Wrap(err, msg)
+	}
+	statusObj.Phase = v1Alpha1API.StepCompleted
+	statusObj.Message = "Migration steps were successful"
+	statusObj.Reason = ""
+	mtask, uerr = updateMigrationDetailedStatus(mtask, statusObj, c.OpenebsNamespace, c.OpenebsClientset)
+	if uerr != nil && IsMigrationTaskJob {
+		return uerr
+	}
+	return nil
+}
+
+func (c *CSPCMigrator) preMigrate(name string) (string, error) {
+	var msg string
+	err := c.validateCSPCOperator()
+	if err != nil {
+		msg = "error validating cspc operator"
+		return msg, err
 	}
 	if c.CSPCName == "" {
 		c.CSPCName = name
 	}
 	err = c.checkForExistingCSPC(name)
 	if err != nil {
-		return err
+		msg = "error while checking for existing cspc"
+		return msg, err
 	}
 	err = c.correctBDs(name)
 	if err != nil {
-		return err
+		msg = "error while correcting incorrect bds in spc"
+		return msg, err
 	}
-	err = c.migrate(name)
-	return err
+	return "", nil
 }
 
 func (c *CSPCMigrator) validateCSPCOperator() error {
@@ -134,33 +193,39 @@ func (c *CSPCMigrator) validateCSPCOperator() error {
 }
 
 // Pool migrates the pool from SPC schema to CSPC schema
-func (c *CSPCMigrator) migrate(spcName string) error {
+func (c *CSPCMigrator) migrate(spcName string) (string, error) {
 	var err error
 	var migrated bool
+	var msg string
 	c.SPCObj, migrated, err = c.getSPCWithMigrationStatus(spcName)
 	if migrated {
 		klog.Infof("spc %s is already migrated to cspc", spcName)
-		return nil
+		return "", nil
 	}
 	if err != nil {
-		return err
+		msg = "error checking migration status of spc " + spcName
+		return msg, err
 	}
 	err = c.validateSPC()
 	if err != nil {
-		return errors.Wrapf(err, "failed to validate spc %s", spcName)
+		msg = "failed to validate spc " + spcName
+		return msg, err
 	}
 	err = c.updateBDCLabels()
 	if err != nil {
-		return errors.Wrapf(err, "failed to update bdc labels for spc %s", spcName)
+		msg = "failed to update bdc labels for spc " + spcName
+		return msg, err
 	}
 	klog.Infof("Creating equivalent cspc %s for spc %s", c.CSPCName, spcName)
 	c.CSPCObj, err = c.generateCSPC(spcName)
 	if err != nil {
-		return err
+		msg = "failed to create equivalent cspc for spc " + spcName
+		return msg, err
 	}
 	err = c.updateBDCOwnerRef()
 	if err != nil {
-		return err
+		msg = "failed to update bdc with cspc ownerref"
+		return msg, err
 	}
 	// List all cspi created with reconcile off
 	cspiList, err := c.OpenebsClientset.CstorV1().
@@ -169,7 +234,8 @@ func (c *CSPCMigrator) migrate(spcName string) error {
 			LabelSelector: string(apis.CStorPoolClusterCPK) + "=" + c.CSPCObj.Name,
 		})
 	if err != nil {
-		return err
+		msg = "failed to list cspi for cspc " + c.CSPCName
+		return msg, err
 	}
 
 	// Perform migration for each cspi created on similar node as csp
@@ -178,20 +244,23 @@ func (c *CSPCMigrator) migrate(spcName string) error {
 		cspiObj := &cspiItem
 		err = c.cspTocspi(cspiObj)
 		if err != nil {
-			return err
+			msg = "failed to migrate cspi " + cspiObj.Name
+			return msg, err
 		}
 	}
 	err = c.addSkipAnnotationToSPC(c.SPCObj.Name)
 	if err != nil {
-		return errors.Wrap(err, "failed to add skip-validation annotation")
+		msg = "failed to add skip-validation annotation to spc " + spcName
+		return msg, err
 	}
 	// Clean up old SPC resources after the migration is complete
 	err = spc.NewKubeClient().
 		Delete(spcName, &metav1.DeleteOptions{})
 	if err != nil {
-		return err
+		msg = "failed to clean up spc " + spcName
+		return msg, err
 	}
-	return nil
+	return "", nil
 }
 
 // checkForExistingCSPC verifies the migration as follows:

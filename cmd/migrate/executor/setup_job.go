@@ -38,6 +38,7 @@ func NewJob() *cobra.Command {
 	cmd.AddCommand(
 		NewMigratePoolJob(),
 		NewMigrateCStorVolumeJob(),
+		NewMigrateResourceJob(),
 	)
 
 	cmd.PersistentFlags().StringVarP(&options.openebsNamespace,

@@ -16,6 +16,10 @@ limitations under the License.
 
 package migrate
 
+var (
+	IsMigrationTaskJob = false
+)
+
 // Migrator abstracts the migration of a resource
 type Migrator interface {
 	Migrate(name, namespace string) error
