@@ -39,6 +39,7 @@ kubectl wait --for=condition=Ready pod -l lkey=lvalue --timeout=600s
 
 echo "Install cstor & csi operators"
 
+kubectl apply -f ./ci/migrate/migrationCRD.yaml
 kubectl apply -f https://raw.githubusercontent.com/openebs/charts/gh-pages/cstor-operator.yaml
 sleep 5
 
