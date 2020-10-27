@@ -21,8 +21,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openebs/api/pkg/apis/openebs.io/v1alpha1"
-	openebstypes "github.com/openebs/api/pkg/apis/types"
+	"github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
+	openebstypes "github.com/openebs/api/v2/pkg/apis/types"
 	apis "github.com/openebs/maya/pkg/apis/openebs.io/v1alpha1"
 	csp "github.com/openebs/maya/pkg/cstor/pool/v1alpha3"
 	pod "github.com/openebs/maya/pkg/kubernetes/pod/v1alpha1"

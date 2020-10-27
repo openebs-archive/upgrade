@@ -25,9 +25,9 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog"
 
-	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
-	"github.com/openebs/api/pkg/apis/types"
-	openebsclientset "github.com/openebs/api/pkg/client/clientset/versioned"
+	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	"github.com/openebs/api/v2/pkg/apis/types"
+	openebsclientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
 	apis "github.com/openebs/maya/pkg/apis/openebs.io/v1alpha1"
 	csp "github.com/openebs/maya/pkg/cstor/pool/v1alpha3"
 	cvr "github.com/openebs/maya/pkg/cstor/volumereplica/v1alpha1"
