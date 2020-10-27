@@ -19,7 +19,7 @@ package upgrader
 import (
 	"os"
 
-	openebsclientset "github.com/openebs/api/pkg/client/clientset/versioned"
+	openebsclientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"

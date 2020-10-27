@@ -20,8 +20,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	cstor "github.com/openebs/api/pkg/apis/cstor/v1"
-	openebsFakeClientset "github.com/openebs/api/pkg/client/clientset/versioned/fake"
+	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	openebsFakeClientset "github.com/openebs/api/v2/pkg/client/clientset/versioned/fake"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
