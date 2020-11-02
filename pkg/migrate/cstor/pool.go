@@ -224,7 +224,7 @@ func (c *CSPCMigrator) migrate(spcName string) (string, error) {
 	}
 	err = c.updateBDCOwnerRef()
 	if err != nil {
-		msg = "failed to update bdc with cspc ownerref"
+		msg = "failed to update bdc with cspc ownerReference"
 		return msg, err
 	}
 	// List all cspi created with reconcile off

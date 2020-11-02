@@ -295,6 +295,9 @@ func (c *CSPCMigrator) updateBDRefsAndlabels(spcObj *apis.StoragePoolClaim, oldB
 	retryBDCStatus:
 		newBDCObj, err = c.OpenebsClientset.OpenebsV1alpha1().
 			BlockDeviceClaims(c.OpenebsNamespace).Get(newBDCObj.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
 		if newBDCObj.Status.Phase != v1alpha1.BlockDeviceClaimStatusDone {
 			klog.Infof("waiting for bd %s to get bound", newBDObj.Name)
 			time.Sleep(2 * time.Second)

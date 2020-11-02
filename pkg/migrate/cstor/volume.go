@@ -356,6 +356,9 @@ func (v *VolumeMigrator) addSkipAnnotationToPVC(pvcObj *corev1.PersistentVolumeC
 			k8stypes.StrategicMergePatchType,
 			data,
 		)
+		if err != nil {
+			return err
+		}
 	}
 	return err
 }
@@ -829,6 +832,9 @@ func (v *VolumeMigrator) removeOldTarget() error {
 	// migrate the target service to openebs namespace
 	if v.CVNamespace != v.OpenebsNamespace {
 		err = v.migrateTargetSVC()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
