@@ -80,6 +80,7 @@ spec:
               completedTime:
                 description: CompletedTime of Migrate
                 format: date-time
+                nullable: true
                 type: string
               migrationDetailedStatuses:
                 description: MigrationDetailedStatuses contains the list of statuses
@@ -91,6 +92,7 @@ spec:
                     lastUpdatedAt:
                       description: LastUpdatedTime of a MigrateStep
                       format: date-time
+                      nullable: true
                       type: string
                     message:
                       description: A human-readable message indicating details about
@@ -108,6 +110,7 @@ spec:
                     startTime:
                       description: StartTime of a MigrateStep
                       format: date-time
+                      nullable: true
                       type: string
                     step:
                       type: string
@@ -124,6 +127,7 @@ spec:
               startTime:
                 description: StartTime of Migrate
                 format: date-time
+                nullable: true
                 type: string
             type: object
         required:
