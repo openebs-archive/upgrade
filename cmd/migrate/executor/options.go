@@ -29,6 +29,7 @@ type MigrateOptions struct {
 	spcName          string
 	cspcName         string
 	pvName           string
+	resourceKind     string
 }
 
 var (

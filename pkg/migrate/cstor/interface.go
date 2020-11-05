@@ -16,6 +16,14 @@ limitations under the License.
 
 package migrate
 
+var (
+	// IsMigrationTaskJob is used to determine
+	// whether to report the utask errors. Errors
+	// are reported only when job is triggered by
+	// the resource command.
+	IsMigrationTaskJob = false
+)
+
 // Migrator abstracts the migration of a resource
 type Migrator interface {
 	Migrate(name, namespace string) error

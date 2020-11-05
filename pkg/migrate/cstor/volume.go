@@ -24,6 +24,7 @@ import (
 	"time"
 
 	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	v1Alpha1API "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/api/v2/pkg/apis/types"
 	openebsclientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
 	apis "github.com/openebs/maya/pkg/apis/openebs.io/v1alpha1"
@@ -79,28 +80,98 @@ func (v *VolumeMigrator) Migrate(pvName, openebsNamespace string) error {
 	if err != nil {
 		return errors.Wrap(err, "error building openebs clientset")
 	}
-	err = v.validateCVCOperator()
+	mtask, err := getOrCreateMigrationTask("cstorVolume", pvName, v.OpenebsNamespace, v, v.OpenebsClientset)
 	if err != nil {
 		return err
 	}
+	statusObj := v1Alpha1API.MigrationDetailedStatuses{Step: "Pre-migration"}
+	statusObj.Phase = v1Alpha1API.StepWaiting
+	mtask, uerr := updateMigrationDetailedStatus(mtask, statusObj, v.OpenebsNamespace, v.OpenebsClientset)
+	if uerr != nil && IsMigrationTaskJob {
+		return uerr
+	}
+	msg, err := v.preMigrate()
+	if err != nil {
+		statusObj.Message = msg
+		statusObj.Reason = err.Error()
+		mtask, uerr = updateMigrationDetailedStatus(mtask, statusObj, v.OpenebsNamespace, v.OpenebsClientset)
+		if uerr != nil && IsMigrationTaskJob {
+			return uerr
+		}
+		return errors.Wrap(err, msg)
+	}
+	statusObj.Phase = v1Alpha1API.StepCompleted
+	statusObj.Message = "Pre-migration steps were successful"
+	statusObj.Reason = ""
+	mtask, uerr = updateMigrationDetailedStatus(mtask, statusObj, v.OpenebsNamespace, v.OpenebsClientset)
+	if uerr != nil && IsMigrationTaskJob {
+		return uerr
+	}
+
+	statusObj = v1Alpha1API.MigrationDetailedStatuses{Step: "Migrate"}
+	statusObj.Phase = v1Alpha1API.StepWaiting
+	mtask, uerr = updateMigrationDetailedStatus(mtask, statusObj, v.OpenebsNamespace, v.OpenebsClientset)
+	if uerr != nil && IsMigrationTaskJob {
+		return uerr
+	}
+	msg, err = v.migrateAll(pvName)
+	if err != nil {
+		statusObj.Message = msg
+		statusObj.Reason = err.Error()
+		mtask, uerr = updateMigrationDetailedStatus(mtask, statusObj, v.OpenebsNamespace, v.OpenebsClientset)
+		if uerr != nil && IsMigrationTaskJob {
+			return uerr
+		}
+		return errors.Wrap(err, msg)
+	}
+	statusObj.Phase = v1Alpha1API.StepCompleted
+	statusObj.Message = "Migration steps were successful"
+	statusObj.Reason = ""
+	mtask, uerr = updateMigrationDetailedStatus(mtask, statusObj, v.OpenebsNamespace, v.OpenebsClientset)
+	if uerr != nil && IsMigrationTaskJob {
+		return uerr
+	}
+	return nil
+}
+
+func (v *VolumeMigrator) migrateAll(pvName string) (string, error) {
+	var msg string
 	shouldMigrate, err := v.isMigrationRequired()
 	if err != nil {
-		return err
+		msg = "failed to check migration status"
+		return msg, err
 	}
 	if shouldMigrate {
-		err = v.migrate()
+		msg, err = v.migrate()
 		if err != nil {
-			return err
+			return msg, err
 		}
 	} else {
 		klog.Infof("Volume %s already migrated to csi spec", pvName)
 	}
 	err = v.deleteTempPolicy()
 	if err != nil {
-		return errors.Wrapf(err, "failed to delete temporary policy %s", pvName)
+		msg = "failed to delete temporary policy " + pvName
+		return msg, err
 	}
 	snap := &SnapshotMigrator{}
-	return snap.migrate(pvName)
+	err = snap.migrate(pvName)
+	if err != nil {
+		msg = "failed to migrate snapshots for volume " + pvName
+		return msg, err
+	}
+	return "", nil
+}
+
+func (v *VolumeMigrator) preMigrate() (string, error) {
+	var msg string
+	err := v.validateCVCOperator()
+	if err != nil {
+		msg = "error validating cvc operator"
+		return msg, err
+	}
+	return "", err
+
 }
 
 func (v *VolumeMigrator) isMigrationRequired() (bool, error) {
@@ -159,40 +230,48 @@ func (v *VolumeMigrator) validateCVCOperator() error {
 }
 
 // migrate migrates the volume from non-CSI schema to CSI schema
-func (v *VolumeMigrator) migrate() error {
+func (v *VolumeMigrator) migrate() (string, error) {
+	var msg string
 	var pvObj *corev1.PersistentVolume
 	pvcObj, pvPresent, err := v.validatePVName()
 	if err != nil {
-		return errors.Wrapf(err, "failed to validate pvname")
+		msg = "failed to validate pvname"
+		return msg, err
 	}
 	err = v.populateCVNamespace(v.PVName)
 	if err != nil {
-		return errors.Wrapf(err, "failed to cv namespace")
+		msg = "failed to fetch cv namespace"
+		return msg, err
 	}
 	err = v.createTempPolicy()
 	if err != nil {
-		return errors.Wrapf(err, "failed to create temporary policy")
+		msg = "failed to create temporary policy"
+		return msg, err
 	}
 	if pvPresent {
 		klog.Infof("Checking volume is not mounted on any application")
 		pvObj, err = v.IsVolumeMounted(v.PVName)
 		if err != nil {
-			return errors.Wrapf(err, "failed to verify mount status for pv {%s}", v.PVName)
+			msg = "failed to verify mount status for pv " + v.PVName
+			return msg, err
 		}
 		if pvObj.Spec.PersistentVolumeSource.CSI == nil {
 			klog.Infof("Retaining PV to migrate into csi volume")
 			err = v.RetainPV(pvObj)
 			if err != nil {
-				return errors.Wrapf(err, "failed to retain pv {%s}", v.PVName)
+				msg = "failed to retain pv " + v.PVName
+				return msg, err
 			}
 		}
 		err = v.updateStorageClass(pvObj.Name, pvObj.Spec.StorageClassName)
 		if err != nil {
-			return errors.Wrapf(err, "failed to update storageclass {%s}", pvObj.Spec.StorageClassName)
+			msg = "failed to update storageclass " + pvObj.Spec.StorageClassName
+			return msg, err
 		}
 		pvcObj, err = v.migratePVC(pvObj)
 		if err != nil {
-			return errors.Wrapf(err, "failed to migrate pvc to csi spec")
+			msg = "failed to migrate pvc to csi spec"
+			return msg, err
 		}
 	} else {
 		klog.Infof("PVC and storageclass already migrated to csi format")
@@ -200,34 +279,41 @@ func (v *VolumeMigrator) migrate() error {
 	v.StorageClass, err = v.KubeClientset.StorageV1().
 		StorageClasses().Get(*pvcObj.Spec.StorageClassName, metav1.GetOptions{})
 	if err != nil {
-		return err
+		msg = "failed to get storageclass " + *pvcObj.Spec.StorageClassName
+		return msg, err
 	}
 	pvObj, err = v.migratePV(pvcObj)
 	if err != nil {
-		return errors.Wrapf(err, "failed to migrate pv to csi spec")
+		msg = "failed to migrate pv to csi spec"
+		return msg, err
 	}
 	err = v.removeOldTarget()
 	if err != nil {
-		return errors.Wrapf(err, "failed to remove old target deployment")
+		msg = "failed to remove old target deployment"
+		return msg, err
 	}
 	klog.Infof("Creating CVC to bound the volume and trigger CSI driver")
 	err = v.createCVC(pvObj)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create cvc")
+		msg = "failed to create cvc"
+		return msg, err
 	}
 	err = v.validateMigratedVolume()
 	if err != nil {
-		return errors.Wrapf(err, "failed to validate migrated volume")
+		msg = "failed to validate migrated volume"
+		return msg, err
 	}
 	err = v.patchTargetPodAffinity()
 	if err != nil {
-		return errors.Wrap(err, "failed to patch target affinity")
+		msg = "failed to patch target affinity"
+		return msg, err
 	}
 	err = v.cleanupOldResources()
 	if err != nil {
-		return errors.Wrapf(err, "failed to cleanup old volume resources")
+		msg = "failed to cleanup old volume resources"
+		return msg, err
 	}
-	return nil
+	return "", nil
 }
 
 func (v *VolumeMigrator) migratePVC(pvObj *corev1.PersistentVolume) (*corev1.PersistentVolumeClaim, error) {
@@ -270,6 +356,9 @@ func (v *VolumeMigrator) addSkipAnnotationToPVC(pvcObj *corev1.PersistentVolumeC
 			k8stypes.StrategicMergePatchType,
 			data,
 		)
+		if err != nil {
+			return err
+		}
 	}
 	return err
 }
@@ -743,6 +832,9 @@ func (v *VolumeMigrator) removeOldTarget() error {
 	// migrate the target service to openebs namespace
 	if v.CVNamespace != v.OpenebsNamespace {
 		err = v.migrateTargetSVC()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
