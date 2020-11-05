@@ -157,7 +157,7 @@ func (v *VolumeMigrator) migrateAll(pvName string) (string, error) {
 	snap := &SnapshotMigrator{}
 	err = snap.migrate(pvName)
 	if err != nil {
-		msg = "failed migrate snapshots for volume " + pvName
+		msg = "failed to migrate snapshots for volume " + pvName
 		return msg, err
 	}
 	return "", nil

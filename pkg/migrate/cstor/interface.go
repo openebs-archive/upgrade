@@ -17,6 +17,10 @@ limitations under the License.
 package migrate
 
 var (
+	// IsMigrationTaskJob is used to determine
+	// whether to report the utask errors. Errors
+	// are reported only when job is triggered by
+	// the resource command.
 	IsMigrationTaskJob = false
 )
 
