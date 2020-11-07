@@ -15,12 +15,9 @@
 # ==============================================================================
 # Build Options
 
-export DBUILD_ARGS=--build-arg DBUILD_DATE=${DBUILD_DATE} --build-arg DBUILD_REPO_URL=${DBUILD_REPO_URL} --build-arg DBUILD_SITE_URL=${DBUILD_SITE_URL}
-
 ifeq (${TAG}, )
 	export TAG=ci
 endif
-
 
 # Build upgrade & migrate docker image with buildx
 # Experimental docker feature to build cross platform multi-architecture docker images
@@ -61,26 +58,10 @@ docker.buildx:
 	@echo "--> Build docker image: $(DOCKERX_IMAGE_NAME)"
 	@echo
 
-.PHONY: buildx.upgrade
-buildx.upgrade: bootstrap clean-upgrade
-	@echo '--> Building upgrade binary...'
-	@pwd
-	@PNAME=${UPGRADE} CTLNAME=${UPGRADE} BUILDX=true sh -c "'$(PWD)/build/build.sh'"
-	@echo '--> Built binary.'
-	@echo
-
 .PHONY: docker.buildx.upgrade
 docker.buildx.upgrade: DOCKERX_IMAGE_NAME=$(DOCKERX_IMAGE_UPGRADE)
 docker.buildx.upgrade: COMPONENT=$(UPGRADE)
 docker.buildx.upgrade: docker.buildx
-
-.PHONY: buildx.migrate
-buildx.migrate: bootstrap clean-migrate
-	@echo '--> Building migrate binary...'
-	@pwd
-	@PNAME=${MIGRATE} CTLNAME=${MIGRATE} BUILDX=true sh -c "'$(PWD)/build/build.sh'"
-	@echo '--> Built binary.'
-	@echo
 
 .PHONY: docker.buildx.migrate
 docker.buildx.migrate: DOCKERX_IMAGE_NAME=$(DOCKERX_IMAGE_MIGRATE)
