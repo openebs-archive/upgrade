@@ -1,6 +1,6 @@
 # Contributing to OpenEBS Upgrade
 
-NDM uses the standard GitHub pull requests process to review and accept contributions.  There are several areas that could use your help. For starters, you could help in improving the sections in this document by either creating a new issue describing the improvement or submitting a pull request to this repository. The issues are maintained at [openebs/openebs](https://github.com/openebs/openebs/issues?q=is%3Aissue+is%3Aopen+label%3Andm) repository.
+Upgrade uses the standard GitHub pull requests process to review and accept contributions.  There are several areas that could use your help. For starters, you could help in improving the sections in this document by either creating a new issue describing the improvement or submitting a pull request to this repository. The issues are maintained at [openebs/openebs](https://github.com/openebs/openebs/issues?q=is%3Aopen+is%3Aissue+label%3A%22component%3A+Upgrade%22) repository.
 
 * If you are a first-time contributor, please see [Steps to Contribute](#steps-to-contribute).
 * If you want to file an issue for a bug or feature request, please see [Filing a issue](#filing-an-issue)
@@ -10,9 +10,9 @@ NDM uses the standard GitHub pull requests process to review and accept contribu
 
 ## Steps to Contribute
 
-NDM is an Apache 2.0 Licensed project and all your commits should be signed with Developer Certificate of Origin. See [Sign your work](#sign-your-work). 
+Upgrade is an Apache 2.0 Licensed project and all your commits should be signed with Developer Certificate of Origin. See [Sign your work](#sign-your-work). 
 
-* Find an issue to work on or create a new issue. The issues are maintained at [openebs/openebs](https://github.com/openebs/openebs/issues?q=is%3Aissue+is%3Aopen+label%3Andm). You can pick up from a list of [good-first-issues](https://github.com/openebs/upgrade/labels/good%20first%20issue).
+* Find an issue to work on or create a new issue. The issues are maintained at [openebs/openebs](https://github.com/openebs/openebs/issues?q=is%3Aopen+is%3Aissue+label%3A%22component%3A+Upgrade%22). You can pick up from a list of [good-first-issues](https://github.com/openebs/upgrade/labels/good%20first%20issue).
 * Claim your issue by commenting your intent to work on it to avoid duplication of efforts. 
 * Fork the repository on GitHub.
 * Create a branch from where you want to base your work (usually master).
@@ -69,7 +69,7 @@ When filing an issue, make sure to answer these seven questions:
 
   For example:
   ```
-   feat(partition) : add support for partitions
+   feat(upgrade) : add support for jiva volume upgrades
    ^--^ ^-----^   ^-----------------------^
      |     |         |
      |     |         +-> PR subject, summary of the changes
@@ -130,5 +130,5 @@ This project is implemented using Go and uses the standard golang tools for deve
 
 For setting up a Development environment on your local host, see the detailed instructions [here](./BUILD.md).
 
-The NDM design document is available [here](./docs/design.md).
+The Upgrade design document is available [here](https://github.com/openebs/openebs/tree/master/contribute/design/1.x/upgrade).
 
