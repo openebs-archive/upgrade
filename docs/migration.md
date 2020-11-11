@@ -98,7 +98,7 @@ spec:
         tty: true
         # the version of the image should be same the 
         # version of cstor-operator installed.
-        image: openebs/migrate-amd64:<same-as-cspc-operator>
+        image: openebs/migrate:<same-as-cspc-operator>
       restartPolicy: Never
 ---
 ```
@@ -177,7 +177,7 @@ spec:
         tty: true
         # the version of the image should be same the 
         # version of cstor-operator installed.
-        image: openebs/migrate-amd64:<same-as-cvc-operator>
+        image: openebs/migrate:<same-as-cvc-operator>
       restartPolicy: Never
 ---
 ```
