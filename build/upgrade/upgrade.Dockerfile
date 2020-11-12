@@ -16,6 +16,8 @@
 #
 FROM golang:1.14.7 as build
 
+ARG RELEASE_TAG
+ARG BRANCH
 ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETVARIANT=""
@@ -25,7 +27,9 @@ ENV GO111MODULE=on \
   GOARCH=${TARGETARCH} \
   GOARM=${TARGETVARIANT} \
   DEBIAN_FRONTEND=noninteractive \
-  PATH="/root/go/bin:${PATH}"
+  PATH="/root/go/bin:${PATH}" \
+  RELEASE_TAG=${RELEASE_TAG} \
+  BRANCH=${BRANCH}
 
 WORKDIR /go/src/github.com/openebs/upgrade/
 
