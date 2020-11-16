@@ -40,7 +40,9 @@ kubectl wait --for=condition=Ready pod -l lkey=lvalue --timeout=600s
 echo "Install cstor & csi operators"
 
 kubectl apply -f ./ci/migrate/migrationCRD.yaml
-kubectl apply -f https://raw.githubusercontent.com/openebs/charts/gh-pages/cstor-operator.yaml
+wget https://raw.githubusercontent.com/openebs/charts/gh-pages/cstor-operator.yaml
+sed -ie 's|value: "0"|value: "1"|g' cstor-operator.yaml
+kubectl apply -f cstor-operator.yaml
 sleep 5
 
 sed "s|testimage|$TEST_IMAGE_TAG|g" ./ci/upgrade/cstor-operator.tmp.yaml | sed "s|testversion|$TEST_VERSION|g" | sed "s|imageorg|$IMAGE_ORG|g" > ./ci/migrate/cstor-operator.yaml
