@@ -1,4 +1,16 @@
-# Changelog
+v2.3.0 / 2020-11-14
+========================
+* chore(build): add support for multiarch build ([#32](https://github.com/openebs/upgrade/pull/32),[@shubham14bajpai](https://github.com/shubham14bajpai))
+* feat(migrate): add support for CR status reporting ([#65](https://github.com/openebs/upgrade/pull/65),[@shubham14bajpai](https://github.com/shubham14bajpai))
+* refact(deps): use openebs/api v2 release modules ([#66](https://github.com/openebs/upgrade/pull/66),[@shubham14bajpai](https://github.com/shubham14bajpai))
+
+
+v2.3.0-RC1 / 2020-11-12
+========================
+* chore(build): add support for multiarch build ([#32](https://github.com/openebs/upgrade/pull/32),[@shubham14bajpai](https://github.com/shubham14bajpai))
+* feat(migrate): add support for CR status reporting ([#65](https://github.com/openebs/upgrade/pull/65),[@shubham14bajpai](https://github.com/shubham14bajpai))
+* refact(deps): use openebs/api v2 release modules ([#66](https://github.com/openebs/upgrade/pull/66),[@shubham14bajpai](https://github.com/shubham14bajpai))
+
 
 ## [v2.2.0](https://github.com/openebs/upgrade/tree/v2.2.0-RC2) (2020-10-14)
 
