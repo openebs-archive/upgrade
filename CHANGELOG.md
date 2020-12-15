@@ -1,3 +1,19 @@
+v2.4.0 / 2020-12-13
+========================
+* chore(version): add 2.4.0 to upgrade matrix ([#75](https://github.com/openebs/upgrade/pull/75),[@shubham14bajpai](https://github.com/shubham14bajpai))
+* fix(travis): increase wait time for pods ([#74](https://github.com/openebs/upgrade/pull/74),[@shubham14bajpai](https://github.com/shubham14bajpai))
+
+
+v2.4.0-RC2 / 2020-12-12
+========================
+
+
+v2.4.0-RC1 / 2020-12-10
+========================
+* chore(version): add 2.4.0 to upgrade matrix ([#75](https://github.com/openebs/upgrade/pull/75),[@shubham14bajpai](https://github.com/shubham14bajpai))
+* fix(travis): increase wait time for pods ([#74](https://github.com/openebs/upgrade/pull/74),[@shubham14bajpai](https://github.com/shubham14bajpai))
+
+
 v2.3.0 / 2020-11-14
 ========================
 * chore(build): add support for multiarch build ([#32](https://github.com/openebs/upgrade/pull/32),[@shubham14bajpai](https://github.com/shubham14bajpai))
