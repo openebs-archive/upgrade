@@ -16,7 +16,13 @@ These instructions will guide you through the process of upgrading cStor CSPC po
 
 Before upgrading the pools make sure the following prerequisites are taken care of:
 
- - Upgrade the control plane components by applying the desired version of cstor-operator from the [charts](https://github.com/openebs/charts/tree/gh-pages). You can verify the current version of the control plane using the command:
+ - Upgrade the control plane components by applying the desired version of cstor-operator from the [charts](https://github.com/openebs/charts/tree/gh-pages). 
+ 
+ **Note:** If upgrading the control plane from 2.4.0 or previous to 2.5.0 or above version please clean up the CSIDriver CR before applying the operator using the below command.
+  ```sh
+  kubectl delete csidriver cstor.csi.openebs.io
+  ```
+ You can verify the current version of the control plane using the command:
     ```sh
     $ kubectl -n openebs get pods -l openebs.io/version=<version>
     ```
