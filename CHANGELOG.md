@@ -1,3 +1,15 @@
+v2.5.0 / 2021-01-13
+========================
+
+
+v2.5.0-RC2 / 2021-01-11
+========================
+
+
+v2.5.0-RC1 / 2021-01-08
+========================
+
+
 v2.4.0 / 2020-12-13
 ========================
 * chore(version): add 2.4.0 to upgrade matrix ([#75](https://github.com/openebs/upgrade/pull/75),[@shubham14bajpai](https://github.com/shubham14bajpai))
