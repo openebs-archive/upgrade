@@ -125,6 +125,9 @@ I0520 10:01:25.674512       1 pool.go:395] Updating cvr pvc-9cf5a405-12c0-4522-b
 I0520 10:01:25.798889       1 pool.go:80] Successfully migrated spc sparse-claim to cspc
 ```
 
+**<span style="color: red;">Note: In case the job fails for any reason please do not scale up the old CSP deployments. It can lead to data corruption.</span>**
+
+
 ## cStor External Provisioned volumes to cStor CSI volumes
 
 These instructions will guide you through the process of migrating cStor volumes from the old v1apha1 external provisioned spec to v1 CSI spec. 

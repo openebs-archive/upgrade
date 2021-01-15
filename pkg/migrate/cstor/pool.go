@@ -41,11 +41,6 @@ import (
 )
 
 const (
-	replicaPatch = `{
-	"spec": {
-		"replicas": 0
-	}
-}`
 	cspNameLabel           = "cstorpool.openebs.io/name"
 	cspUIDLabel            = "cstorpool.openebs.io/uid"
 	cspHostnameAnnotation  = "cstorpool.openebs.io/hostname"
@@ -398,7 +393,7 @@ func (c *CSPCMigrator) cspTocspi(cspiObj *cstor.CStorPoolInstance) error {
 	}
 	if cspiObj.Annotations[types.OpenEBSDisableReconcileLabelKey] != "" {
 		klog.Infof("Migrating csp %s to cspi %s", cspObj.Name, cspiObj.Name)
-		err = c.scaleDownDeployment(cspObj, c.OpenebsNamespace)
+		err = c.scaleDownDeployment(cspObj.Name, cspiObj.Name, c.OpenebsNamespace)
 		if err != nil {
 			return err
 		}
@@ -477,24 +472,41 @@ func getCSP(cspLabel string) (*apis.CStorPool, error) {
 
 // The old pool pod should be scaled down before the new cspi pod reconcile is
 // enabled to avoid importing the pool at two places at the same time.
-func (c *CSPCMigrator) scaleDownDeployment(cspObj *apis.CStorPool, openebsNamespace string) error {
-	klog.Infof("Scaling down deployment %s", cspObj.Name)
+func (c *CSPCMigrator) scaleDownDeployment(cspName, cspiName, openebsNamespace string) error {
+	var zero int32 = 0
+	klog.Infof("Scaling down deployment %s", cspName)
 	cspDeployList, err := c.KubeClientset.AppsV1().
 		Deployments(openebsNamespace).List(
 		metav1.ListOptions{
-			LabelSelector: "openebs.io/cstor-pool=" + cspObj.Name,
+			LabelSelector: "openebs.io/cstor-pool=" + cspName,
 		})
 	if err != nil {
 		return err
 	}
 	if len(cspDeployList.Items) != 1 {
-		return errors.Errorf("invalid number of csp deployment found for %s: expected 1, got %d", cspObj.Name, len(cspDeployList.Items))
+		return errors.Errorf("invalid number of csp deployment found for %s: expected 1, got %d", cspName, len(cspDeployList.Items))
+	}
+	newCSPDeploy := cspDeployList.Items[0]
+	cspiDeploy, err := c.KubeClientset.AppsV1().
+		Deployments(openebsNamespace).Get(cspiName, metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "failed to get deployment for cspi %s", cspiName)
+	}
+	// While scaling down the csp deployment changing the
+	// volumes as well so that the zrepl.lock file used by
+	// csp and cspi becomes the same to avoid data corruption
+	// due to multiple imports at the same time.
+	newCSPDeploy.Spec.Replicas = &zero
+	newCSPDeploy.Spec.Template.Spec.Volumes = cspiDeploy.Spec.Template.Spec.Volumes
+	patchData, err := GetPatchData(cspDeployList.Items[0], newCSPDeploy)
+	if err != nil {
+		return errors.Wrapf(err, "failed to scale down deployment for csp %s", cspName)
 	}
 	_, err = c.KubeClientset.AppsV1().Deployments(openebsNamespace).
 		Patch(
 			cspDeployList.Items[0].Name,
 			k8stypes.StrategicMergePatchType,
-			[]byte(replicaPatch),
+			patchData,
 		)
 	if err != nil {
 		return err
@@ -503,15 +515,15 @@ func (c *CSPCMigrator) scaleDownDeployment(cspObj *apis.CStorPool, openebsNamesp
 		cspPods, err1 := c.KubeClientset.CoreV1().
 			Pods(openebsNamespace).
 			List(metav1.ListOptions{
-				LabelSelector: "openebs.io/cstor-pool=" + cspObj.Name,
+				LabelSelector: "openebs.io/cstor-pool=" + cspName,
 			})
 		if err1 != nil {
-			klog.Errorf("failed to list pods for csp %s deployment: %s", cspObj.Name, err1.Error())
+			klog.Errorf("failed to list pods for csp %s deployment: %s", cspName, err1.Error())
 		} else {
 			if len(cspPods.Items) == 0 {
 				break
 			}
-			klog.Infof("waiting for csp %s deployment to scale down", cspObj.Name)
+			klog.Infof("waiting for csp %s deployment to scale down", cspName)
 		}
 		time.Sleep(10 * time.Second)
 	}
