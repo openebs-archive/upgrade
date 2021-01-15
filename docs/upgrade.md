@@ -10,25 +10,33 @@ This document describes the steps for upgrading the following OpenEBS reources:
 
 ## CSPC pools
 
-These instructions will guide you through the process of upgrading cStor CSPC pools from `1.10.0` or later to a newer release up to `2.4.0`.
+These instructions will guide you through the process of upgrading cStor CSPC pools from `1.10.0` or later to a newer release up to `2.5.0`.
 
 ### Prerequisites
 
 Before upgrading the pools make sure the following prerequisites are taken care of:
 
- - Upgrade the control plane components by applying the desired version of cstor-operator from the [charts](https://github.com/openebs/charts/tree/gh-pages). You can verify the current version of the control plane using the command:
-    ```sh
+ - Upgrade the control plane components by applying the desired version of cstor-operator from the [charts](https://github.com/openebs/charts/tree/gh-pages). 
+ 
+ **Note:** If upgrading the control plane from 2.4.0 or previous to 2.5.0 or above version please clean up the CSIDriver CR before applying the operator using the below command.
+  ```sh
+  kubectl delete csidriver cstor.csi.openebs.io
+  ```
+
+ You can verify the current version of the control plane using the command:
+    
     $ kubectl -n openebs get pods -l openebs.io/version=<version>
-    ```
-    where `<version>` is the desired version.
-    For example if desired version is `2.4.0` the output should look like:
-    ```sh
-    $ kubectl -n openebs get pods -l openebs.io/version=2.4.0
+     
+ where `<version>` is the desired version.
+    
+ For example if desired version is `2.5.0` the output should look like:
+    
+    $ kubectl -n openebs get pods -l openebs.io/version=2.5.0
     NAME                                              READY   STATUS    RESTARTS   AGE
     cspc-operator-7744bfb75-fj2w8                     1/1     Running   0          6m11s
     cvc-operator-5c6456df79-jpl5c                     1/1     Running   0          6m11s
     openebs-cstor-admission-server-845d78b97d-sgcnh   1/1     Running   0          6m10s
-    ```
+    
 
 ### Running the upgrade job
 
@@ -69,7 +77,7 @@ spec:
         - "--from-version=1.10.0"
 
         # --to-version is the version desired upgrade version
-        - "--to-version=2.4.0"
+        - "--to-version=2.5.0"
         # if required the image prefix of the pool deployments can be
         # changed using the flag below, defaults to whatever was present on old
         # deployments.
@@ -119,7 +127,7 @@ cstor-cspc-upgrade-2x4bv     1/1     Running    0          34s
  
 ```sh
 $ kubectl -n openebs logs -f cstor-cspc-upgrade-2x4bv
-I0714 12:37:09.747331       1 cstor_cspc.go:65] Upgrading cspc-stripe to 2.4.0
+I0714 12:37:09.747331       1 cstor_cspc.go:65] Upgrading cspc-stripe to 2.5.0
 I0714 12:37:10.062861       1 deployment.go:77] patching deployment cspc-stripe-k7cc
 I0714 12:40:11.493424       1 deployment.go:114] deployment cspc-stripe-k7cc patched successfully
 I0714 12:40:11.493476       1 cspi.go:73] patching cspi cspc-stripe-k7cc
@@ -128,12 +136,12 @@ I0714 12:40:11.527764       1 cstor_cspi.go:285] Verifying the reconciliation of
 I0714 12:40:21.632513       1 cspc.go:75] patching cspc cspc-stripe
 I0714 12:40:21.682353       1 cspc.go:95] cspc cspc-stripe patched
 I0714 12:40:21.693266       1 cstor_cspc.go:190] Verifying the reconciliation of version for cspc-stripe
-I0714 12:40:31.701881       1 cstor_cspc.go:76] Successfully upgraded cspc-stripe to 2.4.0
+I0714 12:40:31.701881       1 cstor_cspc.go:76] Successfully upgraded cspc-stripe to 2.5.0
 ```
 
 ## cStor CSI volumes
 
-These instructions will guide you through the process of upgrading cStor CSI volumes from `1.10.0` or later to a newer release up to `2.4.0`.
+These instructions will guide you through the process of upgrading cStor CSI volumes from `1.10.0` or later to a newer release up to `2.5.0`.
 
 ### Prerequisites
 
@@ -190,7 +198,7 @@ spec:
         - "--from-version=1.10.0"
 
         # --to-version is the version desired upgrade version
-        - "--to-version=2.4.0"
+        - "--to-version=2.5.0"
         # if required the image prefix of the volume deployments can be
         # changed using the flag below, defaults to whatever was present on old
         # deployments.
@@ -239,7 +247,7 @@ cstor-cspc-upgrade-jd747     1/1     Running    0          34s
 ```
 ```sh
 $ kubectl -n openebs logs -f cstor-volume-upgrade-jd747
-I0714 14:00:53.309707       1 cstor_volume.go:67] Upgrading pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49 to 2.4.0
+I0714 14:00:53.309707       1 cstor_volume.go:67] Upgrading pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49 to 2.5.0
 I0714 14:00:53.818666       1 cvr.go:75] patching cvr pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49-cspc-stripe-k7cc
 I0714 14:00:53.863867       1 cvr.go:95] cvr pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49-cspc-stripe-k7cc patched
 I0714 14:00:53.923339       1 cstor_cvr.go:138] Verifying the reconciliation of version for pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49-cspc-stripe-k7cc
@@ -254,5 +262,5 @@ I0714 14:03:05.890751       1 cstor_volume.go:401] Verifying the reconciliation 
 I0714 14:03:15.897696       1 cvc.go:75] patching cvc pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49
 I0714 14:03:15.929871       1 cvc.go:95] cvc pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49 patched
 I0714 14:03:16.030782       1 cstor_volume.go:423] Verifying the reconciliation of version for pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49
-I0714 14:03:26.046950       1 cstor_volume.go:78] Successfully upgraded pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49 to 2.4.0
+I0714 14:03:26.046950       1 cstor_volume.go:78] Successfully upgraded pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49 to 2.5.0
 ```
