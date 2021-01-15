@@ -22,19 +22,21 @@ Before upgrading the pools make sure the following prerequisites are taken care 
   ```sh
   kubectl delete csidriver cstor.csi.openebs.io
   ```
+
  You can verify the current version of the control plane using the command:
-    ```sh
+    
     $ kubectl -n openebs get pods -l openebs.io/version=<version>
-    ```
-    where `<version>` is the desired version.
-    For example if desired version is `2.5.0` the output should look like:
-    ```sh
+     
+ where `<version>` is the desired version.
+    
+ For example if desired version is `2.5.0` the output should look like:
+    
     $ kubectl -n openebs get pods -l openebs.io/version=2.5.0
     NAME                                              READY   STATUS    RESTARTS   AGE
     cspc-operator-7744bfb75-fj2w8                     1/1     Running   0          6m11s
     cvc-operator-5c6456df79-jpl5c                     1/1     Running   0          6m11s
     openebs-cstor-admission-server-845d78b97d-sgcnh   1/1     Running   0          6m10s
-    ```
+    
 
 ### Running the upgrade job
 
