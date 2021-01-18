@@ -474,7 +474,7 @@ func getCSP(cspLabel string) (*apis.CStorPool, error) {
 // enabled to avoid importing the pool at two places at the same time.
 func (c *CSPCMigrator) scaleDownDeployment(cspName, cspiName, openebsNamespace string) error {
 	var zero int32 = 0
-	klog.Infof("Scaling down deployment %s", cspName)
+	klog.Infof("Scaling down csp deployment %s", cspName)
 	cspDeployList, err := c.KubeClientset.AppsV1().
 		Deployments(openebsNamespace).List(
 		metav1.ListOptions{
@@ -500,7 +500,7 @@ func (c *CSPCMigrator) scaleDownDeployment(cspName, cspiName, openebsNamespace s
 	newCSPDeploy.Spec.Template.Spec.Volumes = cspiDeploy.Spec.Template.Spec.Volumes
 	patchData, err := GetPatchData(cspDeployList.Items[0], newCSPDeploy)
 	if err != nil {
-		return errors.Wrapf(err, "failed to scale down deployment for csp %s", cspName)
+		return errors.Wrapf(err, "failed to patch data for csp %s", cspName)
 	}
 	_, err = c.KubeClientset.AppsV1().Deployments(openebsNamespace).
 		Patch(
