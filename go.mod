@@ -15,3 +15,8 @@ require (
 	k8s.io/client-go v0.17.3
 	k8s.io/klog v1.0.0
 )
+
+
+// This is just to test the api PR
+// Will remove this after it is merged
+replace github.com/openebs/api/v2 => github.com/shubham14bajpai/api/v2 v2.0.0-20210120130135-994b05fdecdf
