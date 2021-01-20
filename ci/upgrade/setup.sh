@@ -47,3 +47,5 @@ kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/maste
  -f ./ci/upgrade/cstor-operator.yaml
 sleep 10
 kubectl wait --for=condition=available --timeout=300s deployment/cspc-operator -n openebs
+
+kubectl apply -f ./ci/upgrade/upgradetaskCRD.yaml
