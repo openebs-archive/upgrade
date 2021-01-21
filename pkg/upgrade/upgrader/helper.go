@@ -86,3 +86,13 @@ func isOperatorUpgraded(componentName string, namespace string,
 	}
 	return nil
 }
+
+// Remove the suffix only if it is present
+// at the end of the string
+func removeSuffixFromEnd(str, suffix string) string {
+	i := strings.LastIndex(str, suffix)
+	if i > -1 && i == len(str)-len(suffix) {
+		str = str[:i]
+	}
+	return str
+}

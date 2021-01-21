@@ -265,6 +265,8 @@ func transformCSPIDeploy(d *appsv1.Deployment, res *ResourcePatch) error {
 		if err != nil {
 			return err
 		}
+		// remove the -amd64 prefix from the image
+		url = removeSuffixFromEnd(url, "-amd64")
 		d.Spec.Template.Spec.Containers[i].Image = url + ":" + tag
 	}
 	d.Labels["openebs.io/version"] = res.To
