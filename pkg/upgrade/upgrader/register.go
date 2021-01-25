@@ -26,7 +26,7 @@ func (u *Upgrade) RegisterAll() *Upgrade {
 	u.registerUpgrade("cstorPoolInstance", RegisterCstorPoolInstance)
 	u.registerUpgrade("cstorPoolCluster", RegisterCstorPoolCluster)
 	u.registerUpgrade("cstorVolume", RegisterCstorVolume)
-	// u.registerUpgrade("jivaVolume", RegisterJivaVolume)
+	u.registerUpgrade("jivaVolume", RegisterJivaVolume)
 	return u
 }
 
@@ -53,6 +53,15 @@ func RegisterCstorVolume(r *ResourcePatch, c *Client) Upgrader {
 	obj := NewCStorVolumePatch(
 		WithCStorVolumeResorcePatch(r),
 		WithCStorVolumeClient(c),
+	)
+	return obj
+}
+
+// RegisterCstorVolume ....
+func RegisterJivaVolume(r *ResourcePatch, c *Client) Upgrader {
+	obj := NewJivaVolumePatch(
+		WithJivaVolumeResorcePatch(r),
+		WithJivaVolumeClient(c),
 	)
 	return obj
 }

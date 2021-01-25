@@ -20,7 +20,6 @@ import (
 	"strings"
 	"time"
 
-	deploy "github.com/openebs/maya/pkg/kubernetes/deployment/appsv1/v1alpha1"
 	retry "github.com/openebs/maya/pkg/util/retry"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
@@ -28,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
+	deploymentutil "k8s.io/kubectl/pkg/util/deployment"
 )
 
 // Deployment ...
@@ -82,7 +82,7 @@ func (d *Deployment) Patch(from, to string) error {
 		return nil
 	}
 	if version == from {
-		_, err := d.Client.AppsV1().Deployments(d.Object.Namespace).Patch(
+		deployObj, err := d.Client.AppsV1().Deployments(d.Object.Namespace).Patch(
 			d.Object.Name,
 			types.StrategicMergePatchType,
 			d.Data,
@@ -94,18 +94,27 @@ func (d *Deployment) Patch(from, to string) error {
 				d.Object.Name,
 			)
 		}
+		revision, err := deploymentutil.Revision(deployObj)
+		if err != nil {
+			return err
+		}
 		err = retry.
 			Times(60).
 			Wait(5 * time.Second).
 			Try(func(attempt uint) error {
-				deloyClient := deploy.NewKubeClient()
-				rolloutStatus, err1 := deloyClient.WithNamespace(d.Object.Namespace).
-					RolloutStatus(d.Object.Name)
+				deployObj, err1 := d.Client.AppsV1().Deployments(d.Object.Namespace).
+					Get(d.Object.Name, metav1.GetOptions{})
+				if err != nil {
+					return err1
+				}
+				statusViewer := DeploymentStatusViewer{}
+				msg, rolledOut, err1 := statusViewer.Status(deployObj, revision+1)
 				if err1 != nil {
 					return err1
 				}
-				if !rolloutStatus.IsRolledout {
-					return errors.Errorf("failed to rollout: %s", rolloutStatus.Message)
+				klog.Info("rollout status: ", msg)
+				if !rolledOut {
+					return errors.Wrapf(err1, "failed to rollout: %s", msg)
 				}
 				return nil
 			})
