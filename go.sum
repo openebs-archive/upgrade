@@ -176,8 +176,8 @@ github.com/onsi/ginkgo v1.10.2/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+
 github.com/onsi/gomega v0.0.0-20170829124025-dcabb60a477c/go.mod h1:C1qb7wdrVGGVU+Z6iS04AVkA3Q65CEZX59MT0QO5uiA=
 github.com/onsi/gomega v1.7.0 h1:XPnZz8VVBHjVsy1vzJmRwIcSwiUO+JFfrv/xGiigmME=
 github.com/onsi/gomega v1.7.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
-github.com/openebs/api/v2 v2.1.0 h1:2DPzT93t2r76MXTUGbTCcBIhM5x+KXDsC04cNossMLU=
-github.com/openebs/api/v2 v2.1.0/go.mod h1:CTvN3qWesanPiu7KWouKPN70nL4DyUwITfyjiO/85cs=
+github.com/openebs/api/v2 v2.2.1-0.20210127083022-3d3257dd6a71 h1:VxNxsSedwpx/J6bbnHtHZzU6YvU16+wFYDamed0ppiM=
+github.com/openebs/api/v2 v2.2.1-0.20210127083022-3d3257dd6a71/go.mod h1:CTvN3qWesanPiu7KWouKPN70nL4DyUwITfyjiO/85cs=
 github.com/openebs/maya v0.0.0-20200602143918-71415115098d h1:o8RIc8RzeZkUlzYM+Sg07wRdekIHytCTMaAhFl8Yams=
 github.com/openebs/maya v0.0.0-20200602143918-71415115098d/go.mod h1:QQY9cOHKQwZ73qbv6O//UYUBLNV2S0MRDIfG7t5KOCk=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
