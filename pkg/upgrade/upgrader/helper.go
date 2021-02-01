@@ -90,9 +90,14 @@ func isOperatorUpgraded(componentName string, namespace string,
 // Remove the suffix only if it is present
 // at the end of the string
 func removeSuffixFromEnd(str, suffix string) string {
-	i := strings.LastIndex(str, suffix)
-	if i > -1 && i == len(str)-len(suffix) {
-		str = str[:i]
+	slice := strings.Split(str, "/")
+	// if the image is from openebs registry and has a suffix -amd64
+	// then only perform the operation
+	if slice[len(slice)-2] == "openebs" && strings.HasSuffix(slice[len(slice)-1], "-amd64") {
+		i := strings.LastIndex(str, suffix)
+		if i > -1 && i == len(str)-len(suffix) {
+			str = str[:i]
+		}
 	}
 	return str
 }

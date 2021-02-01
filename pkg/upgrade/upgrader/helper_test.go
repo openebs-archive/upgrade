@@ -60,6 +60,22 @@ func Test_removeSuffixFromEnd(t *testing.T) {
 			},
 			want: "air-gap-having-amd64/openebs/cstor-operator",
 		},
+		{
+			name: "custom repository with suffix",
+			args: args{
+				str:    "air-gap-having-amd64/custom/cstor-operator-amd64",
+				suffix: "-amd64",
+			},
+			want: "air-gap-having-amd64/custom/cstor-operator-amd64",
+		},
+		{
+			name: "custom repository without suffix",
+			args: args{
+				str:    "air-gap-having-amd64/custom/cstor-operator",
+				suffix: "-amd64",
+			},
+			want: "air-gap-having-amd64/custom/cstor-operator",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
