@@ -210,6 +210,8 @@ func (obj *CStorVolumePatch) transformCVDeploy(d *appsv1.Deployment, res *Resour
 		if err != nil {
 			return err
 		}
+		// remove the -amd64 prefix from the image
+		url = removeSuffixFromEnd(url, "-amd64")
 		d.Spec.Template.Spec.Containers[i].Image = url + ":" + tag
 	}
 	pvObj, err := obj.KubeClientset.CoreV1().PersistentVolumes().
