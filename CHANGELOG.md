@@ -1,3 +1,21 @@
+v2.6.0 / 2021-02-13
+========================
+* chore(crd): update upgradeTask CRD to v1  ([#86](https://github.com/openebs/upgrade/pull/86),[@shubham14bajpai](https://github.com/shubham14bajpai))
+* feat(upgrade): remove the -amd64 suffix from images ([#88](https://github.com/openebs/upgrade/pull/88),[@shubham14bajpai](https://github.com/shubham14bajpai))
+* fix(migrate): update lock file path when csp is scaled down ([#85](https://github.com/openebs/upgrade/pull/85),[@shubham14bajpai](https://github.com/shubham14bajpai))
+
+
+v2.6.0-RC2 / 2021-02-11
+========================
+
+
+v2.6.0-RC1 / 2021-02-08
+========================
+* chore(crd): update upgradeTask CRD to v1  ([#86](https://github.com/openebs/upgrade/pull/86),[@shubham14bajpai](https://github.com/shubham14bajpai))
+* feat(upgrade): remove the -amd64 suffix from images ([#88](https://github.com/openebs/upgrade/pull/88),[@shubham14bajpai](https://github.com/shubham14bajpai))
+* fix(migrate): update lock file path when csp is scaled down ([#85](https://github.com/openebs/upgrade/pull/85),[@shubham14bajpai](https://github.com/shubham14bajpai))
+
+
 v2.5.0 / 2021-01-13
 ========================
 
