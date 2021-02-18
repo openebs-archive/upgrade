@@ -31,7 +31,7 @@ kubectl label nodes --all nodetype=storage
 
 echo "Create application with cStor volume on SPC"
 
-bdname=$(kubectl -n openebs get blockdevices -o jsonpath='{.items[*].metadata.name}')
+bdname=$(kubectl -n openebs get blockdevices -o jsonpath='{.items[?(@.spec.details.deviceType=="sparse")].metadata.name}')
 sed "s/SPCBD/$bdname/" ./ci/migrate/application.tmp.yaml > ./ci/migrate/application.yaml
 kubectl apply -f ./ci/migrate/application.yaml
 sleep 5

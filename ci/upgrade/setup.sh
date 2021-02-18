@@ -33,11 +33,11 @@ kubectl wait --for=condition=available --timeout=550s deployment/cspc-operator -
 echo "Create application with cStor volume on CSPC"
 
 nodename=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
-bdname=$(kubectl -n openebs get blockdevices -o jsonpath='{.items[*].metadata.name}')
+bdname=$(kubectl -n openebs get blockdevices -o jsonpath='{.items[?(@.spec.details.deviceType=="sparse")].metadata.name}')
 sed "s|CSPCBD|$bdname|g" ./ci/upgrade/application.tmp.yaml | sed "s|NODENAME|$nodename|g" > ./ci/upgrade/application.yaml
 kubectl apply -f ./ci/upgrade/application.yaml
 sleep 10
-kubectl wait --for=condition=available --timeout=550s deployment/percona
+kubectl wait --for=condition=available --timeout=200s deployment/percona
 
 echo "Upgrade control plane to latest version"
 

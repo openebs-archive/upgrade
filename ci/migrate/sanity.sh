@@ -14,11 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+sudo modprobe iscsi_tcp
+
 make migrate-image.amd64
 
 # To test the sanity in different customized
 # image prefixes
-if [[ ${IMAGE_ORG} == "" ]]; then
+if [[ "${IMAGE_ORG}" == "" ]]; then
   IMAGE_ORG="openebs";
   export IMAGE_ORG;
 fi
@@ -28,11 +30,11 @@ fi
 # image tags
 # Determine the current branch
 CURRENT_BRANCH=""
-if [ -z ${TRAVIS_BRANCH} ];
+if [ -z "${BRANCH}" ];
 then
   CURRENT_BRANCH=$(git branch | grep \* | cut -d ' ' -f2)
 else
-  CURRENT_BRANCH=${TRAVIS_BRANCH}
+  CURRENT_BRANCH="${BRANCH}"
 fi
 
 TEST_IMAGE_TAG="${CURRENT_BRANCH}-ci"
@@ -41,17 +43,17 @@ if [ ${CURRENT_BRANCH} = "master" ]; then
 fi
 TEST_VERSION="${CURRENT_BRANCH}-dev"
 
-if [ -n "$TRAVIS_TAG" ]; then
-    # Trim the `v` from the TRAVIS_TAG if it exists
+if [ -n "$RELEASE_TAG" ]; then
+    # Trim the `v` from the RELEASE_TAG if it exists
     # Example: v1.10.0 maps to 1.10.0
     # Example: 1.10.0 maps to 1.10.0
     # Example: v1.10.0-custom maps to 1.10.0-custom
-    TEST_IMAGE_TAG="${TRAVIS_TAG#v}"
-    TEST_VERSION="${TRAVIS_TAG#v}"
+    TEST_IMAGE_TAG="${RELEASE_TAG#v}"
+    TEST_VERSION="${RELEASE_TAG#v}"
 fi
 
-export TEST_IMAGE_TAG=${TEST_IMAGE_TAG#v}
-export TEST_VERSION=${TEST_VERSION#v}
+export TEST_IMAGE_TAG="${TEST_IMAGE_TAG#v}"
+export TEST_VERSION="${TEST_VERSION#v}"
 
 echo "Testing migrate for org: $IMAGE_ORG version: $TEST_VERSION imagetag: $TEST_IMAGE_TAG"
 

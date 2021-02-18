@@ -82,3 +82,82 @@ jobs:
         env:
           IMG_RESULT: cache
         run: make docker.buildx.migrate
+
+  unit-tests:
+    name: unit tests 
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Set up Go 1.14
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.14.7
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: verify license
+      run: make check-license 
+
+    - name: verify dependencies
+      run: make deps
+
+    - name: verify tests
+      run: make test
+
+  migration-e2e:
+    needs: ['unit-tests']
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        kubernetes: [v1.18.6]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      
+      - name: Setup Minikube-Kubernetes
+        uses: manusa/actions-setup-minikube@v2.3.0
+        with:
+          minikube version: v1.9.2
+          kubernetes version: ${{ matrix.kubernetes }}
+          github token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set tag
+        run: |
+          BRANCH="${{github.base_ref}}"
+          CI_TAG="ci"
+          echo "TAG=${CI_TAG}" >> $GITHUB_ENV
+          echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
+
+      - name: Running tests
+        run: ./ci/migrate/sanity.sh
+
+  upgrade-e2e:
+    # needs: ['tests']
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        kubernetes: [v1.18.6]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      
+      - name: Setup Minikube-Kubernetes
+        uses: manusa/actions-setup-minikube@v2.3.0
+        with:
+          minikube version: v1.9.2
+          kubernetes version: ${{ matrix.kubernetes }}
+          github token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set tag
+        run: |
+          BRANCH="${{github.base_ref}}"
+          CI_TAG="ci"
+          echo "TAG=${CI_TAG}" >> $GITHUB_ENV
+          echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
+      
+      - name: Running tests
+        run: ./ci/upgrade/sanity.sh
