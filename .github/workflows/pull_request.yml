@@ -135,7 +135,7 @@ jobs:
         run: ./ci/migrate/sanity.sh
 
   upgrade-e2e:
-    # needs: ['tests']
+    needs: ['unit-tests']
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
