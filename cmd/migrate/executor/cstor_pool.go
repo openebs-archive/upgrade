@@ -87,6 +87,8 @@ func (m *MigrateOptions) RunCStorSPCMigrate() error {
 		return errors.Errorf("Failed to migrate cStor SPC : %s", m.spcName)
 	}
 	klog.Infof("Successfully migrated spc %s to cspc", m.spcName)
-
+	klog.Infof("Make sure to migrate the associated PVCs, " +
+		"to find the old PVCs use `kubectl get cstorvolume.openebs.io -n <openebs-namespace>`, " +
+		"and to get the migrated PVCs use `kubectl get cstorvolume.cstor.openebs.io -n <openebs-namespace>`")
 	return nil
 }

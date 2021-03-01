@@ -127,6 +127,7 @@ I0520 10:01:25.798889       1 pool.go:80] Successfully migrated spc sparse-claim
 
 **<span style="color: red;">Note: In case the job fails for any reason please do not scale up the old CSP deployments. It can lead to data corruption.</span>**
 
+Make sure to migrate the associated PVCs, to find the old PVCs use `kubectl get cstorvolume.openebs.io -n <openebs-namespace>` and to get the migrated PVCs use `kubectl get cstorvolume.cstor.openebs.io -n <openebs-namespace>`
 
 ## cStor External Provisioned volumes to cStor CSI volumes
 
