@@ -20,6 +20,7 @@ on:
 
 jobs:
   upgrade:
+    needs: ['upgrade-e2e']
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -60,6 +61,7 @@ jobs:
           make buildx.push.upgrade
 
   migrate:
+    needs: ['migration-e2e']
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

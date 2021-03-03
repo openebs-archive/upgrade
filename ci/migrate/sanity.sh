@@ -20,7 +20,7 @@ make migrate-image.amd64
 
 # To test the sanity in different customized
 # image prefixes
-if [[ "${IMAGE_ORG}" == "" ]]; then
+if [ -z "${IMAGE_ORG}" ]; then
   IMAGE_ORG="openebs";
   export IMAGE_ORG;
 fi
