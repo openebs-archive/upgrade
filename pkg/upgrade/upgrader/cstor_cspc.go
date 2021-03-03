@@ -17,6 +17,7 @@ limitations under the License.
 package upgrader
 
 import (
+	"context"
 	"time"
 
 	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
@@ -120,7 +121,7 @@ func (obj *CSPCPatch) Upgrade() error {
 	}
 	res := *obj.ResourcePatch
 	cspiList, err := obj.Client.OpenebsClientset.CstorV1().
-		CStorPoolInstances(obj.Namespace).List(
+		CStorPoolInstances(obj.Namespace).List(context.TODO(),
 		metav1.ListOptions{
 			LabelSelector: "openebs.io/cstor-pool-cluster=" + obj.Name,
 		},
@@ -138,7 +139,7 @@ func (obj *CSPCPatch) Upgrade() error {
 		if err != nil {
 			utaskObj, uerr := obj.OpenebsClientset.OpenebsV1alpha1().
 				UpgradeTasks(obj.OpenebsNamespace).
-				Get("upgrade-cstor-cspi-"+cspiObj.Name, metav1.GetOptions{})
+				Get(context.TODO(), "upgrade-cstor-cspi-"+cspiObj.Name, metav1.GetOptions{})
 			if uerr != nil && isUpgradeTaskJob {
 				return uerr
 			}
@@ -152,21 +153,21 @@ func (obj *CSPCPatch) Upgrade() error {
 				utaskObj.Status.CompletedTime = metav1.Now()
 			}
 			_, uerr = obj.OpenebsClientset.OpenebsV1alpha1().UpgradeTasks(obj.OpenebsNamespace).
-				Update(utaskObj)
+				Update(context.TODO(), utaskObj, metav1.UpdateOptions{})
 			if uerr != nil && isUpgradeTaskJob {
 				return uerr
 			}
 			return err
 		}
 		utaskObj, uerr := obj.OpenebsClientset.OpenebsV1alpha1().UpgradeTasks(obj.OpenebsNamespace).
-			Get("upgrade-cstor-cspi-"+cspiObj.Name, metav1.GetOptions{})
+			Get(context.TODO(), "upgrade-cstor-cspi-"+cspiObj.Name, metav1.GetOptions{})
 		if uerr != nil && isUpgradeTaskJob {
 			return uerr
 		}
 		utaskObj.Status.Phase = v1Alpha1API.UpgradeSuccess
 		utaskObj.Status.CompletedTime = metav1.Now()
 		_, uerr = obj.OpenebsClientset.OpenebsV1alpha1().UpgradeTasks(obj.OpenebsNamespace).
-			Update(utaskObj)
+			Update(context.TODO(), utaskObj, metav1.UpdateOptions{})
 		if uerr != nil && isUpgradeTaskJob {
 			return uerr
 		}

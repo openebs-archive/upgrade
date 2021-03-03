@@ -17,6 +17,7 @@ limitations under the License.
 package patch
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -82,9 +83,11 @@ func (s *StatefulSet) Patch(from, to string) error {
 	}
 	if version == from {
 		_, err := s.Client.AppsV1().StatefulSets(s.Object.Namespace).Patch(
+			context.TODO(),
 			s.Object.Name,
 			types.StrategicMergePatchType,
 			s.Data,
+			metav1.PatchOptions{},
 		)
 		if err != nil {
 			return errors.Wrapf(
@@ -98,7 +101,7 @@ func (s *StatefulSet) Patch(from, to string) error {
 			Wait(5 * time.Second).
 			Try(func(attempt uint) error {
 				stsObj, err1 := s.Client.AppsV1().StatefulSets(s.Object.Namespace).
-					Get(s.Object.Name, metav1.GetOptions{})
+					Get(context.TODO(), s.Object.Name, metav1.GetOptions{})
 				if err != nil {
 					return err1
 				}
@@ -124,6 +127,7 @@ func (s *StatefulSet) Patch(from, to string) error {
 // Get ...
 func (s *StatefulSet) Get(label, namespace string) error {
 	statefulsets, err := s.Client.AppsV1().StatefulSets(namespace).List(
+		context.TODO(),
 		metav1.ListOptions{
 			LabelSelector: label,
 		},

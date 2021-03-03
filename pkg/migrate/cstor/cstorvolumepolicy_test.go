@@ -17,6 +17,7 @@ limitations under the License.
 package migrate
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -196,7 +197,8 @@ func TestVolumeMigrator_createCVPforConfig(t *testing.T) {
 			if err := f.v.createCVPforConfig(tt.args.sc); (err != nil) != tt.wantErr {
 				t.Errorf("VolumeMigrator.createCVPforConfig() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			cvp, err := f.v.OpenebsClientset.CstorV1().CStorVolumePolicies(f.v.OpenebsNamespace).Get(tt.args.sc.Name, metav1.GetOptions{})
+			cvp, err := f.v.OpenebsClientset.CstorV1().
+				CStorVolumePolicies(f.v.OpenebsNamespace).Get(context.TODO(), tt.args.sc.Name, metav1.GetOptions{})
 			if err != nil {
 				t.Errorf("VolumeMigrator.createCVPforConfig() failed to get CVP = %v, wantErr %v", err, tt.wantErr)
 			}

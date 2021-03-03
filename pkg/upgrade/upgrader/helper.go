@@ -17,6 +17,7 @@ limitations under the License.
 package upgrader
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -69,7 +70,7 @@ func isOperatorUpgraded(componentName string, namespace string,
 	toVersion string, kubeClient kubernetes.Interface) error {
 	operatorPods, err := kubeClient.CoreV1().
 		Pods(namespace).
-		List(metav1.ListOptions{
+		List(context.TODO(), metav1.ListOptions{
 			LabelSelector: "openebs.io/component-name=" + componentName,
 		})
 	if err != nil {

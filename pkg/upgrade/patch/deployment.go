@@ -17,6 +17,7 @@ limitations under the License.
 package patch
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -83,9 +84,11 @@ func (d *Deployment) Patch(from, to string) error {
 	}
 	if version == from {
 		deployObj, err := d.Client.AppsV1().Deployments(d.Object.Namespace).Patch(
+			context.TODO(),
 			d.Object.Name,
 			types.StrategicMergePatchType,
 			d.Data,
+			metav1.PatchOptions{},
 		)
 		if err != nil {
 			return errors.Wrapf(
@@ -103,7 +106,7 @@ func (d *Deployment) Patch(from, to string) error {
 			Wait(5 * time.Second).
 			Try(func(attempt uint) error {
 				deployObj, err1 := d.Client.AppsV1().Deployments(d.Object.Namespace).
-					Get(d.Object.Name, metav1.GetOptions{})
+					Get(context.TODO(), d.Object.Name, metav1.GetOptions{})
 				if err != nil {
 					return err1
 				}
@@ -128,7 +131,7 @@ func (d *Deployment) Patch(from, to string) error {
 
 // Get ...
 func (d *Deployment) Get(label, namespace string) error {
-	deployments, err := d.Client.AppsV1().Deployments(namespace).List(
+	deployments, err := d.Client.AppsV1().Deployments(namespace).List(context.TODO(),
 		metav1.ListOptions{
 			LabelSelector: label,
 		},

@@ -17,6 +17,7 @@ limitations under the License.
 package migrate
 
 import (
+	"context"
 	"strconv"
 	"strings"
 
@@ -44,7 +45,7 @@ type quantity struct {
 func (v *VolumeMigrator) createCVPforConfig(sc *storagev1.StorageClass) error {
 	_, err := v.OpenebsClientset.CstorV1().
 		CStorVolumePolicies(v.OpenebsNamespace).
-		Get(sc.Name, metav1.GetOptions{})
+		Get(context.TODO(), sc.Name, metav1.GetOptions{})
 	found := false
 	if err == nil {
 		found = true
@@ -140,7 +141,7 @@ func (v *VolumeMigrator) createCVPforConfig(sc *storagev1.StorageClass) error {
 	if !found {
 		_, err = v.OpenebsClientset.CstorV1().
 			CStorVolumePolicies(v.OpenebsNamespace).
-			Create(cvp)
+			Create(context.TODO(), cvp, metav1.CreateOptions{})
 		if err != nil {
 			return err
 		}

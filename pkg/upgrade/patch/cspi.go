@@ -17,6 +17,7 @@ limitations under the License.
 package patch
 
 import (
+	"context"
 	"strings"
 
 	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
@@ -81,9 +82,11 @@ func (c *CSPI) Patch(from, to string) error {
 	if version == from {
 		patch := c.Data
 		_, err := c.Client.CstorV1().CStorPoolInstances(c.Object.Namespace).Patch(
+			context.TODO(),
 			c.Object.Name,
 			types.MergePatchType,
 			[]byte(patch),
+			metav1.PatchOptions{},
 		)
 		if err != nil {
 			return errors.Wrapf(
@@ -100,7 +103,7 @@ func (c *CSPI) Patch(from, to string) error {
 // Get ...
 func (c *CSPI) Get(name, namespace string) error {
 	cspi, err := c.Client.CstorV1().CStorPoolInstances(namespace).
-		Get(name, metav1.GetOptions{})
+		Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to get cspi %s in %s namespace", name, namespace)
 	}

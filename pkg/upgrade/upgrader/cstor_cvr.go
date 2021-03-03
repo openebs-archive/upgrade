@@ -17,6 +17,7 @@ limitations under the License.
 package upgrader
 
 import (
+	"context"
 	"time"
 
 	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
@@ -155,7 +156,7 @@ func (obj *CVRPatch) verifyCSPIVersion() error {
 		return errors.Errorf("missing cspi label for cvr %s", obj.Name)
 	}
 	cspiObj, err := obj.OpenebsClientset.CstorV1().CStorPoolInstances(obj.Namespace).
-		Get(cspName, metav1.GetOptions{})
+		Get(context.TODO(), cspName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to get cspi %s", cspName)
 	}

@@ -17,6 +17,7 @@ limitations under the License.
 package patch
 
 import (
+	"context"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -82,9 +83,11 @@ func (s *Service) Patch(from, to string) error {
 	if version == from {
 		patch := s.Data
 		_, err := s.Client.CoreV1().Services(s.Object.Namespace).Patch(
+			context.TODO(),
 			s.Object.Name,
 			types.StrategicMergePatchType,
 			[]byte(patch),
+			metav1.PatchOptions{},
 		)
 		if err != nil {
 			return errors.Wrapf(
@@ -101,6 +104,7 @@ func (s *Service) Patch(from, to string) error {
 // Get ...
 func (s *Service) Get(label, namespace string) error {
 	service, err := s.Client.CoreV1().Services(namespace).List(
+		context.TODO(),
 		metav1.ListOptions{
 			LabelSelector: label,
 		},

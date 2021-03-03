@@ -17,6 +17,7 @@ limitations under the License.
 package patch
 
 import (
+	"context"
 	"strings"
 
 	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
@@ -81,9 +82,11 @@ func (c *CVR) Patch(from, to string) error {
 	if version == from {
 		patch := c.Data
 		_, err := c.Client.CstorV1().CStorVolumeReplicas(c.Object.Namespace).Patch(
+			context.TODO(),
 			c.Object.Name,
 			types.MergePatchType,
 			[]byte(patch),
+			metav1.PatchOptions{},
 		)
 		if err != nil {
 			return errors.Wrapf(
@@ -100,7 +103,7 @@ func (c *CVR) Patch(from, to string) error {
 // Get ...
 func (c *CVR) Get(name, namespace string) error {
 	cvrObj, err := c.Client.CstorV1().CStorVolumeReplicas(namespace).
-		Get(name, metav1.GetOptions{})
+		Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to get cvr %s in %s namespace", name, namespace)
 	}

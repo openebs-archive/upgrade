@@ -17,13 +17,13 @@ limitations under the License.
 package migrate
 
 import (
+	"context"
 	"time"
 
 	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	"github.com/openebs/api/v2/pkg/apis/types"
 	apis "github.com/openebs/maya/pkg/apis/openebs.io/v1alpha1"
 	csp "github.com/openebs/maya/pkg/cstor/pool/v1alpha3"
-	deploy "github.com/openebs/maya/pkg/kubernetes/deployment/appsv1/v1alpha1"
 	"github.com/openebs/maya/pkg/util/retry"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
@@ -34,10 +34,10 @@ import (
 
 var (
 	typeMap = map[string]string{
-		string(apis.PoolTypeStripedCPV):  string(apis.PoolStriped),
-		string(apis.PoolTypeMirroredCPV): string(apis.PoolMirrored),
-		string(apis.PoolTypeRaidzCPV):    string(apis.PoolRaidz),
-		string(apis.PoolTypeRaidz2CPV):   string(apis.PoolRaidz2),
+		string(apis.PoolTypeStripedCPV):  string(cstor.PoolStriped),
+		string(apis.PoolTypeMirroredCPV): string(cstor.PoolMirrored),
+		string(apis.PoolTypeRaidzCPV):    string(cstor.PoolRaidz),
+		string(apis.PoolTypeRaidz2CPV):   string(cstor.PoolRaidz2),
 	}
 )
 
@@ -94,8 +94,8 @@ func (c *CSPCMigrator) getCSPCSpecForSPC(spcName string) (*cstor.CStorPoolCluste
 		cspcObj.Annotations[types.OpenEBSAllowedBDTagKey] = c.SPCObj.Annotations[types.OpenEBSAllowedBDTagKey]
 	}
 	for _, cspObj := range cspList.Items {
-		cspDeployList, err := deploy.NewKubeClient().WithNamespace(c.OpenebsNamespace).
-			List(&metav1.ListOptions{
+		cspDeployList, err := c.KubeClientset.AppsV1().Deployments(c.OpenebsNamespace).
+			List(context.TODO(), metav1.ListOptions{
 				LabelSelector: "openebs.io/cstor-pool=" + cspObj.Name,
 			})
 		if err != nil {
@@ -146,7 +146,8 @@ func getCSPAuxResources(cspDeploy appsv1.Deployment) *corev1.ResourceRequirement
 func (c *CSPCMigrator) generateCSPC(spcName string) (
 	*cstor.CStorPoolCluster, error) {
 	cspcObj, err := c.OpenebsClientset.CstorV1().
-		CStorPoolClusters(c.OpenebsNamespace).Get(c.CSPCName, metav1.GetOptions{})
+		CStorPoolClusters(c.OpenebsNamespace).Get(context.TODO(),
+		c.CSPCName, metav1.GetOptions{})
 	if !k8serrors.IsNotFound(err) && err != nil {
 		return nil, err
 	}
@@ -156,7 +157,8 @@ func (c *CSPCMigrator) generateCSPC(spcName string) (
 			return nil, err
 		}
 		cspcObj, err = c.OpenebsClientset.CstorV1().
-			CStorPoolClusters(c.OpenebsNamespace).Create(cspcObj)
+			CStorPoolClusters(c.OpenebsNamespace).Create(context.TODO(),
+			cspcObj, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -170,7 +172,7 @@ func (c *CSPCMigrator) generateCSPC(spcName string) (
 		Wait(5 * time.Second).
 		Try(func(attempt uint) error {
 			cspiList, err1 := c.OpenebsClientset.CstorV1().
-				CStorPoolInstances(c.OpenebsNamespace).List(
+				CStorPoolInstances(c.OpenebsNamespace).List(context.TODO(),
 				metav1.ListOptions{
 					LabelSelector: types.CStorPoolClusterLabelKey + "=" + cspcObj.Name,
 				})
@@ -189,7 +191,7 @@ func (c *CSPCMigrator) generateCSPC(spcName string) (
 		return nil, err
 	}
 	cspcObj, err = c.OpenebsClientset.CstorV1().
-		CStorPoolClusters(c.OpenebsNamespace).Get(c.CSPCName, metav1.GetOptions{})
+		CStorPoolClusters(c.OpenebsNamespace).Get(context.TODO(), c.CSPCName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +202,7 @@ func (c *CSPCMigrator) generateCSPC(spcName string) (
 	delete(cspcObj.Annotations, types.OpenEBSDisableDependantsReconcileKey)
 	cspcObj, err = c.OpenebsClientset.CstorV1().
 		CStorPoolClusters(c.OpenebsNamespace).
-		Update(cspcObj)
+		Update(context.TODO(), cspcObj, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, err
 	}

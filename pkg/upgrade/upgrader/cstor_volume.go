@@ -17,6 +17,7 @@ limitations under the License.
 package upgrader
 
 import (
+	"context"
 	"time"
 
 	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
@@ -155,7 +156,7 @@ func (obj *CStorVolumePatch) getCVCPatchData() error {
 
 func (obj *CStorVolumePatch) transformCVC(c *cstor.CStorVolumeConfig, res *ResourcePatch) error {
 	pvObj, err := obj.KubeClientset.CoreV1().PersistentVolumes().
-		Get(obj.Name, metav1.GetOptions{})
+		Get(context.TODO(), obj.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -176,7 +177,7 @@ func (obj *CStorVolumePatch) getCVPatchData() error {
 
 func (obj *CStorVolumePatch) transformCV(c *cstor.CStorVolume, res *ResourcePatch) error {
 	pvObj, err := obj.KubeClientset.CoreV1().PersistentVolumes().
-		Get(obj.Name, metav1.GetOptions{})
+		Get(context.TODO(), obj.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -215,7 +216,7 @@ func (obj *CStorVolumePatch) transformCVDeploy(d *appsv1.Deployment, res *Resour
 		d.Spec.Template.Spec.Containers[i].Image = url + ":" + tag
 	}
 	pvObj, err := obj.KubeClientset.CoreV1().PersistentVolumes().
-		Get(obj.Name, metav1.GetOptions{})
+		Get(context.TODO(), obj.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -325,7 +326,7 @@ func (obj *CStorVolumePatch) Upgrade() error {
 	statusObj.Phase = v1Alpha1API.StepErrored
 	res := *obj.ResourcePatch
 	cvrList, err := obj.Client.OpenebsClientset.CstorV1().
-		CStorVolumeReplicas(obj.Namespace).List(
+		CStorVolumeReplicas(obj.Namespace).List(context.TODO(),
 		metav1.ListOptions{
 			LabelSelector: "openebs.io/persistent-volume=" + obj.Name,
 		},
