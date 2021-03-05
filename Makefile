@@ -85,7 +85,9 @@ clean-upgrade:
 # deps ensures fresh go.mod and go.sum.
 .PHONY: deps
 deps:
+	@echo "--> Tidying up submodules"
 	@go mod tidy
+	@echo "--> Verifying submodules"
 	@go mod verify
 
 .PHONY: test
