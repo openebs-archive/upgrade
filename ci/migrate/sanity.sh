@@ -26,7 +26,7 @@ if [ -z "${IMAGE_ORG}" ]; then
 fi
 
 # To test the sanity in different versioned branches 
-# and travis tags, get the travis version and corresponding
+# and release tags, get the release version and corresponding
 # image tags
 # Determine the current branch
 CURRENT_BRANCH=""

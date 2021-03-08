@@ -19,7 +19,7 @@ set -ex
 
 sudo modprobe iscsi_tcp
 
-# To enable dev upgardes in travis
+# To enable dev upgardes in github action
 make upgrade-image.amd64
 
 # To test the sanity in different customized
@@ -30,7 +30,7 @@ if [[ "${IMAGE_ORG}" == "" ]]; then
 fi
 
 # To test the sanity in different versioned branches 
-# and travis tags, get the travis version and corresponding
+# and release tags, get the release version and corresponding
 # image tags
 # Determine the current branch
 CURRENT_BRANCH=""
