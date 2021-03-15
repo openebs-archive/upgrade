@@ -1,3 +1,19 @@
+v2.7.0 / 2021-03-11
+========================
+* refact(migrate): improve logs and docs about multiple cstorvolume apis ([#96](https://github.com/openebs/upgrade/pull/96),[@shubham14bajpai](https://github.com/shubham14bajpai))
+* chore(actions): move travis tests to github action ([#95](https://github.com/openebs/upgrade/pull/95),[@shubham14bajpai](https://github.com/shubham14bajpai))
+
+
+v2.7.0-RC2 / 2021-03-10
+========================
+
+
+v2.7.0-RC1 / 2021-03-08
+========================
+* refact(migrate): improve logs and docs about multiple cstorvolume apis ([#96](https://github.com/openebs/upgrade/pull/96),[@shubham14bajpai](https://github.com/shubham14bajpai))
+* chore(actions): move travis tests to github action ([#95](https://github.com/openebs/upgrade/pull/95),[@shubham14bajpai](https://github.com/shubham14bajpai))
+
+
 v2.6.0 / 2021-02-13
 ========================
 * chore(crd): update upgradeTask CRD to v1  ([#86](https://github.com/openebs/upgrade/pull/86),[@shubham14bajpai](https://github.com/shubham14bajpai))
