@@ -21,7 +21,6 @@ import (
 	"strings"
 	"time"
 
-	retry "github.com/openebs/maya/pkg/util/retry"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -83,7 +82,7 @@ func (d *Deployment) Patch(from, to string) error {
 		return nil
 	}
 	if version == from {
-		deployObj, err := d.Client.AppsV1().Deployments(d.Object.Namespace).Patch(
+		_, err := d.Client.AppsV1().Deployments(d.Object.Namespace).Patch(
 			context.TODO(),
 			d.Object.Name,
 			types.StrategicMergePatchType,
@@ -97,32 +96,28 @@ func (d *Deployment) Patch(from, to string) error {
 				d.Object.Name,
 			)
 		}
-		revision, err := deploymentutil.Revision(deployObj)
-		if err != nil {
-			return err
-		}
-		err = retry.
-			Times(60).
-			Wait(5 * time.Second).
-			Try(func(attempt uint) error {
-				deployObj, err1 := d.Client.AppsV1().Deployments(d.Object.Namespace).
-					Get(context.TODO(), d.Object.Name, metav1.GetOptions{})
-				if err != nil {
-					return err1
-				}
-				statusViewer := DeploymentStatusViewer{}
-				msg, rolledOut, err1 := statusViewer.Status(deployObj, revision+1)
-				if err1 != nil {
-					return err1
-				}
-				klog.Info("rollout status: ", msg)
-				if !rolledOut {
-					return errors.Wrapf(err1, "failed to rollout: %s", msg)
-				}
-				return nil
-			})
-		if err != nil {
-			return err
+		time.Sleep(2 * time.Second)
+		for {
+			deployObj, err1 := d.Client.AppsV1().Deployments(d.Object.Namespace).
+				Get(context.TODO(), d.Object.Name, metav1.GetOptions{})
+			if err1 != nil {
+				return err1
+			}
+			revision, err1 := deploymentutil.Revision(deployObj)
+			if err1 != nil {
+				return err1
+			}
+			statusViewer := DeploymentStatusViewer{}
+			msg, rolledOut, err1 := statusViewer.Status(deployObj, revision)
+			if err1 != nil {
+				return err1
+			}
+			klog.Info("rollout status: ", msg)
+			if !rolledOut {
+				time.Sleep(5 * time.Second)
+			} else {
+				break
+			}
 		}
 		klog.Infof("deployment %s patched successfully", d.Object.Name)
 	}

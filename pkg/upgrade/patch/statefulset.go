@@ -21,7 +21,6 @@ import (
 	"strings"
 	"time"
 
-	retry "github.com/openebs/maya/pkg/util/retry"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -96,28 +95,23 @@ func (s *StatefulSet) Patch(from, to string) error {
 				s.Object.Name,
 			)
 		}
-		err = retry.
-			Times(60).
-			Wait(5 * time.Second).
-			Try(func(attempt uint) error {
-				stsObj, err1 := s.Client.AppsV1().StatefulSets(s.Object.Namespace).
-					Get(context.TODO(), s.Object.Name, metav1.GetOptions{})
-				if err != nil {
-					return err1
-				}
-				statusViewer := StatefulSetStatusViewer{}
-				msg, rolledOut, err1 := statusViewer.Status(stsObj)
-				if err1 != nil {
-					return err1
-				}
-				klog.Info("rollout status: ", msg)
-				if !rolledOut {
-					return errors.Wrapf(err1, "failed to rollout: %s", msg)
-				}
-				return nil
-			})
-		if err != nil {
-			return err
+		for {
+			stsObj, err1 := s.Client.AppsV1().StatefulSets(s.Object.Namespace).
+				Get(context.TODO(), s.Object.Name, metav1.GetOptions{})
+			if err != nil {
+				return err1
+			}
+			statusViewer := StatefulSetStatusViewer{}
+			msg, rolledOut, err1 := statusViewer.Status(stsObj)
+			if err1 != nil {
+				return err1
+			}
+			klog.Info("rollout status: ", msg)
+			if !rolledOut {
+				time.Sleep(5 * time.Second)
+			} else {
+				break
+			}
 		}
 		klog.Infof("statefulset %s patched successfully", s.Object.Name)
 	}

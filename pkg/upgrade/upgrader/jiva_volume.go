@@ -277,7 +277,7 @@ func (obj *JivaVolumePatch) JivaVolumeUpgrade() (string, error) {
 func (obj *JivaVolumePatch) Upgrade() error {
 	var err, uerr error
 	obj.Utask, err = getOrCreateUpgradeTask(
-		"cstorVolume",
+		"jivaVolume",
 		obj.ResourcePatch,
 		obj.Client,
 	)
