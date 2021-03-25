@@ -56,9 +56,14 @@ jobs:
           version: v0.5.1
 
       - name: Build Image
-        env:
-          IMG_RESULT: cache
-        run: make docker.buildx.upgrade
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./build/upgrade/upgrade.Dockerfile
+          push: false
+          platforms: linux/amd64, linux/arm64
+          tags: |
+            openebs/upgrade:ci
 
   migrate:
     runs-on: ubuntu-latest
@@ -79,9 +84,14 @@ jobs:
           version: v0.5.1
 
       - name: Build Image
-        env:
-          IMG_RESULT: cache
-        run: make docker.buildx.migrate
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./build/migrate/migrate.Dockerfile
+          push: false
+          platforms: linux/amd64, linux/arm64
+          tags: |
+            openebs/migrate:ci
 
   unit-tests:
     name: unit tests 
@@ -140,7 +150,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        kubernetes: [v1.18.6]
+        engine: [cstor, jiva]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -149,8 +159,14 @@ jobs:
         uses: manusa/actions-setup-minikube@v2.3.0
         with:
           minikube version: v1.9.2
-          kubernetes version: ${{ matrix.kubernetes }}
+          kubernetes version: v1.18.6
           github token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set Image Org
+        # sets the default IMAGE_ORG to openebs
+        run: |
+          [ -z "${{ secrets.IMAGE_ORG }}" ] && IMAGE_ORG=openebs || IMAGE_ORG=${{ secrets.IMAGE_ORG}}
+          echo "IMAGE_ORG=${IMAGE_ORG}" >> $GITHUB_ENV
       
       - name: Set tag
         run: |
@@ -159,5 +175,20 @@ jobs:
           echo "TAG=${CI_TAG}" >> $GITHUB_ENV
           echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
       
+      - name: Build image locally
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./build/upgrade/upgrade.Dockerfile
+          push: false
+          load: true
+          platforms: linux/amd64
+          tags: |
+            ${{ env.IMAGE_ORG }}/upgrade:${{ env.TAG }}
+          build-args: |
+            DBUILD_REPO_URL=https://github.com/openebs/upgrade
+            DBUILD_SITE_URL=https://openebs.io
+            BRANCH=${{ env.BRANCH }}
+      
       - name: Running tests
-        run: ./ci/upgrade/sanity.sh
+        run: ./ci/upgrade/${{ matrix.engine }}/sanity.sh

@@ -45,7 +45,7 @@ sed -ie '/SPARSE_FILE_COUNT/{n;s/"0"/"1"/}' cstor-operator.yaml
 kubectl apply -f cstor-operator.yaml
 sleep 5
 
-sed "s|testimage|$TEST_IMAGE_TAG|g" ./ci/upgrade/cstor-operator.tmp.yaml | sed "s|testversion|$TEST_VERSION|g" | sed "s|imageorg|$IMAGE_ORG|g" > ./ci/migrate/cstor-operator.yaml
+sed "s|testimage|$TEST_IMAGE_TAG|g" ./ci/upgrade/cstor/cstor-operator.tmp.yaml | sed "s|testversion|$TEST_VERSION|g" | sed "s|imageorg|$IMAGE_ORG|g" > ./ci/migrate/cstor-operator.yaml
 kubectl apply -f ./ci/migrate/cstor-operator.yaml
 sleep 10
 
