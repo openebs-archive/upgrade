@@ -39,7 +39,7 @@ else
 fi
 
 TEST_IMAGE_TAG="${CURRENT_BRANCH}-ci"
-if [ ${CURRENT_BRANCH} = "master" ]; then
+if [ "${CURRENT_BRANCH}" = "master" ]; then
   TEST_IMAGE_TAG="ci"
 fi
 TEST_VERSION="${CURRENT_BRANCH}-dev"
@@ -62,7 +62,7 @@ echo "Testing upgrade for org: $IMAGE_ORG version: $TEST_VERSION imagetag: $TEST
 ./ci/upgrade/jiva/setup.sh || exit 1
 # run migration tests
 ./ci/upgrade/jiva/test.sh 
-if [[ $? != 0 ]]; then
+if [ $? != 0 ]; then
   kubectl logs --tail=50 -l job-name=upgrade-volume -n openebs
   exit 1
 fi
