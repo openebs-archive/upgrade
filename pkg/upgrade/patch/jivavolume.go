@@ -57,12 +57,12 @@ func WithJVClient(c client.Client) JVOptions {
 // PreChecks ...
 func (j *JV) PreChecks(from, to string) error {
 	if j.Object == nil {
-		return errors.Errorf("nil jv object")
+		return errors.Errorf("nil jivaVolume object")
 	}
 	version := strings.Split(j.Object.VersionDetails.Status.Current, "-")[0]
 	if version != strings.Split(from, "-")[0] && version != strings.Split(to, "-")[0] {
 		return errors.Errorf(
-			"jv version %s is neither %s nor %s",
+			"jivaVolume version %s is neither %s nor %s",
 			j.Object.VersionDetails.Status.Current,
 			from,
 			to,
@@ -73,10 +73,10 @@ func (j *JV) PreChecks(from, to string) error {
 
 // Patch ...
 func (j *JV) Patch(from, to string) error {
-	klog.Info("patching jv ", j.Object.Name)
+	klog.Info("patching jivaVolume ", j.Object.Name)
 	version := j.Object.VersionDetails.Desired
 	if version == to {
-		klog.Infof("jv already in %s version", to)
+		klog.Infof("jivaVolume already in %s version", to)
 		return nil
 	}
 	if version == from {
@@ -89,11 +89,11 @@ func (j *JV) Patch(from, to string) error {
 		if err != nil {
 			return errors.Wrapf(
 				err,
-				"failed to patch jv %s",
+				"failed to patch jivaVolume %s",
 				j.Object.Name,
 			)
 		}
-		klog.Infof("jv %s patched", j.Object.Name)
+		klog.Infof("jivaVolume %s patched", j.Object.Name)
 	}
 	return nil
 }
@@ -105,7 +105,7 @@ func (j *JV) Get(name, namespace string) error {
 			Name:      name,
 			Namespace: namespace,
 		}, instance); err != nil {
-		return errors.Wrapf(err, "failed to get jv %s in %s namespace", name, namespace)
+		return errors.Wrapf(err, "failed to get jivaVolume %s in %s namespace", name, namespace)
 	}
 
 	// update cr with the latest change
