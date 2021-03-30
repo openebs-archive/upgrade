@@ -153,7 +153,7 @@ func (u *UpgradeOptions) InitializeFromUpgradeTaskResource(
 		u.resourceKind = "cstorVolume"
 		u.name = upgradeTaskCRObj.Spec.ResourceSpec.CStorVolume.PVName
 
-	case upgradeTaskCRObj.Spec.ResourceSpec.CStorVolume != nil:
+	case upgradeTaskCRObj.Spec.ResourceSpec.JivaVolume != nil:
 		u.resourceKind = "jivaVolume"
 		u.name = upgradeTaskCRObj.Spec.ResourceSpec.JivaVolume.PVName
 

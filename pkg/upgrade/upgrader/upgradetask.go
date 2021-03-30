@@ -159,7 +159,7 @@ func buildUpgradeTask(kind string, r *ResourcePatch) *v1Alpha1API.UpgradeTask {
 	case "jivaVolume":
 		utaskObj.Name = "upgrade-jiva-csi-volume-" + r.Name
 		utaskObj.Spec.ResourceSpec = v1Alpha1API.ResourceSpec{
-			CStorVolume: &v1Alpha1API.CStorVolume{
+			JivaVolume: &v1Alpha1API.JivaVolume{
 				PVName: r.Name,
 			},
 		}

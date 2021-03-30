@@ -1,4 +1,4 @@
-# Copyright © 2020 The OpenEBS Authors
+# Copyright © 2021 The OpenEBS Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ spec:
       # VERIFY the value of serviceAccountName is pointing to service account
       # created within openebs namespace. Use the non-default account.
       # by running `kubectl get sa -n <openebs-namespace>`
-      serviceAccountName: openebs-maya-operator
+      serviceAccountName: jiva-operator
       containers:
       - name:  upgrade
         args:
