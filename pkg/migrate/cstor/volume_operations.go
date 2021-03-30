@@ -17,6 +17,7 @@ limitations under the License.
 package migrate
 
 import (
+	"context"
 	"time"
 
 	errors "github.com/pkg/errors"
@@ -33,14 +34,14 @@ import (
 func (v *VolumeMigrator) IsVolumeMounted(pvName string) (*corev1.PersistentVolume, error) {
 	pvObj, err := v.KubeClientset.CoreV1().
 		PersistentVolumes().
-		Get(pvName, metav1.GetOptions{})
+		Get(context.TODO(), pvName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 	pvcName := pvObj.Spec.ClaimRef.Name
 	pvcNamespace := pvObj.Spec.ClaimRef.Namespace
 	podList, err := v.KubeClientset.CoreV1().Pods(pvcNamespace).
-		List(metav1.ListOptions{})
+		List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +68,7 @@ func (v *VolumeMigrator) RetainPV(pvObj *corev1.PersistentVolume) error {
 	pvObj.Spec.PersistentVolumeReclaimPolicy = corev1.PersistentVolumeReclaimRetain
 	_, err := v.KubeClientset.CoreV1().
 		PersistentVolumes().
-		Update(pvObj)
+		Update(context.TODO(), pvObj, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
@@ -80,7 +81,7 @@ func (v *VolumeMigrator) RetainPV(pvObj *corev1.PersistentVolume) error {
 func (v *VolumeMigrator) RecreatePV(pvObj *corev1.PersistentVolume) (*corev1.PersistentVolume, error) {
 	err := v.KubeClientset.CoreV1().
 		PersistentVolumes().
-		Delete(pvObj.Name, &metav1.DeleteOptions{})
+		Delete(context.TODO(), pvObj.Name, metav1.DeleteOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, err
 	}
@@ -90,7 +91,7 @@ func (v *VolumeMigrator) RecreatePV(pvObj *corev1.PersistentVolume) (*corev1.Per
 	}
 	pvObj, err = v.KubeClientset.CoreV1().
 		PersistentVolumes().
-		Create(pvObj)
+		Create(context.TODO(), pvObj, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +103,7 @@ func (v *VolumeMigrator) RecreatePV(pvObj *corev1.PersistentVolume) (*corev1.Per
 func (v *VolumeMigrator) RecreatePVC(pvcObj *corev1.PersistentVolumeClaim) (*corev1.PersistentVolumeClaim, error) {
 	err := v.KubeClientset.CoreV1().
 		PersistentVolumeClaims(pvcObj.Namespace).
-		Delete(pvcObj.Name, &metav1.DeleteOptions{})
+		Delete(context.TODO(), pvcObj.Name, metav1.DeleteOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, err
 	}
@@ -112,7 +113,7 @@ func (v *VolumeMigrator) RecreatePVC(pvcObj *corev1.PersistentVolumeClaim) (*cor
 	}
 	pvcObj, err = v.KubeClientset.CoreV1().
 		PersistentVolumeClaims(pvcObj.Namespace).
-		Create(pvcObj)
+		Create(context.TODO(), pvcObj, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +127,7 @@ func (v *VolumeMigrator) isPVCDeletedEventually(pvcObj *corev1.PersistentVolumeC
 	for i := 1; i < 60; i++ {
 		_, err := v.KubeClientset.CoreV1().
 			PersistentVolumeClaims(pvcObj.Namespace).
-			Get(pvcObj.Name, metav1.GetOptions{})
+			Get(context.TODO(), pvcObj.Name, metav1.GetOptions{})
 		if k8serrors.IsNotFound(err) {
 			return nil
 		}
@@ -143,7 +144,7 @@ func (v *VolumeMigrator) isPVDeletedEventually(pvObj *corev1.PersistentVolume) e
 	for i := 1; i < 60; i++ {
 		_, err := v.KubeClientset.CoreV1().
 			PersistentVolumes().
-			Get(pvObj.Name, metav1.GetOptions{})
+			Get(context.TODO(), pvObj.Name, metav1.GetOptions{})
 		if k8serrors.IsNotFound(err) {
 			return nil
 		}

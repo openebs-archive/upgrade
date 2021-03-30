@@ -17,17 +17,17 @@ limitations under the License.
 package patch
 
 import (
+	"context"
 	"strings"
 	"time"
 
-	deploy "github.com/openebs/maya/pkg/kubernetes/deployment/appsv1/v1alpha1"
-	retry "github.com/openebs/maya/pkg/util/retry"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
+	deploymentutil "k8s.io/kubectl/pkg/util/deployment"
 )
 
 // Deployment ...
@@ -83,9 +83,11 @@ func (d *Deployment) Patch(from, to string) error {
 	}
 	if version == from {
 		_, err := d.Client.AppsV1().Deployments(d.Object.Namespace).Patch(
+			context.TODO(),
 			d.Object.Name,
 			types.StrategicMergePatchType,
 			d.Data,
+			metav1.PatchOptions{},
 		)
 		if err != nil {
 			return errors.Wrapf(
@@ -94,23 +96,28 @@ func (d *Deployment) Patch(from, to string) error {
 				d.Object.Name,
 			)
 		}
-		err = retry.
-			Times(60).
-			Wait(5 * time.Second).
-			Try(func(attempt uint) error {
-				deloyClient := deploy.NewKubeClient()
-				rolloutStatus, err1 := deloyClient.WithNamespace(d.Object.Namespace).
-					RolloutStatus(d.Object.Name)
-				if err1 != nil {
-					return err1
-				}
-				if !rolloutStatus.IsRolledout {
-					return errors.Errorf("failed to rollout: %s", rolloutStatus.Message)
-				}
-				return nil
-			})
-		if err != nil {
-			return err
+		time.Sleep(2 * time.Second)
+		for {
+			deployObj, err1 := d.Client.AppsV1().Deployments(d.Object.Namespace).
+				Get(context.TODO(), d.Object.Name, metav1.GetOptions{})
+			if err1 != nil {
+				return err1
+			}
+			revision, err1 := deploymentutil.Revision(deployObj)
+			if err1 != nil {
+				return err1
+			}
+			statusViewer := DeploymentStatusViewer{}
+			msg, rolledOut, err1 := statusViewer.Status(deployObj, revision)
+			if err1 != nil {
+				return err1
+			}
+			klog.Info("rollout status: ", msg)
+			if !rolledOut {
+				time.Sleep(5 * time.Second)
+			} else {
+				break
+			}
 		}
 		klog.Infof("deployment %s patched successfully", d.Object.Name)
 	}
@@ -119,7 +126,7 @@ func (d *Deployment) Patch(from, to string) error {
 
 // Get ...
 func (d *Deployment) Get(label, namespace string) error {
-	deployments, err := d.Client.AppsV1().Deployments(namespace).List(
+	deployments, err := d.Client.AppsV1().Deployments(namespace).List(context.TODO(),
 		metav1.ListOptions{
 			LabelSelector: label,
 		},

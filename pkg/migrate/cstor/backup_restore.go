@@ -17,6 +17,8 @@ limitations under the License.
 package migrate
 
 import (
+	"context"
+
 	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
 	openebsio "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/api/v2/pkg/apis/types"
@@ -75,7 +77,7 @@ func TranslateCompletedBackupToV1(oldCompletedBackup openebsio.CStorCompletedBac
 func (c *CSPCMigrator) upgradeBackupRestore(cspUID string, cspiObj *cstor.CStorPoolInstance) error {
 	// Migrate backup to v1 version
 	oldBackupList, err := c.OpenebsClientset.OpenebsV1alpha1().
-		CStorBackups(c.OpenebsNamespace).List(metav1.ListOptions{
+		CStorBackups(c.OpenebsNamespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: cspUIDLabel + "=" + cspUID,
 	})
 	if err != nil && !k8serrors.IsNotFound(err) {
@@ -87,7 +89,7 @@ func (c *CSPCMigrator) upgradeBackupRestore(cspUID string, cspiObj *cstor.CStorP
 		newBackup.Labels[types.CStorPoolInstanceUIDLabelKey] = string(cspiObj.UID)
 		delete(newBackup.Labels, cspUIDLabel)
 		_, err := c.OpenebsClientset.CstorV1().
-			CStorBackups(c.OpenebsNamespace).Create(newBackup)
+			CStorBackups(c.OpenebsNamespace).Create(context.TODO(), newBackup, metav1.CreateOptions{})
 		if err != nil && !k8serrors.IsAlreadyExists(err) {
 			return errors.Wrapf(err, "failed to create v1 cstorbackup for %s", oldBackup.Name)
 		}
@@ -96,7 +98,7 @@ func (c *CSPCMigrator) upgradeBackupRestore(cspUID string, cspiObj *cstor.CStorP
 	if len(oldBackupList.Items) != 0 {
 		err = c.OpenebsClientset.OpenebsV1alpha1().
 			CStorBackups(c.OpenebsNamespace).
-			DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{
+			DeleteCollection(context.TODO(), metav1.DeleteOptions{}, metav1.ListOptions{
 				LabelSelector: cspUIDLabel + "=" + cspUID,
 			})
 		if err != nil && !k8serrors.IsNotFound(err) {
@@ -106,7 +108,7 @@ func (c *CSPCMigrator) upgradeBackupRestore(cspUID string, cspiObj *cstor.CStorP
 
 	// Migrate restore to v1 version
 	oldRestoreList, err := c.OpenebsClientset.OpenebsV1alpha1().
-		CStorRestores(c.OpenebsNamespace).List(metav1.ListOptions{
+		CStorRestores(c.OpenebsNamespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: cspUIDLabel + "=" + cspUID,
 	})
 	if err != nil && !k8serrors.IsNotFound(err) {
@@ -118,7 +120,7 @@ func (c *CSPCMigrator) upgradeBackupRestore(cspUID string, cspiObj *cstor.CStorP
 		newRestore.Labels[types.CStorPoolInstanceUIDLabelKey] = string(cspiObj.UID)
 		delete(newRestore.Labels, cspUIDLabel)
 		_, err := c.OpenebsClientset.CstorV1().
-			CStorRestores(c.OpenebsNamespace).Create(newRestore)
+			CStorRestores(c.OpenebsNamespace).Create(context.TODO(), newRestore, metav1.CreateOptions{})
 		if err != nil && !k8serrors.IsAlreadyExists(err) {
 			return errors.Wrapf(err, "failed to create v1 cstorrestore for %s", oldRestore.Name)
 		}
@@ -127,7 +129,7 @@ func (c *CSPCMigrator) upgradeBackupRestore(cspUID string, cspiObj *cstor.CStorP
 	if len(oldRestoreList.Items) != 0 {
 		err = c.OpenebsClientset.OpenebsV1alpha1().
 			CStorRestores(c.OpenebsNamespace).
-			DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{
+			DeleteCollection(context.TODO(), metav1.DeleteOptions{}, metav1.ListOptions{
 				LabelSelector: cspUIDLabel + "=" + cspUID,
 			})
 		if err != nil && !k8serrors.IsNotFound(err) {
@@ -137,7 +139,7 @@ func (c *CSPCMigrator) upgradeBackupRestore(cspUID string, cspiObj *cstor.CStorP
 
 	// Migrate completedbackup to v1 version
 	oldCompletedBackupList, err := c.OpenebsClientset.OpenebsV1alpha1().
-		CStorCompletedBackups(c.OpenebsNamespace).List(metav1.ListOptions{
+		CStorCompletedBackups(c.OpenebsNamespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: cspUIDLabel + "=" + cspUID,
 	})
 	if err != nil && !k8serrors.IsNotFound(err) {
@@ -149,7 +151,7 @@ func (c *CSPCMigrator) upgradeBackupRestore(cspUID string, cspiObj *cstor.CStorP
 		newCompletedBackup.Labels[types.CStorPoolInstanceUIDLabelKey] = string(cspiObj.UID)
 		delete(newCompletedBackup.Labels, cspUIDLabel)
 		_, err := c.OpenebsClientset.CstorV1().
-			CStorCompletedBackups(c.OpenebsNamespace).Create(newCompletedBackup)
+			CStorCompletedBackups(c.OpenebsNamespace).Create(context.TODO(), newCompletedBackup, metav1.CreateOptions{})
 		if err != nil && !k8serrors.IsAlreadyExists(err) {
 			return errors.Wrapf(err, "failed to create v1 cstorcompletedbackup for %s", oldCompletedBackup.Name)
 		}
@@ -158,7 +160,7 @@ func (c *CSPCMigrator) upgradeBackupRestore(cspUID string, cspiObj *cstor.CStorP
 	if len(oldBackupList.Items) != 0 {
 		err = c.OpenebsClientset.OpenebsV1alpha1().
 			CStorCompletedBackups(c.OpenebsNamespace).
-			DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{
+			DeleteCollection(context.TODO(), metav1.DeleteOptions{}, metav1.ListOptions{
 				LabelSelector: cspUIDLabel + "=" + cspUID,
 			})
 		if err != nil && !k8serrors.IsNotFound(err) {

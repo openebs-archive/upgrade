@@ -17,6 +17,7 @@ limitations under the License.
 package upgrader
 
 import (
+	"context"
 	"os"
 
 	v1Alpha1API "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
@@ -49,7 +50,8 @@ func updateUpgradeDetailedStatus(utaskObj *v1Alpha1API.UpgradeTask,
 		utaskObj.Status.UpgradeDetailedStatuses[l-1] = uStatusObj
 	}
 	utaskObj, err = client.OpenebsClientset.OpenebsV1alpha1().
-		UpgradeTasks(openebsNamespace).Update(utaskObj)
+		UpgradeTasks(openebsNamespace).Update(context.TODO(),
+		utaskObj, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to update upgradetask ")
 	}
@@ -91,11 +93,12 @@ func getOrCreateUpgradeTask(kind string, r *ResourcePatch, client *Client) (*v1A
 	// then creates a new CR
 	utaskObj1, err1 := client.OpenebsClientset.OpenebsV1alpha1().
 		UpgradeTasks(r.OpenebsNamespace).
-		Get(utaskObj.Name, metav1.GetOptions{})
+		Get(context.TODO(), utaskObj.Name, metav1.GetOptions{})
 	if err1 != nil {
 		if k8serror.IsNotFound(err1) {
 			utaskObj, err = client.OpenebsClientset.OpenebsV1alpha1().
-				UpgradeTasks(r.OpenebsNamespace).Create(utaskObj)
+				UpgradeTasks(r.OpenebsNamespace).Create(context.TODO(),
+				utaskObj, metav1.CreateOptions{})
 			if err != nil {
 				return nil, err
 			}
@@ -114,7 +117,7 @@ func getOrCreateUpgradeTask(kind string, r *ResourcePatch, client *Client) (*v1A
 	utaskObj.Status.UpgradeDetailedStatuses = []v1Alpha1API.UpgradeDetailedStatuses{}
 	utaskObj, err = client.OpenebsClientset.OpenebsV1alpha1().
 		UpgradeTasks(r.OpenebsNamespace).
-		Update(utaskObj)
+		Update(context.TODO(), utaskObj, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to update upgradetask")
 	}
@@ -153,6 +156,13 @@ func buildUpgradeTask(kind string, r *ResourcePatch) *v1Alpha1API.UpgradeTask {
 				PVName: r.Name,
 			},
 		}
+	case "jivaVolume":
+		utaskObj.Name = "upgrade-jiva-csi-volume-" + r.Name
+		utaskObj.Spec.ResourceSpec = v1Alpha1API.ResourceSpec{
+			JivaVolume: &v1Alpha1API.JivaVolume{
+				PVName: r.Name,
+			},
+		}
 	}
 	return utaskObj
 }
@@ -160,12 +170,12 @@ func buildUpgradeTask(kind string, r *ResourcePatch) *v1Alpha1API.UpgradeTask {
 func getBackoffLimit(openebsNamespace string, client *Client) (int, error) {
 	podName := os.Getenv("POD_NAME")
 	podObj, err := client.KubeClientset.CoreV1().Pods(openebsNamespace).
-		Get(podName, metav1.GetOptions{})
+		Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get backoff limit")
 	}
 	jobObj, err := client.KubeClientset.BatchV1().Jobs(openebsNamespace).
-		Get(podObj.OwnerReferences[0].Name, metav1.GetOptions{})
+		Get(context.TODO(), podObj.OwnerReferences[0].Name, metav1.GetOptions{})
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get backoff limit")
 	}

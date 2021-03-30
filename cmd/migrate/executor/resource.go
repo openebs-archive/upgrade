@@ -17,6 +17,7 @@ limitations under the License.
 package executor
 
 import (
+	"context"
 	"os"
 	"strings"
 
@@ -61,14 +62,14 @@ func NewMigrateResourceJob() *cobra.Command {
 			openebsNamespace := cmdUtil.GetOpenEBSNamespace()
 			migrationTaskObj, err := client.OpenebsV1alpha1().
 				MigrationTasks(openebsNamespace).
-				Get(name, metav1.GetOptions{})
+				Get(context.TODO(), name, metav1.GetOptions{})
 			util.CheckErr(err, util.Fatal)
 			util.CheckErr(options.InitializeFromMigrationTaskResource(migrationTaskObj), util.Fatal)
 			util.CheckErr(options.RunPreFlightChecks(), util.Fatal)
 			err = options.RunResourceMigrate()
 			if err != nil {
 				migrationTaskObj, uerr := client.OpenebsV1alpha1().MigrationTasks(openebsNamespace).
-					Get(name, metav1.GetOptions{})
+					Get(context.TODO(), name, metav1.GetOptions{})
 				if uerr != nil {
 					util.Fatal(uerr.Error())
 				}
@@ -82,21 +83,21 @@ func NewMigrateResourceJob() *cobra.Command {
 					migrationTaskObj.Status.CompletedTime = metav1.Now()
 				}
 				_, uerr = client.OpenebsV1alpha1().MigrationTasks(openebsNamespace).
-					Update(migrationTaskObj)
+					Update(context.TODO(), migrationTaskObj, metav1.UpdateOptions{})
 				if uerr != nil {
 					util.Fatal(uerr.Error())
 				}
 				util.Fatal(err.Error())
 			} else {
 				migrationTaskObj, uerr := client.OpenebsV1alpha1().MigrationTasks(openebsNamespace).
-					Get(name, metav1.GetOptions{})
+					Get(context.TODO(), name, metav1.GetOptions{})
 				if uerr != nil {
 					util.Fatal(uerr.Error())
 				}
 				migrationTaskObj.Status.Phase = v1Alpha1API.MigrateSuccess
 				migrationTaskObj.Status.CompletedTime = metav1.Now()
 				_, uerr = client.OpenebsV1alpha1().MigrationTasks(openebsNamespace).
-					Update(migrationTaskObj)
+					Update(context.TODO(), migrationTaskObj, metav1.UpdateOptions{})
 				if uerr != nil {
 					util.Fatal(uerr.Error())
 				}
@@ -164,12 +165,12 @@ func getBackoffLimit(openebsNamespace string) (int, error) {
 	}
 	podName := os.Getenv("POD_NAME")
 	podObj, err := client.CoreV1().Pods(openebsNamespace).
-		Get(podName, metav1.GetOptions{})
+		Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get backoff limit")
 	}
 	jobObj, err := client.BatchV1().Jobs(openebsNamespace).
-		Get(podObj.OwnerReferences[0].Name, metav1.GetOptions{})
+		Get(context.TODO(), podObj.OwnerReferences[0].Name, metav1.GetOptions{})
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get backoff limit")
 	}

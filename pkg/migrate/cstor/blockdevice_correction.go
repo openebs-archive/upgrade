@@ -17,6 +17,7 @@ limitations under the License.
 package migrate
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -46,7 +47,8 @@ const (
 
 func (c *CSPCMigrator) correctBDs(spcName string) error {
 	_, err := c.OpenebsClientset.CstorV1().
-		CStorPoolClusters(c.OpenebsNamespace).Get(c.CSPCName, metav1.GetOptions{})
+		CStorPoolClusters(c.OpenebsNamespace).Get(context.TODO(),
+		c.CSPCName, metav1.GetOptions{})
 	// if the CSPC already exists then no need to correct the schema
 	if err == nil {
 		return nil
@@ -105,7 +107,7 @@ retryspcupdate:
 
 func (c *CSPCMigrator) correctCSPBDs(spcObj *apis.StoragePoolClaim, cspObj apis.CStorPool) error {
 	podList, err := c.KubeClientset.CoreV1().Pods(c.OpenebsNamespace).
-		List(metav1.ListOptions{
+		List(context.TODO(), metav1.ListOptions{
 			LabelSelector: "openebs.io/cstor-pool=" + cspObj.Name,
 		})
 	if err != nil {
@@ -170,7 +172,7 @@ func (c *CSPCMigrator) correctCSPBDs(spcObj *apis.StoragePoolClaim, cspObj apis.
 func (c *CSPCMigrator) findBDforDevlink(devlink, hostname string) (string, error) {
 	bds, err := c.OpenebsClientset.OpenebsV1alpha1().
 		BlockDevices(c.OpenebsNamespace).
-		List(metav1.ListOptions{
+		List(context.TODO(), metav1.ListOptions{
 			LabelSelector: "kubernetes.io/hostname=" + hostname,
 		})
 	if err != nil {
@@ -208,7 +210,7 @@ func (c *CSPCMigrator) findBDforDevlink(devlink, hostname string) (string, error
 func (c *CSPCMigrator) verifyBDStatus(bdObj v1alpha1.BlockDevice, hostName string) (bool, error) {
 	if bdObj.Status.State == v1alpha1.BlockDeviceActive {
 		nodes, err := c.KubeClientset.CoreV1().Nodes().
-			List(metav1.ListOptions{
+			List(context.TODO(), metav1.ListOptions{
 				LabelSelector: openebstypes.HostNameLabelKey + "=" + hostName,
 			})
 		if err != nil {
@@ -224,12 +226,12 @@ func (c *CSPCMigrator) verifyBDStatus(bdObj v1alpha1.BlockDevice, hostName strin
 func (c *CSPCMigrator) updateBDRefsAndlabels(spcObj *apis.StoragePoolClaim, oldBD, newBD string) error {
 	spcKind := "StoragePoolClaim"
 	oldBDObj, err := c.OpenebsClientset.OpenebsV1alpha1().
-		BlockDevices(c.OpenebsNamespace).Get(oldBD, metav1.GetOptions{})
+		BlockDevices(c.OpenebsNamespace).Get(context.TODO(), oldBD, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	newBDObj, err := c.OpenebsClientset.OpenebsV1alpha1().
-		BlockDevices(c.OpenebsNamespace).Get(newBD, metav1.GetOptions{})
+		BlockDevices(c.OpenebsNamespace).Get(context.TODO(), newBD, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -241,7 +243,7 @@ func (c *CSPCMigrator) updateBDRefsAndlabels(spcObj *apis.StoragePoolClaim, oldB
 	if newBDObj.Spec.ClaimRef != nil {
 		newBDCObj, err := c.OpenebsClientset.OpenebsV1alpha1().
 			BlockDeviceClaims(c.OpenebsNamespace).
-			Get(newBDObj.Spec.ClaimRef.Name, metav1.GetOptions{})
+			Get(context.TODO(), newBDObj.Spec.ClaimRef.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -255,7 +257,8 @@ func (c *CSPCMigrator) updateBDRefsAndlabels(spcObj *apis.StoragePoolClaim, oldB
 			}
 			newBDCObj.Labels["openebs.io/storage-pool-claim"] = spcObj.Name
 			newBDCObj, err = c.OpenebsClientset.OpenebsV1alpha1().
-				BlockDeviceClaims(c.OpenebsNamespace).Update(newBDCObj)
+				BlockDeviceClaims(c.OpenebsNamespace).Update(context.TODO(),
+				newBDCObj, metav1.UpdateOptions{})
 			if err != nil {
 				return err
 			}
@@ -265,7 +268,8 @@ func (c *CSPCMigrator) updateBDRefsAndlabels(spcObj *apis.StoragePoolClaim, oldB
 		// this will enable claiming of the bd
 		delete(newBDObj.Annotations, "internal.openebs.io/uuid-scheme")
 		newBDObj, err = c.OpenebsClientset.OpenebsV1alpha1().
-			BlockDevices(c.OpenebsNamespace).Update(newBDObj)
+			BlockDevices(c.OpenebsNamespace).
+			Update(context.TODO(), newBDObj, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
@@ -287,14 +291,16 @@ func (c *CSPCMigrator) updateBDRefsAndlabels(spcObj *apis.StoragePoolClaim, oldB
 			WithFinalizer("storagepoolclaim.openebs.io/finalizer")
 
 		newBDCObj, err = c.OpenebsClientset.OpenebsV1alpha1().
-			BlockDeviceClaims(c.OpenebsNamespace).Create(newBDCObj)
+			BlockDeviceClaims(c.OpenebsNamespace).
+			Create(context.TODO(), newBDCObj, metav1.CreateOptions{})
 		if err != nil {
 			return err
 		}
 
 	retryBDCStatus:
 		newBDCObj, err = c.OpenebsClientset.OpenebsV1alpha1().
-			BlockDeviceClaims(c.OpenebsNamespace).Get(newBDCObj.Name, metav1.GetOptions{})
+			BlockDeviceClaims(c.OpenebsNamespace).
+			Get(context.TODO(), newBDCObj.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -310,7 +316,7 @@ func (c *CSPCMigrator) updateBDRefsAndlabels(spcObj *apis.StoragePoolClaim, oldB
 	if oldBDObj.Status.State == "Active" {
 		oldBDCObj, err := c.OpenebsClientset.OpenebsV1alpha1().
 			BlockDeviceClaims(c.OpenebsNamespace).
-			Get(oldBDObj.Spec.ClaimRef.Name, metav1.GetOptions{})
+			Get(context.TODO(), oldBDObj.Spec.ClaimRef.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -318,7 +324,8 @@ func (c *CSPCMigrator) updateBDRefsAndlabels(spcObj *apis.StoragePoolClaim, oldB
 			oldBDCObj.OwnerReferences = []metav1.OwnerReference{}
 			delete(oldBDCObj.Labels, "openebs.io/storage-pool-claim")
 			oldBDCObj, err = c.OpenebsClientset.OpenebsV1alpha1().
-				BlockDeviceClaims(c.OpenebsNamespace).Update(oldBDCObj)
+				BlockDeviceClaims(c.OpenebsNamespace).
+				Update(context.TODO(), oldBDCObj, metav1.UpdateOptions{})
 			if err != nil {
 				return err
 			}

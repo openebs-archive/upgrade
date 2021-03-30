@@ -17,6 +17,7 @@ limitations under the License.
 package migrate
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -186,7 +187,7 @@ func (v *VolumeMigrator) isMigrationRequired() (bool, error) {
 		return true, nil
 	}
 	_, err = v.OpenebsClientset.CstorV1().
-		CStorVolumes(v.OpenebsNamespace).Get(v.PVName, metav1.GetOptions{})
+		CStorVolumes(v.OpenebsNamespace).Get(context.TODO(), v.PVName, metav1.GetOptions{})
 	if err == nil {
 		return false, nil
 	}
@@ -196,7 +197,7 @@ func (v *VolumeMigrator) isMigrationRequired() (bool, error) {
 func (v *VolumeMigrator) deleteTempPolicy() error {
 	err := v.OpenebsClientset.CstorV1().
 		CStorVolumePolicies(v.OpenebsNamespace).
-		Delete(v.PVName, &metav1.DeleteOptions{})
+		Delete(context.TODO(), v.PVName, metav1.DeleteOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
@@ -207,7 +208,7 @@ func (v *VolumeMigrator) validateCVCOperator() error {
 	currentVersion := strings.Split(version.Current(), "-")[0]
 	operatorPods, err := v.KubeClientset.CoreV1().
 		Pods(v.OpenebsNamespace).
-		List(metav1.ListOptions{
+		List(context.TODO(), metav1.ListOptions{
 			LabelSelector: "openebs.io/component-name=cvc-operator",
 		})
 	if err != nil {
@@ -277,7 +278,7 @@ func (v *VolumeMigrator) migrate() (string, error) {
 		klog.Infof("PVC and storageclass already migrated to csi format")
 	}
 	v.StorageClass, err = v.KubeClientset.StorageV1().
-		StorageClasses().Get(*pvcObj.Spec.StorageClassName, metav1.GetOptions{})
+		StorageClasses().Get(context.TODO(), *pvcObj.Spec.StorageClassName, metav1.GetOptions{})
 	if err != nil {
 		msg = "failed to get storageclass " + *pvcObj.Spec.StorageClassName
 		return msg, err
@@ -337,7 +338,8 @@ func (v *VolumeMigrator) migratePVC(pvObj *corev1.PersistentVolume) (*corev1.Per
 
 func (v *VolumeMigrator) addSkipAnnotationToPVC(pvcObj *corev1.PersistentVolumeClaim) error {
 	oldPVC, err := v.KubeClientset.CoreV1().
-		PersistentVolumeClaims(pvcObj.Namespace).Get(pvcObj.Name, metav1.GetOptions{})
+		PersistentVolumeClaims(pvcObj.Namespace).
+		Get(context.TODO(), pvcObj.Name, metav1.GetOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
@@ -351,11 +353,10 @@ func (v *VolumeMigrator) addSkipAnnotationToPVC(pvcObj *corev1.PersistentVolumeC
 		if err != nil {
 			return err
 		}
-		_, err = v.KubeClientset.CoreV1().PersistentVolumeClaims(oldPVC.Namespace).Patch(
+		_, err = v.KubeClientset.CoreV1().PersistentVolumeClaims(oldPVC.Namespace).Patch(context.TODO(),
 			oldPVC.Name,
 			k8stypes.StrategicMergePatchType,
-			data,
-		)
+			data, metav1.PatchOptions{})
 		if err != nil {
 			return err
 		}
@@ -381,14 +382,14 @@ func (v *VolumeMigrator) migratePV(pvcObj *corev1.PersistentVolumeClaim) (*corev
 func (v *VolumeMigrator) generateCSIPVC(pvName string) (*corev1.PersistentVolumeClaim, bool, error) {
 	pvObj, err := v.KubeClientset.CoreV1().
 		PersistentVolumes().
-		Get(pvName, metav1.GetOptions{})
+		Get(context.TODO(), pvName, metav1.GetOptions{})
 	if err != nil {
 		return nil, false, err
 	}
 	pvcName := pvObj.Spec.ClaimRef.Name
 	pvcNamespace := pvObj.Spec.ClaimRef.Namespace
 	pvcObj, err := v.KubeClientset.CoreV1().PersistentVolumeClaims(pvcNamespace).
-		Get(pvcName, metav1.GetOptions{})
+		Get(context.TODO(), pvcName, metav1.GetOptions{})
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return nil, false, err
@@ -420,7 +421,7 @@ func (v *VolumeMigrator) generateCSIPV(
 ) (*corev1.PersistentVolume, bool, error) {
 	pvObj, err := v.KubeClientset.CoreV1().
 		PersistentVolumes().
-		Get(pvName, metav1.GetOptions{})
+		Get(context.TODO(), pvName, metav1.GetOptions{})
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return nil, false, err
@@ -520,7 +521,7 @@ func (v *VolumeMigrator) createCVC(pvObj *corev1.PersistentVolume) error {
 		cvObj  *apis.CStorVolume
 	)
 	cvcObj, err = v.OpenebsClientset.CstorV1().CStorVolumeConfigs(v.OpenebsNamespace).
-		Get(v.PVName, metav1.GetOptions{})
+		Get(context.TODO(), v.PVName, metav1.GetOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
@@ -570,7 +571,7 @@ func (v *VolumeMigrator) createCVC(pvObj *corev1.PersistentVolume) error {
 			cvcObj.Spec.CStorVolumeSource = cvObj.Labels["openebs.io/source-volume"] + "@" + cvObj.Annotations["openebs.io/snapshot"]
 		}
 		_, err = v.OpenebsClientset.CstorV1().CStorVolumeConfigs(v.OpenebsNamespace).
-			Create(cvcObj)
+			Create(context.TODO(), cvcObj, metav1.CreateOptions{})
 		if err != nil {
 			return err
 		}
@@ -581,13 +582,13 @@ func (v *VolumeMigrator) createCVC(pvObj *corev1.PersistentVolume) error {
 func (v *VolumeMigrator) patchTargetSVCOwnerRef() error {
 	svcObj, err := v.KubeClientset.CoreV1().
 		Services(v.OpenebsNamespace).
-		Get(v.PVName, metav1.GetOptions{})
+		Get(context.TODO(), v.PVName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	cvcObj, err := v.OpenebsClientset.CstorV1().
 		CStorVolumeConfigs(v.OpenebsNamespace).
-		Get(v.PVName, metav1.GetOptions{})
+		Get(context.TODO(), v.PVName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -602,7 +603,8 @@ func (v *VolumeMigrator) patchTargetSVCOwnerRef() error {
 	}
 	_, err = v.KubeClientset.CoreV1().
 		Services(v.OpenebsNamespace).
-		Patch(v.PVName, k8stypes.StrategicMergePatchType, data)
+		Patch(context.TODO(), v.PVName, k8stypes.StrategicMergePatchType,
+			data, metav1.PatchOptions{})
 	return err
 }
 
@@ -614,7 +616,7 @@ func (v *VolumeMigrator) updateStorageClass(pvName, scName string) error {
 	var tmpSCObj *storagev1.StorageClass
 	scObj, err := v.KubeClientset.StorageV1().
 		StorageClasses().
-		Get(scName, metav1.GetOptions{})
+		Get(context.TODO(), scName, metav1.GetOptions{})
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return err
@@ -661,13 +663,13 @@ func (v *VolumeMigrator) updateStorageClass(pvName, scName string) error {
 		}
 		if scObj != nil {
 			err = v.KubeClientset.StorageV1().
-				StorageClasses().Delete(scObj.Name, &metav1.DeleteOptions{})
+				StorageClasses().Delete(context.TODO(), scObj.Name, metav1.DeleteOptions{})
 			if err != nil {
 				return err
 			}
 		}
 		scObj, err = v.KubeClientset.StorageV1().
-			StorageClasses().Create(csiSC)
+			StorageClasses().Create(context.TODO(), csiSC, metav1.CreateOptions{})
 		if err != nil {
 			return err
 		}
@@ -675,7 +677,7 @@ func (v *VolumeMigrator) updateStorageClass(pvName, scName string) error {
 
 	}
 	err = v.KubeClientset.StorageV1().
-		StorageClasses().Delete("tmp-migrate-"+scObj.Name, &metav1.DeleteOptions{})
+		StorageClasses().Delete(context.TODO(), "tmp-migrate-"+scObj.Name, metav1.DeleteOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return errors.Wrapf(err, "failed to delete temporary storageclass")
 	}
@@ -689,7 +691,7 @@ func (v *VolumeMigrator) updateStorageClass(pvName, scName string) error {
 // and other jobs will skip this step.
 func isSCMigrationRequired(v *VolumeMigrator, scName string) (bool, error) {
 	tmpSC, err := v.KubeClientset.StorageV1().StorageClasses().
-		Get("tmp-migrate-"+scName, metav1.GetOptions{})
+		Get(context.TODO(), "tmp-migrate-"+scName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return true, nil
@@ -705,13 +707,13 @@ func isSCMigrationRequired(v *VolumeMigrator, scName string) (bool, error) {
 func (v *VolumeMigrator) createTmpSC(scName string) (*storagev1.StorageClass, error) {
 	tmpSCName := "tmp-migrate-" + scName
 	tmpSCObj, err := v.KubeClientset.StorageV1().
-		StorageClasses().Get(tmpSCName, metav1.GetOptions{})
+		StorageClasses().Get(context.TODO(), tmpSCName, metav1.GetOptions{})
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return nil, err
 		}
 		scObj, err := v.KubeClientset.StorageV1().
-			StorageClasses().Get(scName, metav1.GetOptions{})
+			StorageClasses().Get(context.TODO(), scName, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -723,7 +725,8 @@ func (v *VolumeMigrator) createTmpSC(scName string) (*storagev1.StorageClass, er
 		}
 		tmpSCObj.Annotations["pv-name"] = v.PVName
 		tmpSCObj, err = v.KubeClientset.StorageV1().
-			StorageClasses().Create(tmpSCObj)
+			StorageClasses().
+			Create(context.TODO(), tmpSCObj, metav1.CreateOptions{})
 		if err != nil {
 			if k8serrors.IsAlreadyExists(err) {
 				return nil, err
@@ -790,14 +793,14 @@ func (v *VolumeMigrator) validatePVName() (*corev1.PersistentVolumeClaim, bool, 
 	var pvcObj *corev1.PersistentVolumeClaim
 	_, err := v.KubeClientset.CoreV1().
 		PersistentVolumes().
-		Get(v.PVName, metav1.GetOptions{})
+		Get(context.TODO(), v.PVName, metav1.GetOptions{})
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return nil, false, err
 		}
 		pvcList, err := v.KubeClientset.CoreV1().
 			PersistentVolumeClaims("").
-			List(metav1.ListOptions{})
+			List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			return pvcObj, false, err
 		}
@@ -816,14 +819,14 @@ func (v *VolumeMigrator) validatePVName() (*corev1.PersistentVolumeClaim, bool, 
 func (v *VolumeMigrator) removeOldTarget() error {
 	_, err := v.OpenebsClientset.CstorV1().
 		CStorVolumeConfigs(v.OpenebsNamespace).
-		Get(v.PVName, metav1.GetOptions{})
+		Get(context.TODO(), v.PVName, metav1.GetOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
 	if k8serrors.IsNotFound(err) {
 		err = v.KubeClientset.AppsV1().
 			Deployments(v.CVNamespace).
-			Delete(v.PVName+"-target", &metav1.DeleteOptions{})
+			Delete(context.TODO(), v.PVName+"-target", metav1.DeleteOptions{})
 		if err != nil && !k8serrors.IsNotFound(err) {
 			return err
 		}
@@ -842,14 +845,14 @@ func (v *VolumeMigrator) removeOldTarget() error {
 func (v *VolumeMigrator) migrateTargetSVC() error {
 	svcObj, err := v.KubeClientset.CoreV1().
 		Services(v.CVNamespace).
-		Get(v.PVName, metav1.GetOptions{})
+		Get(context.TODO(), v.PVName, metav1.GetOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
 	if err == nil {
 		err = v.KubeClientset.CoreV1().
 			Services(v.CVNamespace).
-			Delete(svcObj.Name, &metav1.DeleteOptions{})
+			Delete(context.TODO(), svcObj.Name, metav1.DeleteOptions{})
 		if err != nil {
 			return err
 		}
@@ -857,7 +860,7 @@ func (v *VolumeMigrator) migrateTargetSVC() error {
 	// get the target service in openebs namespace
 	_, err = v.KubeClientset.CoreV1().
 		Services(v.OpenebsNamespace).
-		Get(v.PVName, metav1.GetOptions{})
+		Get(context.TODO(), v.PVName, metav1.GetOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
@@ -868,7 +871,8 @@ func (v *VolumeMigrator) migrateTargetSVC() error {
 			return err
 		}
 		klog.Infof("creating target service %s in %s namespace", svcObj.Name, v.OpenebsNamespace)
-		svcObj, err = v.KubeClientset.CoreV1().Services(v.OpenebsNamespace).Create(svcObj)
+		svcObj, err = v.KubeClientset.CoreV1().Services(v.OpenebsNamespace).
+			Create(context.TODO(), svcObj, metav1.CreateOptions{})
 		if err != nil {
 			return err
 		}
@@ -935,7 +939,7 @@ func (v *VolumeMigrator) createTempPolicy() error {
 	klog.Infof("Checking for a temporary policy of volume %s", v.PVName)
 	_, err := v.OpenebsClientset.CstorV1().
 		CStorVolumePolicies(v.OpenebsNamespace).
-		Get(v.PVName, metav1.GetOptions{})
+		Get(context.TODO(), v.PVName, metav1.GetOptions{})
 	if err == nil {
 		return nil
 	}
@@ -945,7 +949,7 @@ func (v *VolumeMigrator) createTempPolicy() error {
 	klog.Infof("Creating temporary policy %s for migration", v.PVName)
 	targetDeploy, err := v.KubeClientset.AppsV1().
 		Deployments(v.CVNamespace).
-		Get(v.PVName+"-target", metav1.GetOptions{})
+		Get(context.TODO(), v.PVName+"-target", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -1012,7 +1016,7 @@ func (v *VolumeMigrator) createTempPolicy() error {
 	}
 	_, err = v.OpenebsClientset.CstorV1().
 		CStorVolumePolicies(v.OpenebsNamespace).
-		Create(tempPolicy)
+		Create(context.TODO(), tempPolicy, metav1.CreateOptions{})
 	return err
 }
 
@@ -1021,7 +1025,7 @@ func (v *VolumeMigrator) validateMigratedVolume() error {
 retry:
 	cvcObj, err := v.OpenebsClientset.CstorV1().
 		CStorVolumeConfigs(v.OpenebsNamespace).
-		Get(v.PVName, metav1.GetOptions{})
+		Get(context.TODO(), v.PVName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -1036,13 +1040,13 @@ retry:
 	}
 	policy, err := v.OpenebsClientset.CstorV1().
 		CStorVolumePolicies(v.OpenebsNamespace).
-		Get(v.PVName, metav1.GetOptions{})
+		Get(context.TODO(), v.PVName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	cvrList, err := v.OpenebsClientset.CstorV1().
 		CStorVolumeReplicas(v.OpenebsNamespace).
-		List(metav1.ListOptions{
+		List(context.TODO(), metav1.ListOptions{
 			LabelSelector: "openebs.io/persistent-volume=" + v.PVName,
 		})
 	if err != nil {
@@ -1069,7 +1073,7 @@ retry:
 	for {
 		cvObj, err1 := v.OpenebsClientset.CstorV1().
 			CStorVolumes(v.OpenebsNamespace).
-			Get(v.PVName, metav1.GetOptions{})
+			Get(context.TODO(), v.PVName, metav1.GetOptions{})
 		if err1 != nil {
 			klog.Errorf("failed to get cv %s: %s", v.PVName, err1.Error())
 		} else {
@@ -1095,7 +1099,7 @@ retry:
 func (v *VolumeMigrator) removePodAffinity() error {
 	cvp, err := v.OpenebsClientset.CstorV1().
 		CStorVolumePolicies(v.OpenebsNamespace).
-		Get(v.PVName, metav1.GetOptions{})
+		Get(context.TODO(), v.PVName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -1105,7 +1109,7 @@ func (v *VolumeMigrator) removePodAffinity() error {
 	klog.Info("Patching target pod with no affinity rules to verify volume health")
 	targetDeploy, err := v.KubeClientset.AppsV1().
 		Deployments(v.OpenebsNamespace).
-		Get(v.PVName+"-target", metav1.GetOptions{})
+		Get(context.TODO(), v.PVName+"-target", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -1117,14 +1121,15 @@ func (v *VolumeMigrator) removePodAffinity() error {
 	}
 	_, err = v.KubeClientset.AppsV1().
 		Deployments(v.OpenebsNamespace).
-		Patch(v.PVName+"-target", k8stypes.StrategicMergePatchType, data)
+		Patch(context.TODO(), v.PVName+"-target", k8stypes.StrategicMergePatchType,
+			data, metav1.PatchOptions{})
 	return err
 }
 
 func (v *VolumeMigrator) patchTargetPodAffinity() error {
 	cvp, err := v.OpenebsClientset.CstorV1().
 		CStorVolumePolicies(v.OpenebsNamespace).
-		Get(v.PVName, metav1.GetOptions{})
+		Get(context.TODO(), v.PVName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -1134,7 +1139,7 @@ func (v *VolumeMigrator) patchTargetPodAffinity() error {
 	klog.Info("Patching target pod with old pod affinity rules")
 	targetDeploy, err := v.KubeClientset.AppsV1().
 		Deployments(v.OpenebsNamespace).
-		Get(v.PVName+"-target", metav1.GetOptions{})
+		Get(context.TODO(), v.PVName+"-target", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -1149,7 +1154,8 @@ func (v *VolumeMigrator) patchTargetPodAffinity() error {
 	}
 	_, err = v.KubeClientset.AppsV1().
 		Deployments(v.OpenebsNamespace).
-		Patch(v.PVName+"-target", k8stypes.StrategicMergePatchType, data)
+		Patch(context.TODO(), v.PVName+"-target", k8stypes.StrategicMergePatchType,
+			data, metav1.PatchOptions{})
 	return err
 }
 
@@ -1181,7 +1187,7 @@ func (v *VolumeMigrator) cleanupOldResources() error {
 	}
 	cvcObj, err := v.OpenebsClientset.CstorV1().
 		CStorVolumeConfigs(v.OpenebsNamespace).
-		Get(v.PVName, metav1.GetOptions{})
+		Get(context.TODO(), v.PVName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -1193,7 +1199,8 @@ func (v *VolumeMigrator) cleanupOldResources() error {
 	}
 	_, err = v.OpenebsClientset.CstorV1().
 		CStorVolumeConfigs(v.OpenebsNamespace).
-		Patch(v.PVName, k8stypes.MergePatchType, data)
+		Patch(context.TODO(), v.PVName, k8stypes.MergePatchType,
+			data, metav1.PatchOptions{})
 	if err != nil {
 		return err
 	}

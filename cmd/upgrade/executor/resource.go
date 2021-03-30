@@ -17,6 +17,7 @@ limitations under the License.
 package executor
 
 import (
+	"context"
 	"os"
 	"strings"
 
@@ -62,7 +63,7 @@ func NewUpgradeResourceJob() *cobra.Command {
 			upgradeTaskLabel := cmdUtil.GetUpgradeTaskLabel()
 			openebsNamespace := cmdUtil.GetOpenEBSNamespace()
 			upgradeTaskList, err := client.OpenebsV1alpha1().UpgradeTasks(openebsNamespace).
-				List(metav1.ListOptions{
+				List(context.TODO(), metav1.ListOptions{
 					LabelSelector: upgradeTaskLabel,
 				})
 			util.CheckErr(err, util.Fatal)
@@ -77,7 +78,7 @@ func NewUpgradeResourceJob() *cobra.Command {
 				err := options.RunResourceUpgrade(cmd)
 				if err != nil {
 					utaskObj, uerr := client.OpenebsV1alpha1().UpgradeTasks(openebsNamespace).
-						Get(cr.Name, metav1.GetOptions{})
+						Get(context.TODO(), cr.Name, metav1.GetOptions{})
 					if uerr != nil {
 						util.Fatal(uerr.Error())
 					}
@@ -91,21 +92,21 @@ func NewUpgradeResourceJob() *cobra.Command {
 						utaskObj.Status.CompletedTime = metav1.Now()
 					}
 					_, uerr = client.OpenebsV1alpha1().UpgradeTasks(openebsNamespace).
-						Update(utaskObj)
+						Update(context.TODO(), utaskObj, metav1.UpdateOptions{})
 					if uerr != nil {
 						util.Fatal(uerr.Error())
 					}
 					util.Fatal(err.Error())
 				} else {
 					utaskObj, uerr := client.OpenebsV1alpha1().UpgradeTasks(openebsNamespace).
-						Get(cr.Name, metav1.GetOptions{})
+						Get(context.TODO(), cr.Name, metav1.GetOptions{})
 					if uerr != nil {
 						util.Fatal(uerr.Error())
 					}
 					utaskObj.Status.Phase = v1Alpha1API.UpgradeSuccess
 					utaskObj.Status.CompletedTime = metav1.Now()
 					_, uerr = client.OpenebsV1alpha1().UpgradeTasks(openebsNamespace).
-						Update(utaskObj)
+						Update(context.TODO(), utaskObj, metav1.UpdateOptions{})
 					if uerr != nil {
 						util.Fatal(uerr.Error())
 					}
@@ -151,6 +152,11 @@ func (u *UpgradeOptions) InitializeFromUpgradeTaskResource(
 	case upgradeTaskCRObj.Spec.ResourceSpec.CStorVolume != nil:
 		u.resourceKind = "cstorVolume"
 		u.name = upgradeTaskCRObj.Spec.ResourceSpec.CStorVolume.PVName
+
+	case upgradeTaskCRObj.Spec.ResourceSpec.JivaVolume != nil:
+		u.resourceKind = "jivaVolume"
+		u.name = upgradeTaskCRObj.Spec.ResourceSpec.JivaVolume.PVName
+
 	}
 
 	return nil
@@ -207,12 +213,12 @@ func getBackoffLimit(openebsNamespace string) (int, error) {
 	}
 	podName := os.Getenv("POD_NAME")
 	podObj, err := client.CoreV1().Pods(openebsNamespace).
-		Get(podName, metav1.GetOptions{})
+		Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get backoff limit")
 	}
 	jobObj, err := client.BatchV1().Jobs(openebsNamespace).
-		Get(podObj.OwnerReferences[0].Name, metav1.GetOptions{})
+		Get(context.TODO(), podObj.OwnerReferences[0].Name, metav1.GetOptions{})
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get backoff limit")
 	}

@@ -17,8 +17,6 @@ limitations under the License.
 package executor
 
 import (
-	"fmt"
-
 	"github.com/openebs/maya/pkg/util"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
@@ -77,7 +75,6 @@ func (u *UpgradeOptions) RunCStorVolumeUpgrade(cmd *cobra.Command, name string) 
 		}
 		klog.Infof("Successfully upgraded %s to %s", name, u.toVersion)
 	} else {
-		fmt.Println(version.IsCurrentVersionValid(u.fromVersion), version.IsDesiredVersionValid(u.toVersion))
 		return errors.Errorf("Invalid from version %s or to version %s", u.fromVersion, u.toVersion)
 	}
 	return nil

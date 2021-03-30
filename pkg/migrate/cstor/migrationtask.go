@@ -17,6 +17,8 @@ limitations under the License.
 package migrate
 
 import (
+	"context"
+
 	v1Alpha1API "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
 	openebsclientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
@@ -48,7 +50,8 @@ func updateMigrationDetailedStatus(mtaskObj *v1Alpha1API.MigrationTask,
 		mtaskObj.Status.MigrationDetailedStatuses[l-1] = mStatusObj
 	}
 	mtaskObj, err = client.OpenebsV1alpha1().
-		MigrationTasks(openebsNamespace).Update(mtaskObj)
+		MigrationTasks(openebsNamespace).Update(context.TODO(),
+		mtaskObj, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to update migratetask ")
 	}
@@ -82,11 +85,12 @@ func getOrCreateMigrationTask(kind, name, openebsNamespace string, r Migrator,
 	// then creates a new CR
 	mtaskObj1, err1 := client.OpenebsV1alpha1().
 		MigrationTasks(openebsNamespace).
-		Get(mtaskObj.Name, metav1.GetOptions{})
+		Get(context.TODO(), mtaskObj.Name, metav1.GetOptions{})
 	if err1 != nil {
 		if k8serror.IsNotFound(err1) {
 			mtaskObj, err = client.OpenebsV1alpha1().
-				MigrationTasks(openebsNamespace).Create(mtaskObj)
+				MigrationTasks(openebsNamespace).Create(context.TODO(),
+				mtaskObj, metav1.CreateOptions{})
 			if err != nil {
 				return nil, err
 			}
@@ -105,7 +109,7 @@ func getOrCreateMigrationTask(kind, name, openebsNamespace string, r Migrator,
 	mtaskObj.Status.MigrationDetailedStatuses = []v1Alpha1API.MigrationDetailedStatuses{}
 	mtaskObj, err = client.OpenebsV1alpha1().
 		MigrationTasks(openebsNamespace).
-		Update(mtaskObj)
+		Update(context.TODO(), mtaskObj, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to update migratetask")
 	}

@@ -17,10 +17,11 @@ limitations under the License.
 package migrate
 
 import (
+	"context"
 	"time"
 
-	snapv1beta1 "github.com/kubernetes-csi/external-snapshotter/v2/pkg/apis/volumesnapshot/v1beta1"
-	snapclientset "github.com/kubernetes-csi/external-snapshotter/v2/pkg/client/clientset/versioned"
+	snapv1beta1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1beta1"
+	snapclientset "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned"
 	snapv1 "github.com/openebs/maya/pkg/apis/openebs.io/snapshot/v1"
 	snap "github.com/openebs/maya/pkg/kubernetes/snapshot/v1alpha1"
 	snapData "github.com/openebs/maya/pkg/kubernetes/snapshotdata/v1alpha1"
@@ -69,7 +70,7 @@ func (s *SnapshotMigrator) migrateSnapshots() error {
 		return nil
 	}
 	_, err = s.snapClient.SnapshotV1beta1().VolumeSnapshotClasses().
-		Get(snapClass, metav1.GetOptions{})
+		Get(context.TODO(), snapClass, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to get snapshotclass %s", snapClass)
 	}
@@ -119,7 +120,7 @@ func (s *SnapshotMigrator) migrateSnapshot(oldSnap *snapv1.VolumeSnapshot) error
 func (s *SnapshotMigrator) createSnapContent(snapshotData *snapv1.VolumeSnapshotData, oldSnap *snapv1.VolumeSnapshot) (
 	*snapv1beta1.VolumeSnapshotContent, error) {
 	snapContent, err := s.snapClient.SnapshotV1beta1().VolumeSnapshotContents().
-		Get(snapshotData.Name, metav1.GetOptions{})
+		Get(context.TODO(), snapshotData.Name, metav1.GetOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, err
 	}
@@ -146,13 +147,14 @@ func (s *SnapshotMigrator) createSnapContent(snapshotData *snapv1.VolumeSnapshot
 			},
 		},
 	}
-	return s.snapClient.SnapshotV1beta1().VolumeSnapshotContents().Create(snapContent)
+	return s.snapClient.SnapshotV1beta1().VolumeSnapshotContents().
+		Create(context.TODO(), snapContent, metav1.CreateOptions{})
 }
 
 func (s *SnapshotMigrator) createNewSnapShot(snapContent *snapv1beta1.VolumeSnapshotContent, oldSnap *snapv1.VolumeSnapshot) (
 	*snapv1beta1.VolumeSnapshot, error) {
 	newSnap, err := s.snapClient.SnapshotV1beta1().VolumeSnapshots(oldSnap.Namespace).
-		Get(oldSnap.Name, metav1.GetOptions{})
+		Get(context.TODO(), oldSnap.Name, metav1.GetOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, err
 	}
@@ -172,14 +174,14 @@ func (s *SnapshotMigrator) createNewSnapShot(snapContent *snapv1beta1.VolumeSnap
 		},
 	}
 	return s.snapClient.SnapshotV1beta1().VolumeSnapshots(oldSnap.Namespace).
-		Create(newSnap)
+		Create(context.TODO(), newSnap, metav1.CreateOptions{})
 }
 
 func (s *SnapshotMigrator) validateMigration(snapContent *snapv1beta1.VolumeSnapshotContent, newSnap *snapv1beta1.VolumeSnapshot) error {
 retry:
 	newSnap, err := s.snapClient.SnapshotV1beta1().
 		VolumeSnapshots(newSnap.Namespace).
-		Get(newSnap.Name, metav1.GetOptions{})
+		Get(context.TODO(), newSnap.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}

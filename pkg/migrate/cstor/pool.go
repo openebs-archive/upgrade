@@ -17,6 +17,7 @@ limitations under the License.
 package migrate
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -165,7 +166,7 @@ func (c *CSPCMigrator) validateCSPCOperator() error {
 	currentVersion := strings.Split(version.Current(), "-")[0]
 	operatorPods, err := c.KubeClientset.CoreV1().
 		Pods(c.OpenebsNamespace).
-		List(metav1.ListOptions{
+		List(context.TODO(), metav1.ListOptions{
 			LabelSelector: "openebs.io/component-name=cspc-operator",
 		})
 	if err != nil {
@@ -225,7 +226,7 @@ func (c *CSPCMigrator) migrate(spcName string) (string, error) {
 	// List all cspi created with reconcile off
 	cspiList, err := c.OpenebsClientset.CstorV1().
 		CStorPoolInstances(c.OpenebsNamespace).
-		List(metav1.ListOptions{
+		List(context.TODO(), metav1.ListOptions{
 			LabelSelector: string(apis.CStorPoolClusterCPK) + "=" + c.CSPCObj.Name,
 		})
 	if err != nil {
@@ -283,7 +284,7 @@ func (c *CSPCMigrator) checkForExistingCSPC(spcName string) error {
 	}
 	cspc, err := c.OpenebsClientset.CstorV1().
 		CStorPoolClusters(c.OpenebsNamespace).
-		Get(c.CSPCName, metav1.GetOptions{})
+		Get(context.TODO(), c.CSPCName, metav1.GetOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
@@ -369,7 +370,7 @@ func (c *CSPCMigrator) getSPCWithMigrationStatus(spcName string) (*apis.StorageP
 	if k8serrors.IsNotFound(err) {
 		klog.Infof("spc %s not found.", spcName)
 		_, err = c.OpenebsClientset.CstorV1().
-			CStorPoolClusters(c.OpenebsNamespace).Get(c.CSPCName, metav1.GetOptions{})
+			CStorPoolClusters(c.OpenebsNamespace).Get(context.TODO(), c.CSPCName, metav1.GetOptions{})
 		if err != nil {
 			return nil, false, errors.Wrapf(err, "failed to get equivalent cspc %s for spc %s", c.CSPCName, spcName)
 		}
@@ -404,7 +405,7 @@ func (c *CSPCMigrator) cspTocspi(cspiObj *cstor.CStorPoolInstance) error {
 		delete(cspiObj.Annotations, types.OpenEBSDisableReconcileLabelKey)
 		cspiObj, err = c.OpenebsClientset.CstorV1().
 			CStorPoolInstances(c.OpenebsNamespace).
-			Update(cspiObj)
+			Update(context.TODO(), cspiObj, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
@@ -412,7 +413,7 @@ func (c *CSPCMigrator) cspTocspi(cspiObj *cstor.CStorPoolInstance) error {
 	for {
 		cspiObj, err1 = c.OpenebsClientset.CstorV1().
 			CStorPoolInstances(c.OpenebsNamespace).
-			Get(cspiObj.Name, metav1.GetOptions{})
+			Get(context.TODO(), cspiObj.Name, metav1.GetOptions{})
 		if err1 != nil {
 			klog.Errorf("failed to get cspi %s: %s", cspiObj.Name, err1.Error())
 		} else {
@@ -476,7 +477,7 @@ func (c *CSPCMigrator) scaleDownDeployment(cspName, cspiName, openebsNamespace s
 	var zero int32 = 0
 	klog.Infof("Scaling down csp deployment %s", cspName)
 	cspDeployList, err := c.KubeClientset.AppsV1().
-		Deployments(openebsNamespace).List(
+		Deployments(openebsNamespace).List(context.TODO(),
 		metav1.ListOptions{
 			LabelSelector: "openebs.io/cstor-pool=" + cspName,
 		})
@@ -488,7 +489,7 @@ func (c *CSPCMigrator) scaleDownDeployment(cspName, cspiName, openebsNamespace s
 	}
 	newCSPDeploy := cspDeployList.Items[0]
 	cspiDeploy, err := c.KubeClientset.AppsV1().
-		Deployments(openebsNamespace).Get(cspiName, metav1.GetOptions{})
+		Deployments(openebsNamespace).Get(context.TODO(), cspiName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to get deployment for cspi %s", cspiName)
 	}
@@ -503,10 +504,11 @@ func (c *CSPCMigrator) scaleDownDeployment(cspName, cspiName, openebsNamespace s
 		return errors.Wrapf(err, "failed to patch data for csp %s", cspName)
 	}
 	_, err = c.KubeClientset.AppsV1().Deployments(openebsNamespace).
-		Patch(
+		Patch(context.TODO(),
 			cspDeployList.Items[0].Name,
 			k8stypes.StrategicMergePatchType,
 			patchData,
+			metav1.PatchOptions{},
 		)
 	if err != nil {
 		return err
@@ -514,7 +516,7 @@ func (c *CSPCMigrator) scaleDownDeployment(cspName, cspiName, openebsNamespace s
 	for {
 		cspPods, err1 := c.KubeClientset.CoreV1().
 			Pods(openebsNamespace).
-			List(metav1.ListOptions{
+			List(context.TODO(), metav1.ListOptions{
 				LabelSelector: "openebs.io/cstor-pool=" + cspName,
 			})
 		if err1 != nil {
@@ -533,9 +535,10 @@ func (c *CSPCMigrator) scaleDownDeployment(cspName, cspiName, openebsNamespace s
 // Update the bdc with the cspc labels instead of spc labels to allow
 // filtering of bds claimed by the migrated cspc.
 func (c *CSPCMigrator) updateBDCLabels() error {
-	bdcList, err := c.OpenebsClientset.OpenebsV1alpha1().BlockDeviceClaims(c.OpenebsNamespace).List(metav1.ListOptions{
-		LabelSelector: string(apis.StoragePoolClaimCPK) + "=" + c.SPCObj.Name,
-	})
+	bdcList, err := c.OpenebsClientset.OpenebsV1alpha1().BlockDeviceClaims(c.OpenebsNamespace).
+		List(context.TODO(), metav1.ListOptions{
+			LabelSelector: string(apis.StoragePoolClaimCPK) + "=" + c.SPCObj.Name,
+		})
 	if err != nil {
 		return err
 	}
@@ -552,7 +555,7 @@ func (c *CSPCMigrator) updateBDCLabels() error {
 				}
 			}
 			_, err := c.OpenebsClientset.OpenebsV1alpha1().BlockDeviceClaims(c.OpenebsNamespace).
-				Update(bdcObj)
+				Update(context.TODO(), bdcObj, metav1.UpdateOptions{})
 			if err != nil {
 				return errors.Wrapf(err, "failed to update bdc %s with cspc label & finalizer", bdcObj.Name)
 			}
@@ -566,7 +569,7 @@ func (c *CSPCMigrator) updateBDCLabels() error {
 func (c *CSPCMigrator) updateBDCOwnerRef() error {
 	bdcList, err := c.OpenebsClientset.OpenebsV1alpha1().
 		BlockDeviceClaims(c.OpenebsNamespace).
-		List(metav1.ListOptions{
+		List(context.TODO(), metav1.ListOptions{
 			LabelSelector: types.CStorPoolClusterLabelKey + "=" + c.CSPCObj.Name,
 		})
 	if err != nil {
@@ -582,7 +585,7 @@ func (c *CSPCMigrator) updateBDCOwnerRef() error {
 					cstor.SchemeGroupVersion.WithKind(cspcKind)),
 			}
 			_, err := c.OpenebsClientset.OpenebsV1alpha1().BlockDeviceClaims(c.OpenebsNamespace).
-				Update(bdcObj)
+				Update(context.TODO(), bdcObj, metav1.UpdateOptions{})
 			if err != nil {
 				return errors.Wrapf(err, "failed to update bdc %s with cspc onwerRef", bdcObj.Name)
 			}
