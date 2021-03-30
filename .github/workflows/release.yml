@@ -20,11 +20,16 @@ on:
 
 jobs:
   upgrade:
-    needs: ['upgrade-e2e']
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v1
+
+      - name: Set Image Org
+        # sets the default IMAGE_ORG to openebs
+        run: |
+          [ -z "${{ secrets.IMAGE_ORG }}" ] && IMAGE_ORG=openebs || IMAGE_ORG=${{ secrets.IMAGE_ORG}}
+          echo "IMAGE_ORG=${IMAGE_ORG}" >> $GITHUB_ENV
 
       - name: Set Tag
         run: |
@@ -32,8 +37,26 @@ jobs:
           echo "TAG=${TAG}" >> $GITHUB_ENV
           echo "RELEASE_TAG=${TAG}" >> $GITHUB_ENV
 
+      - name: Set Build Date
+        id: date
+        run: |
+          echo "::set-output name=DATE::$(date -u +'%Y-%m-%dT%H:%M:%S%Z')"
+
+      - name: Docker meta
+        id: docker_meta
+        uses: crazy-max/ghaction-docker-meta@v1
+        with:
+          # add each registry to which the image needs to be pushed here
+          images: |
+            ${{ env.IMAGE_ORG }}/upgrade
+            quay.io/${{ env.IMAGE_ORG }}/upgrade
+          tag-latest: true
+          tag-semver: |
+            {{version}}
+
       - name: Print Tag info
         run: |
+          echo "${{ steps.docker_meta.outputs.tags }}"
           echo "RELEASE TAG: ${RELEASE_TAG}"
 
       - name: Set up QEMU
@@ -53,19 +76,39 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Login to Quay
+        uses: docker/login-action@v1
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_TOKEN }}
+
       - name: Build & Push Image
-        env:
-          IMAGE_ORG: ${{ secrets.IMAGE_ORG}}
-        run: |
-          make docker.buildx.upgrade
-          make buildx.push.upgrade
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./build/upgrade/upgrade.Dockerfile
+          push: true
+          platforms: linux/amd64, linux/arm64
+          tags: |
+            ${{ steps.docker_meta.outputs.tags }}
+          build-args: |
+            DBUILD_DATE=${{ steps.date.outputs.DATE }}
+            DBUILD_REPO_URL=https://github.com/openebs/upgrade
+            DBUILD_SITE_URL=https://openebs.io
+            RELEASE_TAG=${{ env.RELEASE_TAG }}
 
   migrate:
-    needs: ['migration-e2e']
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v1
+
+      - name: Set Image Org
+        # sets the default IMAGE_ORG to openebs
+        run: |
+          [ -z "${{ secrets.IMAGE_ORG }}" ] && IMAGE_ORG=openebs || IMAGE_ORG=${{ secrets.IMAGE_ORG}}
+          echo "IMAGE_ORG=${IMAGE_ORG}" >> $GITHUB_ENV
 
       - name: Set Tag
         run: |
@@ -73,8 +116,26 @@ jobs:
           echo "TAG=${TAG}" >> $GITHUB_ENV
           echo "RELEASE_TAG=${TAG}" >> $GITHUB_ENV
 
+      - name: Set Build Date
+        id: date
+        run: |
+          echo "::set-output name=DATE::$(date -u +'%Y-%m-%dT%H:%M:%S%Z')"
+
+      - name: Docker meta
+        id: docker_meta
+        uses: crazy-max/ghaction-docker-meta@v1
+        with:
+          # add each registry to which the image needs to be pushed here
+          images: |
+            ${{ env.IMAGE_ORG }}/migrate
+            quay.io/${{ env.IMAGE_ORG }}/migrate
+          tag-latest: true
+          tag-semver: |
+            {{version}}
+
       - name: Print Tag info
         run: |
+          echo "${{ steps.docker_meta.outputs.tags }}"
           echo "RELEASE TAG: ${RELEASE_TAG}"
 
       - name: Set up QEMU
@@ -94,86 +155,25 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Login to Quay
+        uses: docker/login-action@v1
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_TOKEN }}
+
       - name: Build & Push Image
-        env:
-          IMAGE_ORG: ${{ secrets.IMAGE_ORG}}
-        run: |
-          make docker.buildx.migrate
-          make buildx.push.migrate
-
-  unit-tests:
-    name: unit tests 
-    runs-on: ubuntu-latest
-    steps:
-
-    - name: Set up Go 1.14
-      uses: actions/setup-go@v2
-      with:
-        go-version: 1.14.7
-      id: go
-
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
-
-    - name: verify license
-      run: make check-license 
-
-    - name: verify dependencies
-      run: make deps
-
-    - name: verify tests
-      run: make test
-
-  migration-e2e:
-    needs: ['unit-tests']
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-      matrix:
-        kubernetes: [v1.18.6]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      
-      - name: Setup Minikube-Kubernetes
-        uses: manusa/actions-setup-minikube@v2.3.0
+        uses: docker/build-push-action@v2
         with:
-          minikube version: v1.9.2
-          kubernetes version: ${{ matrix.kubernetes }}
-          github token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Set tag
-        run: |
-          TAG="${GITHUB_REF#refs/*/v}"
-          echo "TAG=${TAG}" >> $GITHUB_ENV
-          echo "RELEASE_TAG=${TAG}" >> $GITHUB_ENV
+          context: .
+          file: ./build/migrate/migrate.Dockerfile
+          push: true
+          platforms: linux/amd64, linux/arm64
+          tags: |
+            ${{ steps.docker_meta.outputs.tags }}
+          build-args: |
+            DBUILD_DATE=${{ steps.date.outputs.DATE }}
+            DBUILD_REPO_URL=https://github.com/openebs/migrate
+            DBUILD_SITE_URL=https://openebs.io
+            RELEASE_TAG=${{ env.RELEASE_TAG }}
 
-      - name: Running tests
-        run: ./ci/migrate/sanity.sh
-
-  upgrade-e2e:
-    needs: ['unit-tests']
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-      matrix:
-        kubernetes: [v1.18.6]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      
-      - name: Setup Minikube-Kubernetes
-        uses: manusa/actions-setup-minikube@v2.3.0
-        with:
-          minikube version: v1.9.2
-          kubernetes version: ${{ matrix.kubernetes }}
-          github token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Set tag
-        run: |
-          TAG="${GITHUB_REF#refs/*/v}"
-          echo "TAG=${TAG}" >> $GITHUB_ENV
-          echo "RELEASE_TAG=${TAG}" >> $GITHUB_ENV
-      
-      - name: Running tests
-        run: ./ci/upgrade/sanity.sh

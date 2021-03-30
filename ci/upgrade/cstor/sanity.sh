@@ -15,12 +15,9 @@
 # limitations under the License.
 
 
-set -ex
+set -x
 
 sudo modprobe iscsi_tcp
-
-# To enable dev upgardes in github action
-make upgrade-image.amd64
 
 # To test the sanity in different customized
 # image prefixes
@@ -42,7 +39,7 @@ else
 fi
 
 TEST_IMAGE_TAG="${CURRENT_BRANCH}-ci"
-if [ ${CURRENT_BRANCH} = "master" ]; then
+if [ "${CURRENT_BRANCH}" = "master" ]; then
   TEST_IMAGE_TAG="ci"
 fi
 TEST_VERSION="${CURRENT_BRANCH}-dev"
@@ -62,13 +59,13 @@ export TEST_VERSION="${TEST_VERSION#v}"
 echo "Testing upgrade for org: $IMAGE_ORG version: $TEST_VERSION imagetag: $TEST_IMAGE_TAG"
 
 # setup openebs & cstor v1 for migration 
-./ci/upgrade/setup.sh || exit 1
+./ci/upgrade/cstor/setup.sh || exit 1
 # run migration tests
-./ci/upgrade/test.sh 
-if [[ $? != 0 ]]; then
+./ci/upgrade/cstor/test.sh 
+if [ $? != 0 ]; then
   kubectl logs --tail=50 -l job-name=upgrade-pool -n openebs
   kubectl logs --tail=50 -l job-name=upgrade-volume -n openebs
   exit 1
 fi
 
-rm ./ci/upgrade/volume.yaml ./ci/upgrade/application.yaml
+rm ./ci/upgrade/cstor/volume.yaml ./ci/upgrade/cstor/application.yaml

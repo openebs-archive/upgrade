@@ -1,0 +1,79 @@
+# Copyright © 2020 The OpenEBS Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This is an example YAML for upgrading cstor volume.
+# Some of the values below needs to be changed to
+# match your openebs installation. The fields are
+# indicated with VERIFY
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  # VERIFY that you have provided a unique name for this upgrade job.
+  # The name can be any valid K8s string for name.
+  name: upgrade-volume
+
+  # VERIFY the value of namespace is same as the namespace where openebs components
+  # are installed. You can verify using the command:
+  # `kubectl get pods -n <openebs-namespace> -l openebs.io/component-name=maya-apiserver`
+  # The above command should return status of the openebs-apiserver.
+  namespace: openebs
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      # VERIFY the value of serviceAccountName is pointing to service account
+      # created within openebs namespace. Use the non-default account.
+      # by running `kubectl get sa -n <openebs-namespace>`
+      serviceAccountName: jiva-operator
+      containers:
+      - name:  upgrade
+        args:
+        - "jiva-volume"
+
+        # --from-version is the current version of the volume
+        - "--from-version=2.7.0"
+
+        # --to-version is the version desired upgrade version
+        - "--to-version=testversion"
+        # if required the image prefix of the volume deployments can be
+        # changed using the flag below, defaults to whatever was present on old
+        # deployments.
+        - "--to-version-image-prefix=imageorg/"
+        # if required the image tags for volume deployments can be changed
+        # to a custom image tag using the flag below, 
+        # defaults to the --to-version mentioned above.
+        - "--to-version-image-tag=testimage"
+
+        # VERIFY that you have provided the correct list of volume Names
+        - "PVNAME"
+
+        # Following are optional parameters
+        # Log Level
+        - "--v=4"
+        # DO NOT CHANGE BELOW PARAMETERS
+        env:
+        - name: OPENEBS_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        tty: true
+
+        # the image version should be same as the --to-version mentioned above
+        # in the args of the job
+        image: imageorg/upgrade:ci
+        imagePullPolicy: IfNotPresent
+      restartPolicy: Never
+---
+

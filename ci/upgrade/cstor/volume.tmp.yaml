@@ -72,7 +72,7 @@ spec:
 
         # the image version should be same as the --to-version mentioned above
         # in the args of the job
-        image: imageorg/upgrade-amd64:ci
+        image: imageorg/upgrade:ci
         imagePullPolicy: IfNotPresent
       restartPolicy: OnFailure
 ---
