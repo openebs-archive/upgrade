@@ -74,6 +74,6 @@ spec:
         # in the args of the job
         image: imageorg/upgrade:ci
         imagePullPolicy: IfNotPresent
-      restartPolicy: OnFailure
+      restartPolicy: Never
 ---
 

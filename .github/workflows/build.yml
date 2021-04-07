@@ -298,7 +298,7 @@ jobs:
           load: true
           platforms: linux/amd64
           tags: |
-            ${{ env.IMAGE_ORG }}/upgrade:${{ env.TAG }}
+            ${{ env.IMAGE_ORG }}/upgrade:ci
           build-args: |
             DBUILD_REPO_URL=https://github.com/openebs/upgrade
             DBUILD_SITE_URL=https://openebs.io
