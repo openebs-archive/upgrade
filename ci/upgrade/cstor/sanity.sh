@@ -63,8 +63,9 @@ echo "Testing upgrade for org: $IMAGE_ORG version: $TEST_VERSION imagetag: $TEST
 # run migration tests
 ./ci/upgrade/cstor/test.sh 
 if [ $? != 0 ]; then
-  kubectl logs --tail=50 -l job-name=upgrade-pool -n openebs
-  kubectl logs --tail=50 -l job-name=upgrade-volume -n openebs
+  kubectl logs -l job-name=upgrade-pool -n openebs
+  kubectl logs -l job-name=upgrade-volume -n openebs
+  kubectl describe pods -n openebs
   exit 1
 fi
 
