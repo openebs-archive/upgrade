@@ -12,7 +12,7 @@ This document describes the steps for migrating the following OpenEBS cStor cust
 
 ## SPC pools to CSPC pools
 
-These instructions will guide you through the process of migrating cStor pools from the old v1apha1 SPC spec to v1 CSPC spec. 
+These instructions will guide you through the process of migrating cStor pools from the old v1alpha1 SPC spec to v1 CSPC spec. 
 
 ### Prerequisites
 
@@ -131,7 +131,7 @@ Make sure to migrate the associated PVs, to list CStorVolumes for the PVs which 
 
 ## cStor External Provisioned volumes to cStor CSI volumes
 
-These instructions will guide you through the process of migrating cStor volumes from the old v1apha1 external provisioned spec to v1 CSI spec. 
+These instructions will guide you through the process of migrating cStor volumes from the old v1alpha1 external provisioned spec to v1 CSI spec. 
 
 ### Prerequisites
 
@@ -284,7 +284,7 @@ metadata:
 
 # Migrating jiva External Provisioned volumes to jiva CSI volumes (Experimental)
 
-These instructions will guide you through the process of migrating jiva volumes from the old v1apha1 external provisioned spec to v1 CSI spec. 
+These instructions will guide you through the process of migrating Jiva volumes from the old v1alpha1 external provisioned spec to v1 CSI spec. 
 
 ### Prerequisites
 
@@ -292,6 +292,8 @@ Before migrating the volumes make sure the following prerequisites are taken car
 
  - The jiva-operator should be installed with version 2.7.0 or above. You can install the correct version of jiva-operator from [charts](https://github.com/openebs/charts/tree/gh-pages). Get the jiva-operator yaml within the correct versioned folder and install. 
  - **The application needs to be scaled down before migrating.** This is required as the old PVC and PV spec needs to be deleted at the end of migration.
+
+ For this example lets say the original volume has PVC name `demo-vol-claim` and PV name `pvc-898d90cc-ec73-4868-9205-1a8ba141a5bb`.
  
 ### Migration steps
 
@@ -327,6 +329,8 @@ Before migrating the volumes make sure the following prerequisites are taken car
     spec:
       replicaSC: openebs-hostpath
       target:
+        # This should be same as the ReplicaCount
+        # in the old StorageClass 
         replicationFactor: 1
     ```
     You can find more about jivaVolumePolicy [here]().
@@ -367,9 +371,15 @@ Before migrating the volumes make sure the following prerequisites are taken car
     ```
 
 6. Scale down the csi replica sts to 0.
+    ```sh
+    $ kubectl scale deploy pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650-rep -n openebs --replicas=0
+    ```
 
 7. Exec into each node. Remove the files from the new localpv hostpath and copy the files from old hostpath to the new localpv hostpath. The old hostpath would be the same for all replica deployments and will be like `/var/openebs/<pv-name>`, for example `/var/openebs/pvc-898d90cc-ec73-4868-9205-1a8ba141a5bb`
 
 8. Scale up the replica statefulset. Replace the volume name in the application and scale it up. Verify the data.
 
 9. Delete the old volume. Done!!
+    ```sh
+    $ kubectl delete pvc demo-vol-claim
+    ```
