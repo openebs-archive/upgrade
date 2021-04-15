@@ -1,3 +1,17 @@
+v2.8.0 / 2021-04-14
+========================
+* feat(upgrade): add support for jiva-csi volume upgrades ([#89](https://github.com/openebs/upgrade/pull/89),[@shubham14bajpai](https://github.com/shubham14bajpai))
+
+
+v2.8.0-RC2 / 2021-04-12
+========================
+
+
+v2.8.0-RC1 / 2021-04-07
+========================
+* feat(upgrade): add support for jiva-csi volume upgrades ([#89](https://github.com/openebs/upgrade/pull/89),[@shubham14bajpai](https://github.com/shubham14bajpai))
+
+
 v2.7.0 / 2021-03-11
 ========================
 * refact(migrate): improve logs and docs about multiple cstorvolume apis ([#96](https://github.com/openebs/upgrade/pull/96),[@shubham14bajpai](https://github.com/shubham14bajpai))
