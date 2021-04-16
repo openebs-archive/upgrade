@@ -243,7 +243,7 @@ The status of the job can be verified by looking at the logs of the job pod. To 
 ```sh
 $ kubectl -n openebs get pods -l job-name=cstor-volume-upgrade
 NAME                               READY   STATUS   RESTARTS   AGE
-cstor-cspc-upgrade-jd747     1/1     Running    0          34s
+cstor-volume-upgrade-jd747     1/1     Running    0          34s
 ```
 ```sh
 $ kubectl -n openebs logs -f cstor-volume-upgrade-jd747
@@ -263,4 +263,123 @@ I0714 14:03:15.897696       1 cvc.go:75] patching cvc pvc-5fdce1bf-2cfc-4692-835
 I0714 14:03:15.929871       1 cvc.go:95] cvc pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49 patched
 I0714 14:03:16.030782       1 cstor_volume.go:423] Verifying the reconciliation of version for pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49
 I0714 14:03:26.046950       1 cstor_volume.go:78] Successfully upgraded pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49 to 2.8.0
+```
+
+## jiva CSI volumes
+
+These instructions will guide you through the process of upgrading jiva CSI volumes from `2.7.0` or later to a newer release up to `2.8.0`.
+
+### Prerequisites
+
+Before upgrading the volumes make sure the following prerequisites are taken care of:
+
+ - Upgrade the jiva operator to desired version by applying the jiva-operator from the [charts](https://github.com/openebs/charts/tree/gh-pages).
+
+ - Check for the `REMOUNT` env in `openebs-jiva-csi-node` daemonset, if disabled then scaling down the application before upgrading the volume is recommended to avoid any read-only issues.
+
+### Running the upgrade job
+
+To upgrade a jiva CSI volume a jobs needs to be launched that automates all the steps required. Below is the sample yaml for the job:
+
+```yaml
+# This is an example YAML for upgrading jiva volume.
+# Some of the values below needs to be changed to
+# match your openebs installation. The fields are
+# indicated with VERIFY
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  # VERIFY that you have provided a unique name for this upgrade job.
+  # The name can be any valid K8s string for name.
+  name: jiva-volume-upgrade
+
+  # VERIFY the value of namespace is same as the namespace where openebs components
+  # are installed. You can verify using the command:
+  # `kubectl get pods -n <openebs-namespace> -l openebs.io/component-name=maya-apiserver`
+  # The above command should return status of the openebs-apiserver.
+  namespace: openebs
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      # VERIFY the value of serviceAccountName is pointing to service account
+      # created within openebs namespace. Use the non-default account.
+      # by running `kubectl get sa -n <openebs-namespace>`
+      serviceAccountName: jiva-operator
+      containers:
+      - name:  upgrade
+        args:
+        - "jiva-volume"
+
+        # --from-version is the current version of the volume
+        - "--from-version=2.7.0"
+
+        # --to-version is the version desired upgrade version
+        - "--to-version=2.8.0"
+        # if required the image prefix of the volume deployments can be
+        # changed using the flag below, defaults to whatever was present on old
+        # deployments.
+        #- "--to-version-image-prefix=openebs/"
+        # if required the image tags for volume deployments can be changed
+        # to a custom image tag using the flag below, 
+        # defaults to the --to-version mentioned above.
+        #- "--to-version-image-tag=ci"
+
+        # VERIFY that you have provided the correct list of volume Names
+        - "pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650"
+
+        # Following are optional parameters
+        # Log Level
+        - "--v=4"
+        # DO NOT CHANGE BELOW PARAMETERS
+        env:
+        - name: OPENEBS_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        tty: true
+
+        # the image version should be same as the --to-version mentioned above
+        # in the args of the job
+        image: openebs/upgrade:<same-as-to-version>
+        imagePullPolicy: IfNotPresent
+      restartPolicy: OnFailure
+---
+```
+You can get the above yaml from [here](../examples/upgrade/jiva-volume.yaml).
+
+To get the PV names you can use the command:
+```sh
+$ kubectl get pv
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                   STORAGECLASS          REASON   AGE
+pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650   4Gi        RWO            Delete           Bound    default/jiva-csi-demo   openebs-jiva-csi-sc            11m
+```
+To identify a jiva CSI volume PV, look for the StorageClass associated with the PV and make sure the StorageClass is having provisioner as `jiva.csi.openebs.io`.
+
+The status of the job can be verified by looking at the logs of the job pod. To get the job pod use the command:
+```sh
+$ kubectl -n openebs get pods -l job-name=jiva-volume-upgrade
+NAME                               READY   STATUS   RESTARTS   AGE
+jiva-volume-upgrade-jd747     1/1     Running    0          34s
+```
+```sh
+$ kubectl -n openebs logs -f jiva-volume-upgrade-jd747
+I0330 13:07:31.054955       1 jiva_volume.go:63] Upgrading JivaVolume pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650 to master-dev
+I0330 13:07:31.502460       1 statefulset.go:77] patching statefulset pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650-jiva-rep
+I0330 13:07:31.562237       1 statefulset.go:109] rollout status: waiting for statefulset rolling update to complete 0 pods at revision pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650-jiva-rep-55b8789655...
+I0330 13:07:36.565525       1 statefulset.go:109] rollout status: Waiting for 1 pods to be ready...
+I0330 13:07:41.571291       1 statefulset.go:109] rollout status: statefulset rolling update complete 1 pods at revision pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650-jiva-rep-55b8789655...
+I0330 13:07:41.571709       1 statefulset.go:116] statefulset pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650-jiva-rep patched successfully
+I0330 13:07:41.586417       1 deployment.go:78] patching deployment pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650-jiva-ctrl
+I0330 13:07:43.761694       1 deployment.go:115] rollout status: Waiting for deployment "pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650-jiva-ctrl" rollout to finish: 0 out of 1 new replicas have been updated...
+I0330 13:07:48.765812       1 deployment.go:115] rollout status: Waiting for deployment "pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650-jiva-ctrl" rollout to finish: 0 out of 1 new replicas have been updated...
+I0330 13:07:53.768960       1 deployment.go:115] rollout status: deployment "pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650-jiva-ctrl" successfully rolled out
+I0330 13:07:53.768985       1 deployment.go:122] deployment pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650-jiva-ctrl patched successfully
+I0330 13:07:53.768999       1 service.go:77] Patching service pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650-jiva-ctrl-svc
+I0330 13:07:53.787189       1 service.go:99] Service pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650-jiva-ctrl-svc patched
+I0330 13:07:53.787233       1 jivavolume.go:76] patching jivaVolume pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650
+I0330 13:07:53.799901       1 jivavolume.go:96] jivaVolume pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650 patched
+I0330 13:07:53.806268       1 jiva_volume.go:383] Verifying the reconciliation of version for pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650
+I0330 13:08:03.814190       1 jiva_volume.go:74] Successfully upgraded pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650 to master-dev
 ```

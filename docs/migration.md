@@ -12,7 +12,7 @@ This document describes the steps for migrating the following OpenEBS cStor cust
 
 ## SPC pools to CSPC pools
 
-These instructions will guide you through the process of migrating cStor pools from the old v1apha1 SPC spec to v1 CSPC spec. 
+These instructions will guide you through the process of migrating cStor pools from the old v1alpha1 SPC spec to v1 CSPC spec. 
 
 ### Prerequisites
 
@@ -131,7 +131,7 @@ Make sure to migrate the associated PVs, to list CStorVolumes for the PVs which 
 
 ## cStor External Provisioned volumes to cStor CSI volumes
 
-These instructions will guide you through the process of migrating cStor volumes from the old v1apha1 external provisioned spec to v1 CSI spec. 
+These instructions will guide you through the process of migrating cStor volumes from the old v1alpha1 external provisioned spec to v1 CSI spec. 
 
 ### Prerequisites
 
@@ -281,3 +281,105 @@ metadata:
     name: fio-cstor
     openebs.io/target-affinity: fio-cstor
 ```
+
+# Migrating jiva External Provisioned volumes to jiva CSI volumes (Experimental)
+
+These instructions will guide you through the process of migrating Jiva volumes from the old v1alpha1 external provisioned spec to v1 CSI spec. 
+
+### Prerequisites
+
+Before migrating the volumes make sure the following prerequisites are taken care of:
+
+ - The jiva-operator should be installed with version 2.7.0 or above. You can install the correct version of jiva-operator from [charts](https://github.com/openebs/charts/tree/gh-pages). Get the jiva-operator yaml within the correct versioned folder and install. 
+ - **The application needs to be scaled down before migrating.** This is required as the old PVC and PV spec needs to be deleted at the end of migration.
+
+ For this example lets say the original volume has PVC name `demo-vol-claim` and PV name `pvc-898d90cc-ec73-4868-9205-1a8ba141a5bb`.
+ 
+### Migration steps
+
+1. Scale down volume controller and all replica deployments. You can find these deployments using the command:
+   ```
+    $ kubectl -n openebs get deploy
+    NAME                                             READY   UP-TO-DATE   AVAILABLE   AGE
+    pvc-898d90cc-ec73-4868-9205-1a8ba141a5bb-ctrl    1/1     1            1           50s
+    pvc-898d90cc-ec73-4868-9205-1a8ba141a5bb-rep-1   1/1     1            1           50s
+   ```
+
+2. Create a jivaVolumePolicy equivalent to old storageclass annotations. For example if the original storageclass was:
+   ```yaml
+    apiVersion: storage.k8s.io/v1
+    kind: StorageClass
+    metadata:
+      name: jiva-1r
+      annotations:
+        openebs.io/cas-type: jiva
+        cas.openebs.io/config: |
+          - name: ReplicaCount
+            value: "1"
+    provisioner: openebs.io/provisioner-iscsi
+   ```
+    The equivalent jivaVolumepolicy will look like:
+
+    ```yaml
+    apiVersion: openebs.io/v1alpha1
+    kind: JivaVolumePolicy
+    metadata:
+      name: example-jivavolumepolicy
+      namespace: openebs
+    spec:
+      replicaSC: openebs-hostpath
+      target:
+        # This should be same as the ReplicaCount
+        # in the old StorageClass 
+        replicationFactor: 1
+    ```
+    You can find more about jivaVolumePolicy [here](https://github.com/openebs/jiva-operator/blob/master/docs/tutorials/policies.md).
+
+3. Create equivalent CSI storageclass. 
+    ```yaml
+    apiVersion: storage.k8s.io/v1
+    kind: StorageClass
+    metadata:
+      name: openebs-jiva-csi-sc
+    provisioner: jiva.csi.openebs.io
+    parameters:
+      cas-type: "jiva"
+      policy: "example-jivavolumepolicy"
+    ```
+    The jivaVolumePolicy will be added to the parameters instead of having the annotation.
+
+4. Create an equivalent volume with new CSI storageclass. 
+    ```yaml
+    kind: PersistentVolumeClaim
+    apiVersion: v1
+    metadata:
+      name: migrated-demo-vol-claim
+    spec:
+      storageClassName: openebs-jiva-csi-sc
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+        storage: 5Gi
+    ```
+    Make sure the size and other spec fields should match the old external provisioned volume.
+
+5. The new csi volume replica statefulset will have a hostpath-localpv volume each. Note down the node-name and the hostpath for the volume.
+    ```
+    NodeName 	  Corresponding hostpath 
+    127.0.0.1 	/var/openebs/local/pvc-91d8fa8d-a474-4444-881e-a13571be5487
+    ```
+
+6. Scale down the csi replica sts to 0.
+    ```sh
+    $ kubectl scale sts pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650-rep -n openebs --replicas=0
+    ```
+
+7. SSH into each node. Remove the files from the new localpv hostpath and copy the files from old hostpath to the new localpv hostpath which we have noted down in step 5. The old hostpath would be the same for all replica deployments and will be like `/var/openebs/<pv-name>`, for example `/var/openebs/pvc-898d90cc-ec73-4868-9205-1a8ba141a5bb`
+
+8. Scale up the replica statefulset. Replace the volume name in the application and scale it up. Verify the data.
+
+9. Delete the old volume. Done!!
+    ```sh
+    $ kubectl delete pvc demo-vol-claim
+    ```
