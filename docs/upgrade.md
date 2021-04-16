@@ -347,7 +347,7 @@ spec:
       restartPolicy: OnFailure
 ---
 ```
-You can get the above yaml from [here](../examples/upgrade/cstor-volume.yaml).
+You can get the above yaml from [here](../examples/upgrade/jiva-volume.yaml).
 
 To get the PV names you can use the command:
 ```sh

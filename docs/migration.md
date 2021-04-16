@@ -333,7 +333,7 @@ Before migrating the volumes make sure the following prerequisites are taken car
         # in the old StorageClass 
         replicationFactor: 1
     ```
-    You can find more about jivaVolumePolicy [here]().
+    You can find more about jivaVolumePolicy [here](https://github.com/openebs/jiva-operator/blob/master/docs/tutorials/policies.md).
 
 3. Create equivalent CSI storageclass. 
     ```yaml
@@ -372,10 +372,10 @@ Before migrating the volumes make sure the following prerequisites are taken car
 
 6. Scale down the csi replica sts to 0.
     ```sh
-    $ kubectl scale deploy pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650-rep -n openebs --replicas=0
+    $ kubectl scale sts pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650-rep -n openebs --replicas=0
     ```
 
-7. Exec into each node. Remove the files from the new localpv hostpath and copy the files from old hostpath to the new localpv hostpath. The old hostpath would be the same for all replica deployments and will be like `/var/openebs/<pv-name>`, for example `/var/openebs/pvc-898d90cc-ec73-4868-9205-1a8ba141a5bb`
+7. SSH into each node. Remove the files from the new localpv hostpath and copy the files from old hostpath to the new localpv hostpath which we have noted down in step 5. The old hostpath would be the same for all replica deployments and will be like `/var/openebs/<pv-name>`, for example `/var/openebs/pvc-898d90cc-ec73-4868-9205-1a8ba141a5bb`
 
 8. Scale up the replica statefulset. Replace the volume name in the application and scale it up. Verify the data.
 
