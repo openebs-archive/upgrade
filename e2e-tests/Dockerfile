@@ -32,8 +32,6 @@ RUN pip install openshift==0.11.2
 #Installing jmespath
 RUN pip install jmespath
 
-RUN touch /mnt/parameters.yml
-
 #Installing Kubectl
 ENV KUBE_LATEST_VERSION="v1.20.0"
 RUN curl -L https://storage.googleapis.com/kubernetes-release/release/${KUBE_LATEST_VERSION}/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl && \

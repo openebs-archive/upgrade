@@ -3,15 +3,15 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   generateName: cstor-cspc-csi-migration-
-  namespace: litmus
+  namespace: e2e
 spec:
   template:
     metadata:
-      name: litmus
+      name: e2e
       labels:
         app: cspc-csi-migration
     spec:
-      serviceAccountName: litmus
+      serviceAccountName: e2e
       restartPolicy: Never
       containers:
       - name: ansibletest

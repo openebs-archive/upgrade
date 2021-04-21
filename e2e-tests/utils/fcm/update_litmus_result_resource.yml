@@ -1,9 +1,9 @@
 ---
 - block:
-   - name: Generate the litmus result CR to reflect SOT (Start of Test)
+   - name: Generate the e2e result CR to reflect SOT (Start of Test)
      template:
-       src: /litmus-result.j2
-       dest: litmus-result.yaml
+       src: /e2e-result.j2
+       dest: e2e-result.yaml
      vars:
        test: "{{ test_name }}"
        app: ""
@@ -12,10 +12,10 @@
        verdict: none
 
    - name: Analyze the cr yaml
-     shell: cat litmus-result.yaml
+     shell: cat e2e-result.yaml
 
-   - name: Apply the litmus result CR
-     shell: kubectl apply -f litmus-result.yaml
+   - name: Apply the e2e result CR
+     shell: kubectl apply -f e2e-result.yaml
      args:
        executable: /bin/bash
      register: lr_status
@@ -24,10 +24,10 @@
   when: status == "SOT"
 
 - block:
-   - name: Generate the litmus result CR to reflect EOT (End of Test)
+   - name: Generate the e2e result CR to reflect EOT (End of Test)
      template:
-       src: /litmus-result.j2
-       dest: litmus-result.yaml
+       src: /e2e-result.j2
+       dest: e2e-result.yaml
      vars:
        test: "{{ test_name }}"
        app: ""
@@ -36,10 +36,10 @@
        verdict: "{{ flag }}"
 
    - name: Analyze the cr yaml
-     shell: cat litmus-result.yaml
+     shell: cat e2e-result.yaml
 
-   - name: Apply the litmus result CR
-     shell: kubectl apply -f litmus-result.yaml
+   - name: Apply the e2e result CR
+     shell: kubectl apply -f e2e-result.yaml
      args:
        executable: /bin/bash
      register: lr_status
