@@ -1,0 +1,15 @@
+# Test-specific parameters
+operator_ns: "{{ lookup('env','OPERATOR_NS') }}"
+test_name: cstor-cspc-csi-upgrade
+from_version: "{{ lookup('env','FROM_VERSION') }}"
+to_version: "{{ lookup('env','TO_VERSION') }}"
+upgrade_image_tag: "{{ lookup('env', 'UPGRADE_IMAGE_TAG') }}"
+cstor_operator: cstor-operator.yaml
+csi_operator: csi-operator.yaml
+cstor_operator_link: "https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/cstor-operator.yaml"
+csi_operator_link: "https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/csi-operator.yaml"
+new_cstor_operator: "https://raw.githubusercontent.com/openebs/charts/gh-pages/{{ lookup('env','TO_VERSION') }}/cstor-operator.yaml"
+cspc_pool_upgrade: "{{ lookup('env', 'CSPC_POOL_UPGRADE') }}"
+csi_volume_upgrade: "{{ lookup('env', 'CSI_VOLUME_UPGRADE') }}"
+cstor_operator_upgrade: "{{ lookup('env', 'CSTOR_OPERATOR_UPGRADE') }}"
+csi_ns: "{{ lookup('env', 'CSI_NAMESPACE') }}"

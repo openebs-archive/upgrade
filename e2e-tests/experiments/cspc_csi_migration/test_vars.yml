@@ -1,0 +1,6 @@
+# Test-specific parameters
+operator_ns: "{{ lookup('env','OPERATOR_NS') }}"
+test_name: cstor-cspc-csi-migration
+migration_image_tag: "{{ lookup('env', 'MIGRATATION_IMAGE_TAG') }}"
+spc_pool_migration: "{{ lookup('env', 'MIGRATE_SPC_POOL') }}"
+cstor_volume_migration: "{{ lookup('env', 'MIGRATE_CSTOR_VOLUME') }}"

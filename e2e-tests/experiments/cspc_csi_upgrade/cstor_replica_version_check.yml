@@ -1,0 +1,16 @@
+---
+            - name: Obtain the CVR name to verify the current version
+              shell: >
+                kubectl get cvr -n {{ operator_ns }} -l openebs.io/persistent-volume={{ outer_item }}
+                -o=jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'
+              register: cvr_name
+              failed_when: 'cvr_name.stdout == ""'
+
+            - name: Check if the CVRs are upgraded to newer version
+              shell: >
+                 kubectl get cvr -n {{ operator_ns }} {{ item }}
+                 -o custom-columns=:.versionDetails.status.current --no-headers
+              register: cvr_version
+              failed_when: "cvr_version.stdout != to_version"
+              with_items:
+                  - "{{ cvr_name.stdout_lines }}"

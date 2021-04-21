@@ -1,0 +1,43 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: cstor-cspc-csi-migration-
+  namespace: litmus
+spec:
+  template:
+    metadata:
+      name: litmus
+      labels:
+        app: cspc-csi-migration
+    spec:
+      serviceAccountName: litmus
+      restartPolicy: Never
+      containers:
+      - name: ansibletest
+        image: openebs/ansible-runner:ci
+        imagePullPolicy: IfNotPresent
+
+        env:
+          - name: ANSIBLE_STDOUT_CALLBACK
+            #value: log_plays, actionable, default
+            value: default
+            
+            # Namespace where OpenEBS is deployed
+          - name: OPERATOR_NS
+            value: ""
+
+            # Image tag for migration Job
+          - name: MIGRATATION_IMAGE_TAG
+            value: ""
+             
+            # set to "true" if you want to upgrade cStor CSPC pool
+          - name: MIGRATE_SPC_POOL
+            value: ""
+
+            # set to "true" if you want to upgrade CSI volumes        
+          - name: MIGRATE_CSTOR_VOLUME
+            value: ""
+
+        command: ["/bin/bash"]
+        args: ["-c", "ansible-playbook ./e2e-tests/experiments/cspc_csi_migration/test.yml -i /etc/ansible/hosts -v; exit 0"]
