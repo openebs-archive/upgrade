@@ -15,7 +15,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: ansibletest
-        image: openebs/ansible-runner:ci
+        image: openebs/upgrade-e2e:ci
         imagePullPolicy: IfNotPresent
 
         env:
