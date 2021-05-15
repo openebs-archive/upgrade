@@ -18,7 +18,7 @@ Before upgrading the pools make sure the following prerequisites are taken care 
 
  - Upgrade the control plane components by applying the desired version of cstor-operator from the [charts](https://github.com/openebs/charts/tree/gh-pages). 
  
- **Note:** If upgrading the control plane from 2.4.0 or previous to 2.9.0 or above version please clean up the CSIDriver CR before applying the operator using the below command.
+ **Note:** If upgrading the control plane from 2.4.0 or the previous versions to the latest version please clean up the CSIDriver CR before applying the operator using the below command.
   ```sh
   kubectl delete csidriver cstor.csi.openebs.io
   ```
