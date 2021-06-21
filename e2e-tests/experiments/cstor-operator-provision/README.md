@@ -5,8 +5,8 @@
 
    - This test constitutes the below files. 
 
-### run_litmus_test.yml
-   - This includes the litmus job which triggers the test execution. The pod includes several environmental variables such as 
+### run_e2e_test.yml
+   - This includes the e2e job which triggers the test execution. The pod includes several environmental variables such as 
         - RELEASE_VERSION: Version Tag for the cstor operator
         - ACTION: Values should be provision for deploy, to remove the operator value should be deprovision.
         - WEBHOOK_FAILURE_POLICY: value for the webhook failure policy.
