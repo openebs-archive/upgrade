@@ -1,0 +1,46 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: e2e-openebs-runner
+  namespace: e2e 
+spec:
+  template:
+    metadata:
+      name: e2e
+      labels: 
+        provider: openebs-runner
+    spec:
+      serviceAccountName: e2e
+      restartPolicy: Never
+      containers:
+      - name: ansibletest
+        image: openebs/upgrade-e2e:ci
+        imagePullPolicy: IfNotPresent
+        env: 
+          - name: ANSIBLE_STDOUT_CALLBACK
+            value: default
+
+          - name: OPENEBS_VERSION
+            value: ""
+
+          - name: SPARSE_FILE_COUNT
+            value: "10" 
+            
+          - name: DEPLOY_MODE
+            value: "operator"  
+
+          - name: Action
+            value: provision
+
+          - name: OPERATOR_NS
+            value: "openebs"
+
+          - name: COMMIT_ID
+            value: ""
+
+          - name: RC_TAG
+            value: ""
+
+        command: ["/bin/bash"]
+        args: ["-c", "ansible-playbook ./e2e-tests/experiments/openebs-provision/test.yml -i /etc/ansible/hosts -vv; exit 0"]

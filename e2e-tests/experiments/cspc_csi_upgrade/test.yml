@@ -10,10 +10,10 @@
     - block:
 
          ## Generating the testname for deployment
-        - include_tasks: /utils/fcm/create_testname.yml
+        - include_tasks: /e2e-tests/utils/create_testname.yml
 
          ## RECORD START-OF-TEST IN E2E RESULT CR
-        - include_tasks: "/utils/fcm/update_e2e_result_resource.yml"
+        - include_tasks: "/e2e-tests/utils/update_e2e_result_resource.yml"
           vars:
             status: 'SOT'
 
@@ -37,14 +37,36 @@
               register: cspc_version
               failed_when: "cspc_version.stdout != from_version"
 
-            - name: Record the namespace for csi plugin pods
-              set_fact:
-                csi_ns: kube-system
-              when: from_version == '1.10.0' or from_version == '1.11.0' or from_version == '1.12.0'
+            - name: Check if the cStor admission server is in expected version
+              shell: >
+                kubectl get deploy -n {{ operator_ns }}
+                -o jsonpath='{.items[?(@.metadata.labels.app=="cstor-admission-webhook")].metadata.labels.openebs\.io\/version}'
+              args:
+                executable: /bin/bash
+              register: webhook_version
+              failed_when: "webhook_version.stdout != from_version"              
+
+            - name: Check if the cStor ndm operator is in expected version
+              shell: >
+                kubectl get deploy -n {{ operator_ns }}
+                -o jsonpath='{.items[?(@.metadata.labels.name=="openebs-ndm-operator")].metadata.labels.openebs\.io\/version}'
+              args:
+                executable: /bin/bash
+              register: ndm_version
+              failed_when: "ndm_version.stdout != from_version"
+
+            - name: Check if the cStor ndm daemonset is in expected version
+              shell: >
+                kubectl get daemonset -n {{ operator_ns }}
+                -o jsonpath='{.items[?(@.metadata.labels.name=="openebs-ndm")].metadata.labels.openebs\.io\/version}'
+              args:
+                executable: /bin/bash
+              register: ndm_ds_version
+              failed_when: "ndm_ds_version.stdout != from_version"
 
             - name: Check if the csi daemonset is in expected version
               shell: >
-                kubectl get daemonset -n {{ csi_ns }}
+                kubectl get daemonset -n {{ operator_ns }}
                 -o jsonpath='{.items[?(@.metadata.labels.app=="openebs-cstor-csi-node")].metadata.labels.openebs\.io\/version}'
               args:
                 executable: /bin/bash
@@ -53,79 +75,61 @@
 
             - name: Check if the csi controller is in expected version
               shell: >
-                kubectl get sts -n {{ csi_ns }}
+                kubectl get sts -n {{ operator_ns }}
                 -o jsonpath='{.items[?(@.metadata.labels.name=="openebs-cstor-csi-controller")].metadata.labels.openebs\.io\/version}'
               args:
                 executable: /bin/bash
               register: csi_sts_version
               failed_when: "csi_sts_version.stdout != from_version"
 
-            - name: Downloading cstor Operator
-              get_url:
-                url: "{{ new_cstor_operator }}"
-                dest: "{{ playbook_dir }}/{{ cstor_operator }}"
-                force: yes
-              register: operator_file
-              ignore_errors: true
-              until:  "'OK' in operator_file.msg"
-              delay: 5
-              retries: 3
-             
-            # this removing of csidriver plugin is just a workaround
-  
-            - name: Remove the csidriver plugin
-              shell: kubectl delete csidriver cstor.csi.openebs.io
-              args:
-                 executable: /bin/bash
-
             - block:
 
-                - name: Downloading cstor Operator
+                - name: Downloading cstor operator yaml for rc tag
+                  get_url:
+                    url: "{{ release_operator_link }}"
+                    dest: "{{ playbook_dir }}/{{ cstor_operator }}"
+                    force: yes
+                  register: release_operator
+                  when: rc_tag == ""
+
+                - name: Downloading cstor operator yaml for rc tag
+                  get_url:
+                    url: "{{ rc_operator_link }}"
+                    dest: "{{ playbook_dir }}/{{ cstor_operator }}"
+                    force: yes
+                  register: rc_operator
+                  when: rc_tag != ""
+
+                - name: Deploy cStor operator
+                  shell: >
+                    kubectl apply -f {{ cstor_operator }}
+                  args:
+                    executable: /bin/bash
+                  register: deploy_status
+
+              when:
+                - commit_id != "charts"
+
+            - block:
+                - name: Downloading the cstor operator file from charts
                   get_url:
                     url: "{{ cstor_operator_link }}"
                     dest: "{{ playbook_dir }}/{{ cstor_operator }}"
                     force: yes
-                  register: result
-                  until:  "'OK' in result.msg"
+                  register: status
+                  until:  "'OK' in status.msg"
                   delay: 5
                   retries: 3
 
-                - name: Change the OpenEBS component labels to desired version in Operator yaml
-                  replace:
-                    path: "{{ cstor_operator }}"
-                    regexp: 'openebs.io/version: dev'
-                    replace: "openebs.io/version: {{ to_version }}"
-
-                - name: Change the Image tag to newer version in operator yaml
-                  replace:
-                    path: "{{ cstor_operator }}"
-                    regexp: ':ci'
-                    replace: ":{{ to_version }}"
-
-                - name: Applying rbac rule
-                  shell: "kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/rbac.yaml"
+                - name: Deploy cStor operator
+                  shell: >
+                    kubectl apply -f {{ cstor_operator }}
                   args:
                     executable: /bin/bash
+                  register: deploy_status
 
-                - name: Applying all crds
-                  shell: "kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/crds/all_cstor_crds.yaml"
-                  args:
-                    executable: /bin/bash
-
-              when: "'OK' not in operator_file.msg"
-
-            - name: Enable auto-remount feature to recover volumes from readonly state
-              replace:
-                path: "{{ cstor_operator }}"
-                regexp: 'value: "false"'
-                after: '- name: REMOUNT'
-                replace: 'value: "true"'
-              when: "'OK' in operator_file.msg"
-
-            - name: Applying cspc operator
-              shell: "kubectl apply -f {{ cstor_operator }}"
-              args:
-                executable: /bin/bash
+              when:
+                - commit_id == "charts"
 
             - name: Checking OpenEBS-CVC-Operator is running
               shell: >
@@ -154,47 +158,9 @@
               delay: 5
               retries: 120
 
-            - block:
-
-                - name: Downloading the csi-operator file
-                  get_url:
-                    url: "{{ csi_operator_link }}"
-                    dest: "{{ playbook_dir }}/{{ csi_operator }}"
-                    force: yes
-                  register: status
-                  until:  "'OK' in status.msg"
-                  delay: 5
-                  retries: 3
-
-                - name: Update the desired image tag for openebs-plugin
-                  replace:
-                    path: "{{ playbook_dir }}/{{ csi_operator }}"
-                    regexp: "cstor-csi-driver:ci"
-                    replace: "cstor-csi-driver:{{ to_version }}"
-
-                - name: Update the label tag for openebs-plugin
-                  replace:
-                    path: "{{ playbook_dir }}/{{ csi_operator }}"
-                    regexp: "openebs.io/version: dev"
-                    replace: "openebs.io/version: {{ to_version }}"
-
-                - name: Enable auto-remount feature to recover volumes from readonly state
-                  replace:
-                    path: "{{ playbook_dir }}/{{ csi_operator }}"
-                    regexp: 'value: "false"'
-                    after: '- name: REMOUNT'
-                    replace: 'value: "true"'
-
-                - name: Applying cspc operator
-                  shell: "kubectl apply -f {{ playbook_dir }}/{{ csi_operator }}"
-                  args:
-                    executable: /bin/bash
-                    
-              when: "'OK' not in operator_file.msg"
-
             - name: check if csi-controller pod is running
               shell: >
-                kubectl get pods -n {{ csi_ns }} -l app=openebs-cstor-csi-controller
+                kubectl get pods -n {{ operator_ns }} -l app=openebs-cstor-csi-controller
                 --no-headers -o custom-columns=:status.phase
               args:
                 executable: /bin/bash
@@ -205,7 +171,7 @@
 
             - name: Obtain the desired number of openebs-csi-node pods
               shell: >
-                kubectl get ds -n {{ csi_ns }} openebs-cstor-csi-node --no-headers
+                kubectl get ds -n {{ operator_ns }} openebs-cstor-csi-node --no-headers
                 -o custom-columns=:status.desiredNumberScheduled
               args:
                 executable: /bin/bash
@@ -213,7 +179,7 @@
 
             - name: Check if the desired count matches the ready pods
               command: >
-                kubectl get ds -n {{ csi_ns }} openebs-cstor-csi-node --no-headers
+                kubectl get ds -n {{ operator_ns }} openebs-cstor-csi-node --no-headers
                 -o custom-columns=:status.numberReady
               args:
                 executable: /bin/bash
@@ -221,22 +187,6 @@
               until: "desired_count.stdout == ready_pods.stdout"
               delay: 5
               retries: 50
-
-            - block: 
-
-               - name: Remove the csi controler in kube-system namespace
-                 shell: kubectl delete statefulset -n kube-system openebs-cstor-csi-controller
-                 args: 
-                   executable: /bin/bash
-                 register: csi_ctrl
-
-               - name: Remove the csi cstor node daemonset in kube-system namespace
-                 shell: kubectl delete daemonset -n kube-system openebs-cstor-csi-node
-                 args: 
-                   executable: /bin/bash
-                 register: csi_daemonset
- 
-              when: from_version == '1.10.0' or from_version == '1.11.0' or from_version == '1.12.0'
 
           when: cstor_operator_upgrade == "true"
 
@@ -258,6 +208,33 @@
           register: new_cspc_version
           failed_when: "new_cspc_version.stdout != to_version"
 
+        - name: Check if the cStor admission server updated to new version
+          shell: >
+            kubectl get deploy -n {{ operator_ns }}
+            -o jsonpath='{.items[?(@.metadata.labels.app=="cstor-admission-webhook")].metadata.labels.openebs\.io\/version}'
+          args:
+            executable: /bin/bash
+          register: new_webhook_version
+          failed_when: "new_webhook_version.stdout != to_version"
+
+        - name: Check if the cStor ndm operator is updated to new version
+          shell: >
+            kubectl get deploy -n {{ operator_ns }}
+            -o jsonpath='{.items[?(@.metadata.labels.name=="openebs-ndm-operator")].metadata.labels.openebs\.io\/version}'
+          args:
+            executable: /bin/bash
+          register: new_ndm_version
+          failed_when: "new_ndm_version.stdout != to_version"
+
+        - name: Check if the cStor ndm daemonset is updated to new version
+          shell: >
+            kubectl get daemonset -n {{ operator_ns }}
+            -o jsonpath='{.items[?(@.metadata.labels.name=="openebs-ndm")].metadata.labels.openebs\.io\/version}'
+          args:
+            executable: /bin/bash
+          register: new_ndm_ds_version
+          failed_when: "new_ndm_ds_version.stdout != to_version"
+
         - name: Check if the csi daemonset is updated to new version
           shell: >
             kubectl get daemonset -n {{ operator_ns }}
@@ -277,7 +254,7 @@
           failed_when: "new_csi_sts_version.stdout != to_version"
 
         - name: Obtain the service account name
-          shell: kubectl get deploy -n {{ operator_ns }} -l name=maya-apiserver -o jsonpath="{.items[*].spec.template.spec.serviceAccount}"
+          shell: kubectl get deploy -n {{ operator_ns }} -l name=cspc-operator -o jsonpath="{.items[*].spec.template.spec.serviceAccount}"
           register: service_account
           failed_when: 'service_account.stdout == ""'
 
@@ -493,11 +470,11 @@
             flag: "Pass"
 
       rescue:
-          - set_fact:
-              flag: "Fail"
+        - set_fact:
+            flag: "Fail"
 
       always:
-            ## RECORD END-OF-TEST IN E2E RESULT CR
-          - include_tasks: /utils/fcm/update_e2e_result_resource.yml
-            vars:
-              status: 'EOT'
+          ## RECORD END-OF-TEST IN E2E RESULT CR
+        - include_tasks: /e2e-tests/utils/update_e2e_result_resource.yml
+          vars:
+            status: 'EOT'

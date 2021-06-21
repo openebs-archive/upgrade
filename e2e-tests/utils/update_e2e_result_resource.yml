@@ -2,7 +2,7 @@
 - block:
    - name: Generate the e2e result CR to reflect SOT (Start of Test)
      template:
-       src: /e2e-result.j2
+       src: /e2e-tests/hack/e2e-result.j2
        dest: e2e-result.yaml
      vars:
        test: "{{ test_name }}"
@@ -26,7 +26,7 @@
 - block:
    - name: Generate the e2e result CR to reflect EOT (End of Test)
      template:
-       src: /e2e-result.j2
+       src: /e2e-tests/hack/e2e-result.j2
        dest: e2e-result.yaml
      vars:
        test: "{{ test_name }}"

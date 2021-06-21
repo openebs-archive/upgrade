@@ -20,7 +20,6 @@ spec:
 
         env:
           - name: ANSIBLE_STDOUT_CALLBACK
-            #value: log_plays, actionable, default
             value: default
 
             # OpenEBS Version already installed
@@ -33,10 +32,6 @@ spec:
             
             # Namespace where OpenEBS is deployed
           - name: OPERATOR_NS
-            value: "openebs"
-
-            # Namespace where OpenEBS csi operator is deployed
-          - name: CSI_NAMESPACE
             value: "openebs"
 
             # Image tag for Upgrade Job
@@ -53,6 +48,12 @@ spec:
 
             # set to "true" to upgrade CSTOR OPERATOR  plane
           - name: CSTOR_OPERATOR_UPGRADE
+            value: ""
+
+          - name: COMMIT_ID
+            value: ""
+
+          - name: RC_TAG
             value: ""
 
         command: ["/bin/bash"]

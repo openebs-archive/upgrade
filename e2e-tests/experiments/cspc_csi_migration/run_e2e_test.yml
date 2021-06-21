@@ -27,6 +27,10 @@ spec:
           - name: OPERATOR_NS
             value: ""
 
+            # Image tag for operator version
+          - name: OPERATOR_IMAGE_TAG
+            value: ""
+
             # Image tag for migration Job
           - name: MIGRATATION_IMAGE_TAG
             value: ""

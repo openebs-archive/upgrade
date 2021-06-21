@@ -20,7 +20,6 @@
 | FROM_VERSION            | Old version which needs to be upgraded                     |
 | TO_VERSION              | New version to upgrade                                     |
 | OPERATOR_NS             | Namespace where the openebs is deployed                    |
-| CSI_NAMESPACE           | Namespace where OpenEBS csi operator is deployed           |
 | UPGRADE_IMAGE_TAG       | Image tag for upgrade job                                  |
 | CSPC_POOL_UPGRADE       | Set the value as `true` to Upgrade cspc pool               |
 | CSPC_VOLUME_UPGRADE     | Set the value as `true` to Upgrade csi volumes             |

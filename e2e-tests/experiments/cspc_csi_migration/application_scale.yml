@@ -15,7 +15,7 @@
               args:
                 executable: /bin/bash
               register: app_deploy_name
-              
+
             - block:
 
                 - name: Obtain the application pod name
@@ -31,7 +31,7 @@
                   args:
                     executable: /bin/bash
                   register: scale_down_status
-                  
+
                 - name: Verify if the application scaled down successfully
                   shell: >
                       kubectl get deploy -n {{ app_ns.stdout }} {{ app_deploy_name.stdout }} --no-headers -o custom-columns=:.spec.replicas
@@ -53,8 +53,8 @@
                   retries: 30
 
               when: app_status == "scaledown"
-            
-            - block:  
+
+            - block:
 
                 - name: Scale the application after migration
                   shell: >
@@ -72,7 +72,7 @@
                   until: deploy_rep_status.stdout|int == 1
                   delay: 2
                   retries: 30
-                
+
                 - name: Obtain the application pod name
                   shell: >
                     kubectl get pod -n {{ app_ns.stdout }} -o custom-columns=:.metadata.name --no-headers | grep {{ app_deploy_name.stdout }}
@@ -89,5 +89,5 @@
                   until: "'Running' in pod_status.stdout"
                   delay: 10
                   retries: 30
-              
+
               when: app_status == "scaleup"
