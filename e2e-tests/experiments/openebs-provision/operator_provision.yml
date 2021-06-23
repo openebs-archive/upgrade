@@ -1,7 +1,7 @@
       ## Obtaining the OpenEBS operator from charts.
       ## If the chart is not created, openebs operator will be downloaded from master branch.
 
-    - block: 
+    - block:
 
         - name: Downloading openebs operator yaml for rc tag
           get_url:
@@ -19,7 +19,7 @@
           register: rc_operator
           when: rc_tag != ""
 
-      when: 
+      when:
         - commit_id != "charts"
 
     - name: Downloading openebs operator yaml for rc tag
@@ -69,4 +69,4 @@
           args:
             executable: /bin/bash
 
-      when: namespace != "openebs"        
+      when: namespace != "openebs"

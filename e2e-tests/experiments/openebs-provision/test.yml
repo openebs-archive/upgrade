@@ -21,7 +21,7 @@
 
         - block:
 
-            - include_tasks: "operator_provision.yaml"
+            - include_tasks: "operator_provision.yml"
               when:  deploy_type == "operator"
 
             - include_tasks: "helm_provision.yml"
@@ -145,7 +145,7 @@
 
         - block:
 
-            - name: Downloading openebs-operator.yaml
+            - name: Downloading openebs-operator yml
               get_url:
                 url: "{{ openebs_operator_link }}"
                 dest: "{{ playbook_dir }}/{{ openebs_operator }}"
@@ -169,14 +169,14 @@
                     path: "{{ openebs_operator_link }}"
                     regexp: 'namespace: openebs'
                     replace: 'namespace: "{{ namespace }}"'
-    
+
                 - name: Cleaning openebs operator
                   shell: kubectl delete -f "{{ openebs_operator_link }}"
                   args:
                     executable: /bin/bash
                   ignore_errors: True
-                      
-              when: namespace != "openebs"                 
+
+              when: namespace != "openebs"
 
             - name: Confirm pods has been deleted
               shell: kubectl get pods -n {{ namespace }}
