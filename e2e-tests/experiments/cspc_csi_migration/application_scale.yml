@@ -1,0 +1,93 @@
+---
+
+            ##{{ outer_item }} is name of the pv, the values will passed as a loop variable in test.yml
+
+            - name: Obtain the application namespace to scaledown the application
+              shell: >
+                  kubectl get pvc --all-namespaces --no-headers | grep {{ outer_item }} | awk '{print $1}'
+              args:
+                executable: /bin/bash
+              register: app_ns
+
+            - name: Obtain the application deployment name to scaledown the application
+              shell: >
+                  kubectl get deploy -n {{ app_ns.stdout }} --no-headers  -o custom-columns=:.metadata.name
+              args:
+                executable: /bin/bash
+              register: app_deploy_name
+
+            - block:
+
+                - name: Obtain the application pod name
+                  shell: >
+                    kubectl get pod -n {{ app_ns.stdout }} -o custom-columns=:.metadata.name --no-headers | grep {{ app_deploy_name.stdout }}
+                  args:
+                    executable: /bin/bash
+                  register: pod_name
+
+                - name: Scaledown the application
+                  shell: >
+                      kubectl scale deploy -n {{ app_ns.stdout }} {{ app_deploy_name.stdout }} --replicas=0
+                  args:
+                    executable: /bin/bash
+                  register: scale_down_status
+
+                - name: Verify if the application scaled down successfully
+                  shell: >
+                      kubectl get deploy -n {{ app_ns.stdout }} {{ app_deploy_name.stdout }} --no-headers -o custom-columns=:.spec.replicas
+                  args:
+                    executable: /bin/bash
+                  register: deploy_status
+                  until: deploy_status.stdout|int == 0
+                  delay: 2
+                  retries: 30
+
+                - name: check if the application pod is deleted
+                  shell: >
+                    kubectl get pod -n {{ app_ns.stdout }}
+                  args:
+                    executable: /bin/bash
+                  register: status
+                  until: '"{{ pod_name.stdout }}" not in status.stdout'
+                  delay: 10
+                  retries: 30
+
+              when: app_status == "scaledown"
+
+            - block:
+
+                - name: Scale the application after migration
+                  shell: >
+                    kubectl scale deploy -n {{ app_ns.stdout }} {{ app_deploy_name.stdout }} --replicas=1
+                  args:
+                    executable: /bin/bash
+                  register: scale_status
+
+                - name: Verify if the application scaled up successfully
+                  shell: >
+                    kubectl get deploy -n {{ app_ns.stdout }} --no-headers -o custom-columns=:.spec.replicas
+                  args:
+                    executable: /bin/bash
+                  register: deploy_rep_status
+                  until: deploy_rep_status.stdout|int == 1
+                  delay: 2
+                  retries: 30
+
+                - name: Obtain the application pod name
+                  shell: >
+                    kubectl get pod -n {{ app_ns.stdout }} -o custom-columns=:.metadata.name --no-headers | grep {{ app_deploy_name.stdout }}
+                  args:
+                    executable: /bin/bash
+                  register: new_pod_name
+
+                - name: check if the application pod is in running state
+                  shell: >
+                    kubectl get pod -n {{ app_ns.stdout }} {{ new_pod_name.stdout }} --no-headers -o custom-columns=:.status.phase
+                  args:
+                    executable: /bin/bash
+                  register: pod_status
+                  until: "'Running' in pod_status.stdout"
+                  delay: 10
+                  retries: 30
+
+              when: app_status == "scaleup"

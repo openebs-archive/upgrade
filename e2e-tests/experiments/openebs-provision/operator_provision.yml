@@ -1,0 +1,72 @@
+      ## Obtaining the OpenEBS operator from charts.
+      ## If the chart is not created, openebs operator will be downloaded from master branch.
+
+    - block:
+
+        - name: Downloading openebs operator yaml for rc tag
+          get_url:
+            url: "{{ release_operator_link }}"
+            dest: "{{ playbook_dir }}/{{ openebs_operator }}"
+            force: yes
+          register: release_operator
+          when: rc_tag == ""
+
+        - name: Downloading openebs operator yaml for rc tag
+          get_url:
+            url: "{{ rc_operator_link }}"
+            dest: "{{ playbook_dir }}/{{ openebs_operator }}"
+            force: yes
+          register: rc_operator
+          when: rc_tag != ""
+
+      when:
+        - commit_id != "charts"
+
+    - name: Downloading openebs operator yaml for rc tag
+      get_url:
+        url: "{{ new_operator }}"
+        dest: "{{ playbook_dir }}/{{ openebs_operator }}"
+        force: yes
+      register: rc_operator
+      when:
+        - commit_id == "charts"
+
+    - name: Change the openebs analytics value of openebs resources in operator YAML
+      replace:
+        path: "{{ openebs_operator }}"
+        regexp: 'value: "true"'
+        after: '- name: OPENEBS_IO_ENABLE_ANALYTICS'
+        replace: 'value: "false"'
+
+    - name: Change the value of sparse file count in operator YAML
+      replace:
+        path: "{{ openebs_operator }}"
+        regexp: 'value: "0"'
+        after: '- name: SPARSE_FILE_COUNT'
+        replace: 'value: "{{ sparse_file_count }}"'
+
+    - name: Applying openebs operator
+      shell: kubectl apply -f "{{ openebs_operator }}"
+      args:
+        executable: /bin/bash
+      when: namespace == "openebs"
+
+    - block:
+
+        - name: Change the default namespace in openebs operator spec
+          replace:
+            path: "{{ openebs_operator }}"
+            regexp: 'namespace: openebs'
+            replace: 'namespace: "{{ namespace }}"'
+
+        - name: Create the namesapce to deploy openebs
+          shell: kubectl create namespace {{ namespace }}
+          args:
+            executable: /bin/bash
+
+        - name: Applying openebs operator
+          shell: kubectl apply -f "{{ openebs_operator }}"
+          args:
+            executable: /bin/bash
+
+      when: namespace != "openebs"

@@ -1,0 +1,27 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate-cstor-cstor_volume_name
+  namespace: {{ operator_ns }}
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      serviceAccountName: service_account
+      containers:
+      - name:  migrate
+        args:
+        - "cstor-volume"
+        - "--pv-name=cstor_volume_name"
+        - "--v=4"
+        env:
+        - name: OPENEBS_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        tty: true
+        image: openebs/migrate:{{ migration_image_tag }}
+      restartPolicy: Never
+---
+

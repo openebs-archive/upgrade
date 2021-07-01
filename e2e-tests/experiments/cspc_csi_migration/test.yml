@@ -1,0 +1,342 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars_files:
+    - test_vars.yml
+
+  tasks:
+    - block:
+
+         ## Generating the testname for deployment
+        - include_tasks: /e2e-tests/utils/create_testname.yml
+
+         ## RECORD START-OF-TEST IN E2E RESULT CR
+        - include_tasks: "/e2e-tests/utils/update_e2e_result_resource.yml"
+          vars:
+            status: 'SOT'
+
+        - name: Check if the cStor cvc operator is in expected version
+          shell: >
+            kubectl get deploy -n {{ operator_ns }}
+            -o jsonpath='{.items[?(@.metadata.labels.name=="cvc-operator")].metadata.labels.openebs\.io\/version}'
+          args:
+            executable: /bin/bash
+          register: cvc_version
+          failed_when: "cvc_version.stdout != operator_image_tag"
+
+        - name: Check if the cStor cspc operator is in expected version
+          shell: >
+            kubectl get deploy -n {{ operator_ns }}
+            -o jsonpath='{.items[?(@.metadata.labels.name=="cspc-operator")].metadata.labels.openebs\.io\/version}'
+          args:
+            executable: /bin/bash
+          register: cspc_version
+          failed_when: "cspc_version.stdout != operator_image_tag"
+
+        - name: Check if the csi daemonset is in expected version
+          shell: >
+            kubectl get daemonset -n {{ operator_ns }}
+            -o jsonpath='{.items[?(@.metadata.labels.app=="openebs-cstor-csi-node")].metadata.labels.openebs\.io\/version}'
+          args:
+            executable: /bin/bash
+          register: csi_dm_version
+          failed_when: "csi_dm_version.stdout != operator_image_tag"
+
+        - name: Check if the csi controller is in expected version
+          shell: >
+            kubectl get sts -n {{ operator_ns }}
+            -o jsonpath='{.items[?(@.metadata.labels.name=="openebs-cstor-csi-controller")].metadata.labels.openebs\.io\/version}'
+          args:
+            executable: /bin/bash
+          register: csi_sts_version
+          failed_when: "csi_sts_version.stdout != operator_image_tag"
+
+        - name: Check if the cStor admission server updated to new version
+          shell: >
+            kubectl get deploy -n {{ operator_ns }}
+            -o jsonpath='{.items[?(@.metadata.labels.app=="cstor-admission-webhook")].metadata.labels.openebs\.io\/version}'
+          args:
+            executable: /bin/bash
+          register: new_webhook_version
+          failed_when: "new_webhook_version.stdout != operator_image_tag"
+
+        - name: Check if the cStor ndm operator is updated to new version
+          shell: >
+            kubectl get deploy -n {{ operator_ns }}
+            -o jsonpath='{.items[?(@.metadata.labels.name=="openebs-ndm-operator")].metadata.labels.openebs\.io\/version}'
+          args:
+            executable: /bin/bash
+          register: new_ndm_version
+          failed_when: "new_ndm_version.stdout != operator_image_tag"
+
+        - name: Check if the cStor ndm daemonset is updated to new version
+          shell: >
+            kubectl get daemonset -n {{ operator_ns }}
+            -o jsonpath='{.items[?(@.metadata.labels.name=="openebs-ndm")].metadata.labels.openebs\.io\/version}'
+          args:
+            executable: /bin/bash
+          register: new_ndm_ds_version
+          failed_when: "new_ndm_ds_version.stdout != operator_image_tag"
+
+        - name: Obtain the service account name
+          shell: kubectl get deploy -n {{ operator_ns }} -l name=maya-apiserver -o jsonpath="{.items[*].spec.template.spec.serviceAccount}"
+          register: service_account
+          failed_when: 'service_account.stdout == ""'
+
+        - block:
+            - name: Obtain the SPC name
+              shell: kubectl get spc -o custom-columns=:.metadata.name --no-headers
+              register: spc_name
+              failed_when: 'spc_name.stdout == ""'
+
+            - name: create job yaml spec for migrate cstor volume
+              template:
+                src: ./cstor-spc-migration-job.j2
+                dest: ./cstor-spc-migration-job-{{ item }}.yml
+              with_items:
+                - "{{ spc_name.stdout_lines }}"
+
+            - name: Replacing the pool name in migrate spc pool job spec
+              replace:
+                path: ./cstor-spc-migration-job-{{ item }}.yml
+                regexp: "pool_name"
+                replace: "{{ item }}"
+              with_items:
+                - "{{ spc_name.stdout_lines }}"
+
+            - name: Replacing the service Account name in migrate spc pool job spec
+              replace:
+                path: ./cstor-spc-migration-job-{{ item }}.yml
+                regexp: "service_account"
+                replace: "{{ service_account.stdout }}"
+              with_items:
+                - "{{ spc_name.stdout_lines }}"
+
+            - name: Create the job to migrate the cstor pool
+              shell: kubectl apply -f cstor-spc-migration-job-{{ item }}.yml
+              args:
+                executable: /bin/bash
+              with_items:
+                - "{{ spc_name.stdout_lines }}"
+
+            - name: Check if the migration jobs has been completed
+              shell: kubectl get pods -n {{ operator_ns }} -l job-name=migrate-{{ item }} -o custom-columns=:.status.phase --no-headers
+              register: job_status
+              until: "'Succeeded' in job_status.stdout"
+              delay: 10
+              retries: 60
+              with_items:
+                - "{{ spc_name.stdout_lines }}"
+
+            - name: Check if the old spc has been removed
+              shell: kubectl get spc {{ item }} -o custom-columns=:.metadata.name --no-headers
+              register: old_spc
+              failed_when: 'old_spc.stdout != ""'
+              with_items:
+                - "{{ spc_name.stdout_lines }}"
+
+            - name: Check if the old csp has been removed
+              shell: >
+                 kubectl get csp -l openebs.io/storage-pool-claim={{ item }}
+                 -o=jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'
+              register: csp_name
+              failed_when: 'csp_name.stdout != ""'
+              with_items:
+                - "{{ spc_name.stdout_lines }}"
+
+            - name: Check if the SPC is migrated into CSPC
+              shell: kubectl get cspc -n {{ operator_ns }} {{ item }} -o custom-columns=:.metadata.name --no-headers
+              register: cspc
+              until: "item in cspc.stdout"
+              delay: 10
+              retries: 60
+              with_items:
+                - "{{ spc_name.stdout_lines }}"
+
+            - name: Obtain the cspc name
+              shell: kubectl get cspc -n {{ operator_ns }} -o custom-columns=:.metadata.name --no-headers
+              register: cspc_name
+
+            - name: Check if cspi pools are in online state after migrate the pool
+              shell: >
+                kubectl get cspi -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ item }}
+                -o custom-columns=:.status.phase --no-headers
+              register: cspi_status
+              until: "((cspi_status.stdout_lines|unique)|length) == 1 and 'ONLINE' in cspi_status.stdout"
+              retries: 30
+              delay: 10
+              with_items:
+                 - "{{ cspc_name.stdout_lines }}"
+
+            - name: Check if cspi are not in readonly state after migrate the pool
+              shell: >
+                kubectl get cspi -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ item }}
+                -o custom-columns=:.status.readOnly --no-headers
+              register: cspi_ro_status
+              until: "((cspi_ro_status.stdout_lines|unique)|length) == 1 and 'false' in cspi_ro_status.stdout"
+              retries: 30
+              delay: 10
+              with_items:
+                 - "{{ cspc_name.stdout_lines }}"
+
+            - name: Check if the CSPC pool pods are in running state after migrating the pool
+              shell: >
+                kubectl get pods -n {{ operator_ns }}
+                -l openebs.io/cstor-pool-cluster={{ item }} -o custom-columns=:.status.phase --no-headers
+              register: pool_status
+              until: "((pool_status.stdout_lines|unique)|length) == 1 and 'Running' in pool_status.stdout"
+              retries: 30
+              delay: 10
+              with_items:
+                 - "{{ cspc_name.stdout_lines }}"
+
+            - name: Obtain the CSPI name to check the version
+              shell: >
+                 kubectl get cspi -n {{ operator_ns }} -l openebs.io/cstor-pool-cluster={{ item }}
+                 -o=jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'
+              register: cspi_name
+              failed_when: 'cspi_name.stdout == ""'
+              with_items:
+                  - "{{ cspc_name.stdout_lines }}"
+
+            - name: Initialize an empty list to store cspi names
+              set_fact:
+                cspi_list: []
+
+            - name: Store name of all cspi in the list
+              set_fact:
+                cspi_list: "{{ cspi_list + item.stdout_lines }}"
+              with_items:
+                - "{{ cspi_name.results }}"
+
+            - name: Check if the CSPI resources are upgraded to newer version
+              shell: kubectl get cspi {{ item }} -n {{ operator_ns }} -o custom-columns=:.versionDetails.status.current --no-headers
+              register: cspi_version
+              failed_when: "cspi_version.stdout != operator_image_tag"
+              with_items:
+                  - "{{ cspi_list }}"
+
+          when: spc_pool_migration == "true"
+
+        - block:
+
+            - name: Obtain the cStor PV name
+              shell: >
+                kubectl get pv -o jsonpath='{.items[?(@.metadata.annotations.pv\.kubernetes\.io\/provisioned\-by=="openebs.io/provisioner-iscsi")].metadata.name}' | tr " " "\n"
+              register: pv_name
+              failed_when: 'pv_name.stdout == ""'
+
+            - set_fact:
+                app_status: 'scaledown'
+
+            - name: Scale down the application deployment
+              include_tasks: application_scale.yml
+              with_items: "{{ pv_name.stdout_lines }}"
+              loop_control:
+                loop_var: outer_item
+
+            - name: create job yaml spec for migrate cstor volume
+              template:
+                src: ./cstor-volume-migration-job.j2
+                dest: ./cstor-volume-migration-job-{{ item }}.yml
+              with_items: "{{ pv_name.stdout_lines }}"
+
+            - name: Replacing the pv name in migrate cstor volume job spec
+              replace:
+                path: ./cstor-volume-migration-job-{{ item }}.yml
+                regexp: "cstor_volume_name"
+                replace: "{{ item }}"
+              with_items: "{{ pv_name.stdout_lines }}"
+
+            - name: Replacing the service Account name in migrate cstor volume job spec
+              replace:
+                path: ./cstor-volume-migration-job-{{ item }}.yml
+                regexp: "service_account"
+                replace: "{{ service_account.stdout }}"
+              with_items: "{{ pv_name.stdout_lines }}"
+
+            - name: Create the job to migrate the cstor volume
+              shell: kubectl apply -f cstor-volume-migration-job-{{ item }}.yml
+              args:
+                executable: /bin/bash
+              with_items: "{{ pv_name.stdout_lines }}"
+
+            - name: Check if the migrating jobs have been completed
+              shell: >
+                kubectl get pods -n {{ operator_ns }} -l job-name=migrate-cstor-{{ item }}
+                -o custom-columns=:.status.phase --no-headers
+              register: job_status
+              until: "'Succeeded' in job_status.stdout"
+              delay: 10
+              retries: 60
+              with_items: "{{ pv_name.stdout_lines }}"
+
+            - set_fact:
+                app_status: 'scaleup'
+
+            - name: Scale up the application deployment
+              include_tasks: application_scale.yml
+              with_items: "{{ pv_name.stdout_lines }}"
+              loop_control:
+                loop_var: outer_item
+
+            - name: Check if the target pod is in Running state
+              shell: >
+                kubectl get pods -n {{ operator_ns }} -l openebs.io/persistent-volume={{ item }}
+                -o custom-columns=:.status.phase --no-headers
+              register: target_status
+              until: "((target_status.stdout_lines|unique)|length) == 1 and 'Running' in target_status.stdout"
+              retries: 30
+              delay: 10
+              with_items: "{{ pv_name.stdout_lines }}"
+
+            - name: Check if the CVRs are in Healthy state
+              shell: >
+                kubectl get cvr -n {{ operator_ns }} -l openebs.io/persistent-volume={{ item }}
+                -o custom-columns=:.status.phase --no-headers
+              register: cvr_status
+              until: "((cvr_status.stdout_lines|unique)|length) == 1 and 'Healthy' in cvr_status.stdout"
+              retries: 45
+              delay: 5
+              with_items: "{{ pv_name.stdout_lines }}"
+
+            - name: Check if the CVC is getting created
+              shell: >
+                kubectl get cvc -n {{ operator_ns }} --no-headers | grep {{ item }} | awk '{print $1}'
+              register: cvc
+              until: "item in cvc.stdout"
+              retries: 45
+              delay: 5
+              with_items: "{{ pv_name.stdout_lines }}"
+
+            - name: Check if the CVC is in bound state
+              shell: >
+                kubectl get cvc -n {{ operator_ns }} {{ item }} --no-headers -o custom-columns=:.status.phase
+              register: cvc_status
+              until: "'Bound' in cvc_status.stdout"
+              retries: 45
+              delay: 5
+              with_items: "{{ pv_name.stdout_lines }}"
+
+            - name: Verify the cstor replicas are upgraded to new version
+              include_tasks: cstor_replica_version_check.yml
+              with_items: "{{ pv_name.stdout_lines }}"
+              loop_control:
+                loop_var: outer_item
+
+          when: cstor_volume_migration == "true"
+
+        - set_fact:
+            flag: "Pass"
+
+      rescue:
+          - set_fact:
+              flag: "Fail"
+
+      always:
+            ## RECORD END-OF-TEST IN E2E RESULT CR
+          - include_tasks: /e2e-tests/utils/update_e2e_result_resource.yml
+            vars:
+              status: 'EOT'

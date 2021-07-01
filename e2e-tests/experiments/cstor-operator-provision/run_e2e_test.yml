@@ -1,0 +1,45 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: e2e-cstor-operator-
+  namespace: e2e
+spec:
+  template:
+    metadata:
+      name: e2e
+      labels: 
+        provider: cstor-operator
+    spec:
+      serviceAccountName: e2e
+      restartPolicy: Never
+      containers:
+      - name: ansibletest
+        image: openebs/upgrade-e2e:ci
+        imagePullPolicy: IfNotPresent
+        env: 
+          - name: ANSIBLE_STDOUT_CALLBACK
+            value: default
+
+          - name: OPENEBS_VERSION
+            value: ""
+
+          - name: ACTION
+            value: provision
+
+            ## Admission server policy
+            #supported values are 'fail' or 'ignore'
+          - name: WEBHOOK_FAILURE_POLICY
+            value: "ignore"
+
+          - name: CSI_NS
+            value: "openebs"
+
+          - name: COMMIT_ID
+            value: ""
+
+          - name: RC_TAG
+            value: ""                                           
+
+        command: ["/bin/bash"]
+        args: ["-c", "ansible-playbook ./e2e-tests/experiments/cstor-operator-provision/test.yml -i /etc/ansible/hosts -vv; exit 0"]

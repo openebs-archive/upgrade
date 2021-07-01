@@ -1,0 +1,242 @@
+# Apply openebs operation.
+
+- hosts: localhost
+  connection: local
+
+  vars_files:
+    - test_vars.yml
+
+  tasks:
+
+    - block:
+
+         ## GENERATING THE TEST NAME
+        - include_tasks: /e2e-tests/utils/create_testname.yml
+
+         ##  RECORD START-OF-TEST IN E2E RESULT CR
+        - include_tasks: "/e2e-tests/utils/update_e2e_result_resource.yml"
+          vars:
+            status: 'SOT'
+
+        - block:
+
+            - name: Downloading cstor operator yaml for rc tag
+              get_url:
+                url: "{{ release_operator_link }}"
+                dest: "{{ playbook_dir }}/{{ cstor_operator }}"
+                force: yes
+              register: release_operator
+              when: rc_tag == ""
+
+            - name: Downloading cstor operator yaml for rc tag
+              get_url:
+                url: "{{ rc_operator_link }}"
+                dest: "{{ playbook_dir }}/{{ cstor_operator }}"
+                force: yes
+              register: rc_operator
+              when: rc_tag != ""
+
+            - name: Change the value for remount feature for volumes
+              replace:
+                path: "{{ cstor_operator }}"
+                regexp: 'value: "false"'
+                after: '- name: REMOUNT'
+                replace: 'value: "true"'
+
+            - name: Change the value for admission server failure policy
+              replace:
+                path: "{{ cstor_operator }}"
+                regexp: 'value: "Fail"'
+                after: '- name: ADMISSION_WEBHOOK_FAILURE_POLICY'
+                replace: 'value: "{{ webhook_policy }}"'
+              when: lookup('env','WEBHOOK_FAILURE_POLICY') != ''                
+
+            - name: Deploy cStor operator
+              shell: >
+                kubectl apply -f {{ cstor_operator }}
+              args:
+                executable: /bin/bash
+              register: deploy_status
+              when: lookup('env','ACTION') == "provision"
+
+            - name: Deprovision cStor operator
+              shell: >
+                kubectl delete -f {{ cstor_operator }}
+              args:
+                executable: /bin/bash
+              register: deprovision_status
+              ignore_errors: True
+              when: lookup('env','ACTION') == "deprovision"
+
+          when:
+            - commit_id != "charts"
+
+        - block:
+
+            - name: Downloading the cstor operator file from charts
+              get_url:
+                url: "{{ cstor_operator_link }}"
+                dest: "{{ playbook_dir }}/{{ cstor_operator }}"
+                force: yes
+              register: status
+              until:  "'OK' in status.msg"
+              delay: 5
+              retries: 3
+
+            - name: Change the value for remount feature for volumes
+              replace:
+                path: "{{ cstor_operator }}"
+                regexp: 'value: "false"'
+                after: '- name: REMOUNT'
+                replace: 'value: "true"'
+
+            - name: Change the value for admission server failure policy
+              replace:
+                path: "{{ cstor_operator }}"
+                regexp: 'value: "Fail"'
+                after: '- name: ADMISSION_WEBHOOK_FAILURE_POLICY'
+                replace: 'value: "{{ webhook_policy }}"'
+              when: lookup('env','WEBHOOK_FAILURE_POLICY') != ''
+
+            - name: Deploy cStor operator
+              shell: >
+                kubectl apply -f {{ cstor_operator }}
+              args:
+                executable: /bin/bash
+              register: deploy_status
+              when: lookup('env','ACTION') == "provision"
+
+            - name: Deprovision cStor operator
+              shell: >
+                kubectl delete -f {{ cstor_operator }}
+              args:
+                executable: /bin/bash
+              register: deprovision_status
+              ignore_errors: True
+              when: lookup('env','ACTION') == "deprovision"
+
+          when:
+            - commit_id == "charts"
+
+        - block:
+
+            - name: Checking OpenEBS-CSPC-Operator is running
+              shell: >
+                kubectl get pods -n {{ operator_ns }}
+                -o jsonpath='{.items[?(@.metadata.labels.name=="cspc-operator")].status.phase}'
+              register: cspc_status
+              until: "'Running' in cspc_status.stdout"
+              delay: 5
+              retries: 120
+
+            - name: Checking OpenEBS-CVC-Operator is running
+              shell: >
+                kubectl get pods -n {{ operator_ns }}
+                -o jsonpath='{.items[?(@.metadata.labels.name=="cvc-operator")].status.phase}'
+              register: cvc_status
+              until: "'Running' in cvc_status.stdout"
+              delay: 5
+              retries: 120
+
+            - name: Checking OpenEBS-CVC-Operator is running
+              shell: >
+                kubectl get pods -n {{ operator_ns }}
+                -o jsonpath='{.items[?(@.metadata.labels.app=="cstor-admission-webhook")].status.phase}'
+              register: admission_status
+              until: "'Running' in admission_status.stdout"
+              delay: 5
+              retries: 120
+
+            - name: Obtain the desired number of ndm daemonset
+              shell: >
+                kubectl get daemonset -n {{ operator_ns }} -l name=openebs-ndm
+                -o custom-columns=:.status.desiredNumberScheduled --no-headers
+              args:
+                executable: /bin/bash
+              register: desired_count
+
+            - name: Verify readily available daemonset is equal to desired count
+              shell: >
+                kubectl get daemonset -n {{ operator_ns }} -l name=openebs-ndm
+                -o custom-columns=:.status.numberReady --no-headers
+              args:
+                executable: /bin/bash
+              register: ready_count
+              until: (ready_count.stdout)|int == (desired_count.stdout)|int
+              delay: 5
+              retries: 120
+
+            - name: Confirm if node-disk-manager is running in all the nodes
+              shell: >
+                kubectl get pods -n {{ operator_ns }}
+                -o jsonpath='{.items[?(@.metadata.labels.name=="openebs-ndm")].status.phase}' | grep Running | wc -w
+              args:
+                executable: /bin/bash
+              register: ndm_count
+              until: (desired_count.stdout)|int == (ndm_count.stdout)|int
+              delay: 5
+              retries: 60
+
+            - name: check if csi-controller pod is running
+              shell: >
+                kubectl get pods -n {{ operator_ns }} -l app=openebs-cstor-csi-controller
+                --no-headers -o custom-columns=:status.phase
+              args:
+                executable: /bin/bash
+              register: csi_controller
+              until: "'Running' in csi_controller.stdout"
+              delay: 10
+              retries: 30
+
+            - name: Obtain the desired number of openebs-csi-node pods
+              shell: >
+                kubectl get ds -n {{ operator_ns }} openebs-cstor-csi-node --no-headers
+                -o custom-columns=:status.desiredNumberScheduled
+              args:
+                executable: /bin/bash
+              register: desired_count
+
+            - name: Check if the desired count matches the ready pods
+              command: >
+                kubectl get ds -n {{ operator_ns }} openebs-cstor-csi-node --no-headers
+                -o custom-columns=:status.numberReady
+              args:
+                executable: /bin/bash
+              register: ready_pods
+              until: "desired_count.stdout == ready_pods.stdout"
+              delay: 5
+              retries: 50
+
+          when: lookup('env','ACTION') == "provision"
+
+        - block:
+
+            - name: Confirm pods has been deleted
+              shell: kubectl get pods -n {{ operator_ns }}
+              args:
+                executable: /bin/bash
+              register: result
+              until: 'item not in result.stdout'
+              with_items:
+                - "cstor-operator"
+                - "cvc-operator"
+                - "cstor-admission-webhook"
+                - "openebs-cstor-csi-controller"
+                - "openebs-cstor-csi-node"
+              delay: 30
+              retries: 10
+
+          when: lookup('env','ACTION') == "deprovision"
+
+        - set_fact:
+            flag: "Pass"
+
+      rescue:
+        - set_fact:
+            flag: "Fail"
+
+      always:
+        ## RECORD END-OF-TEST IN E2E RESULT CR
+        - include_tasks: /e2e-tests/utils/update_e2e_result_resource.yml
+          vars:
+            status: 'EOT'

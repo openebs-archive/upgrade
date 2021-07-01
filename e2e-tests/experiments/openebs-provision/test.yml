@@ -1,0 +1,220 @@
+# Apply openebs operation.
+
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars_files:
+    - test_vars.yml
+
+  tasks:
+
+    - block:
+
+         ## GENERATING THE TEST NAME
+        - include_tasks: /e2e-tests/utils/create_testname.yml
+
+         ##  RECORD START-OF-TEST IN E2E RESULT CR
+        - include_tasks: "/e2e-tests/utils/update_e2e_result_resource.yml"
+          vars:
+            status: 'SOT'
+
+        - block:
+
+            - include_tasks: "operator_provision.yml"
+              when:  deploy_type == "operator"
+
+            - include_tasks: "helm_provision.yml"
+              when:  deploy_type == "helm"
+
+            - name: Verify that rolling update of maya-apiserver is completed
+              shell: >
+                kubectl get pods --no-headers -n {{ namespace }}
+                -l name=maya-apiserver | wc -l
+              args:
+                executable: /bin/bash
+              register: maya_count
+              until: "maya_count.stdout == '1'"
+              delay: 5
+              retries: 120
+
+            - name: Set the Maya container name in case of helm installation
+              set_fact:
+                container_name: "openebs-apiserver"
+              when: deploy_type == 'helm'
+
+            - name: Set the Maya container name in case of operator installation
+              set_fact:
+                 container_name: "maya-apiserver"
+              when: deploy_type == 'operator'
+
+            - name: Checking Maya-API-Server container status
+              shell: >
+                kubectl get pods --no-headers -n {{ namespace }} -l name=maya-apiserver
+                -o jsonpath='{.items[?(@.status.containerStatuses[*].name=="{{ container_name }}")].status.containerStatuses[*].ready}'
+              register: maya_api
+              until: "maya_api.stdout == 'true'"
+              delay: 5
+              retries: 120
+
+            - name: Checking OpenEBS-provisioner is running
+              shell: >
+                 kubectl get pods -n {{ namespace }}
+                 -o jsonpath='{.items[?(@.metadata.labels.name=="openebs-provisioner")].status.phase}'
+              register: openebs_prob
+              until: "'Running' in openebs_prob.stdout"
+              delay: 5
+              retries: 120
+
+            - name: Checking OpenEBS-admission-server is running
+              shell: >
+                 kubectl get pods -n {{ namespace }}
+                 -o jsonpath='{.items[?(@.metadata.labels.app=="admission-webhook")].status.phase}'
+              register: admission_web
+              until: "'Running' in admission_web.stdout"
+              delay: 5
+              retries: 120
+
+            - name: Checking OpenEBS-Snapshot-Operator is running
+              shell: >
+                  kubectl get pods -n {{ namespace }}
+                  -o jsonpath='{.items[?(@.metadata.labels.name=="openebs-snapshot-operator")].status.phase}'
+              register: oso
+              until: "'Running' in oso.stdout"
+              delay: 5
+              retries: 120
+
+            - name: Check if the OpenEBS-ndm-Operator is running
+              shell: >
+                kubectl get pods -n {{ namespace }}
+                -o jsonpath='{.items[?(@.metadata.labels.openebs\.io\/component-name=="ndm-operator")].status.phase}'
+              register: ndm_operator
+              until: "'Running' in ndm_operator.stdout"
+              delay: 5
+              retries: 120
+
+            - name: Check if the OpenEBS-localpv-provisioner is running
+              shell: >
+                kubectl get pods -n {{ namespace }}
+                -o jsonpath='{.items[?(@.metadata.labels.name=="openebs-localpv-provisioner")].status.phase}'
+              register: local_pv
+              until: "'Running' in local_pv.stdout"
+              delay: 5
+              retries: 120
+
+            - name: Obtain the desired number of ndm daemonset
+              shell: >
+                kubectl get daemonset -n {{ namespace }} -l name=openebs-ndm
+                -o custom-columns=:.status.desiredNumberScheduled --no-headers
+              args:
+                executable: /bin/bash
+              register: desired_count
+
+            - name: Verify readily available daemonset is equal to desired count
+              shell: >
+                kubectl get daemonset -n {{ namespace }} -l name=openebs-ndm
+                -o custom-columns=:.status.numberReady --no-headers
+              args:
+                executable: /bin/bash
+              register: ready_count
+              until: (ready_count.stdout)|int == (desired_count.stdout)|int
+              delay: 5
+              retries: 120
+
+            - name: Confirm if node-disk-manager is running in all the nodes
+              shell: >
+                kubectl get pods -n {{ namespace }}
+                -o jsonpath='{.items[?(@.metadata.labels.name=="openebs-ndm")].status.phase}' | grep Running | wc -w
+              args:
+                executable: /bin/bash
+              register: ndm_count
+              until: (desired_count.stdout)|int == (ndm_count.stdout)|int
+              delay: 5
+              retries: 60
+
+            - name: Confirm CAS Templates are deployed
+              shell: kubectl get castemplate -n {{ namespace }}
+              args:
+                executable: /bin/bash
+              register: result
+              until: "result.rc == 0"
+              delay: 5
+              retries: 120
+
+          when: lookup('env','Action') == "provision"
+
+        - block:
+
+            - name: Downloading openebs-operator yml
+              get_url:
+                url: "{{ openebs_operator_link }}"
+                dest: "{{ playbook_dir }}/{{ openebs_operator }}"
+                force: yes
+              register: result
+              until:  "'OK' in result.msg"
+              delay: 5
+              retries: 3
+
+            - name: Cleaning openebs operator
+              shell: kubectl delete -f "{{ openebs_operator_link }}"
+              args:
+                executable: /bin/bash
+              ignore_errors: True
+              when: namespace == "openebs"
+
+            - block:
+
+                - name: Change the default namespace
+                  replace:
+                    path: "{{ openebs_operator_link }}"
+                    regexp: 'namespace: openebs'
+                    replace: 'namespace: "{{ namespace }}"'
+
+                - name: Cleaning openebs operator
+                  shell: kubectl delete -f "{{ openebs_operator_link }}"
+                  args:
+                    executable: /bin/bash
+                  ignore_errors: True
+
+              when: namespace != "openebs"
+
+            - name: Confirm pods has been deleted
+              shell: kubectl get pods -n {{ namespace }}
+              args:
+                executable: /bin/bash
+              register: result
+              until: ' item not in result.stdout'
+              with_items:
+                - "maya-apiserver"
+                - "openebs-provisioner"
+                - "openebs-snapshot-operator"
+                - "openebs-ndm-operator"
+                - "openebs-admission-server"
+                - "openebs-localpv-provisioner"
+                - "openebs-ndm"
+              delay: 30
+              retries: 100
+
+            - name: Confirm that namespace has been deleted
+              shell: 'kubectl get namespaces'
+              args:
+                executable: /bin/bash
+              register: result
+              until: 'namespace not in result.stdout'
+              delay: 30
+              retries: 100
+
+          when: lookup('env','Action') == "deprovision"
+
+        - set_fact:
+            flag: "Pass"
+
+      rescue:
+        - set_fact:
+            flag: "Fail"
+
+      always:
+        ## RECORD END-OF-TEST IN E2E RESULT CR
+        - include_tasks: /e2e-tests/utils/update_e2e_result_resource.yml
+          vars:
+            status: 'EOT'

@@ -1,0 +1,30 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cstor-cspc-upgrade
+  namespace: {{ operator_ns }}
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      serviceAccountName: service_account
+      containers:
+      - name: upgrade
+        args:
+        - "cstor-cspc"
+        - "--from-version={{ from_version }}"
+        - "--to-version={{ to_version }}"
+        - "--v=4"
+        # DO NOT CHANGE BELOW PARAMETERS
+        env:
+        - name: OPENEBS_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        tty: true
+        image: openebs/upgrade:{{ upgrade_image_tag }}
+        imagePullPolicy: IfNotPresent
+      restartPolicy: OnFailure
+---
+

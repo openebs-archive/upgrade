@@ -1,0 +1,12 @@
+#kubeapply: kubectl --kubeconfig /root/admin.conf
+new_operator: "https://openebs.github.io/charts/{{ lookup('env','OPENEBS_VERSION') }}/openebs-operator.yaml"
+rc_operator_link: "https://raw.githubusercontent.com/openebs/charts/{{ lookup('env','COMMIT_ID') }}/{{ lookup('env','OPENEBS_VERSION') }}/openebs-operator-{{ lookup('env','RC_TAG') }}.yaml"
+release_operator_link: "https://raw.githubusercontent.com/openebs/charts/{{ lookup('env','COMMIT_ID') }}/{{ lookup('env','OPENEBS_VERSION') }}/openebs-operator.yaml"
+openebs_version: "{{ lookup('env','OPENEBS_VERSION') }}"
+openebs_operator: openebs-operator.yaml
+test_name: "openebs-{{ lookup('env','Action') }}"
+deploy_type: "{{ lookup('env','DEPLOY_MODE') }}"
+namespace: "{{ lookup('env','OPERATOR_NS') }}"
+sparse_file_count: "{{ lookup('env','SPARSE_FILE_COUNT') }}"
+commit_id: "{{ lookup('env','COMMIT_ID') }}"
+rc_tag: "{{ lookup('env','RC_TAG') }}"

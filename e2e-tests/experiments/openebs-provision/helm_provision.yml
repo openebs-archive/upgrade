@@ -1,0 +1,18 @@
+                - name: Install helm client
+                  shell: curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+                  args:
+                    executable: /bin/bash
+                  register: output
+                  until: "'installed' in output.stdout"
+                  delay: 30
+                  retries: 5
+
+                - name: Installing openebs using stable charts.
+                  shell: >
+                    helm install --namespace {{ namespace }} --name openebs stable/openebs --version {{ openebs_version }}
+                  args:
+                    executable: /bin/bash
+                  register: openebs_out
+                  until: "'The OpenEBS has been installed' in openebs_out.stdout"
+                  delay: 5
+                  retries: 5
