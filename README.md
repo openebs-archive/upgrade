@@ -4,6 +4,7 @@
 [![Go Report](https://goreportcard.com/badge/github.com/openebs/upgrade)](https://goreportcard.com/report/github.com/openebs/upgrade)
 [![codecov](https://codecov.io/gh/openebs/upgrade/branch/master/graph/badge.svg)](https://codecov.io/gh/openebs/upgrade)
 [![Slack](https://img.shields.io/badge/chat!!!-slack-ff1493.svg?style=flat-square)](https://kubernetes.slack.com/messages/openebs)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fopenebs%2Fupgrade.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fopenebs%2Fupgrade?ref=badge_shield)
 
 
 Contains components that help with OpenEBS data engine upgrades
@@ -30,3 +31,7 @@ Below are the steps for migrating the OpenEBS cStor custom reources:
  - Minimum version of Kubernetes to migrate to CSPC pools / CSI volumes is 1.17.0.
  - If using virtual disks as blockdevices for provisioning cStorpool please refer this [doc](https://github.com/openebs/upgrade/blob/master/docs/virtual-disk-troubleshoot.md) before proceeding.
 
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fopenebs%2Fupgrade.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fopenebs%2Fupgrade?ref=badge_large)
