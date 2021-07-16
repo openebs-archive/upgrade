@@ -8,6 +8,11 @@ Upgrade uses the standard GitHub pull requests process to review and accept cont
 * If you would like to make code contributions, please start with [Setting up the Development Environment](#setting-up-your-development-environment).
 * If you would like to work on something more involved, please connect with the OpenEBS Contributors. See [OpenEBS Community](https://github.com/openebs/openebs/tree/master/community)
 
+
+## Release Changes
+
+With each OpenEBS release the upgrade needs some changes to enable upgrading the resources to the latest versions. A upgrade matrix `validCurrentVersions` is maintained at [here](pkg/version/util.go) which helps the upgrade job to validate the `--from-version` parameter. This upgrade matrix is updated with the latest release version when a new cstor-operator or jiva-operator is released.
+
 ## Steps to Contribute
 
 Upgrade is an Apache 2.0 Licensed project and all your commits should be signed with Developer Certificate of Origin. See [Sign your work](#sign-your-work). 
