@@ -62,6 +62,8 @@ echo "Testing migrate for org: $IMAGE_ORG version: $TEST_VERSION imagetag: $TEST
 # run migration tests
 ./ci/migrate/test.sh 
 if [[ $? != 0 ]]; then
+  kubectl describe pods
+  kubectl describe pods -n openebs
   kubectl logs --tail=50 -l job-name=migrate-pool -n openebs
   kubectl logs --tail=50 -l job-name=migrate-volume -n openebs
   exit 1
