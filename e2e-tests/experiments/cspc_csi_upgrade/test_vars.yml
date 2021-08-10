@@ -5,11 +5,12 @@ from_version: "{{ lookup('env','FROM_VERSION') }}"
 to_version: "{{ lookup('env','TO_VERSION') }}"
 upgrade_image_tag: "{{ lookup('env', 'UPGRADE_IMAGE_TAG') }}"
 cstor_operator: cstor-operator.yaml
-cstor_operator_link: https://raw.githubusercontent.com/openebs/charts/gh-pages/{{ to_version }}/cstor-operator.yaml
-release_operator_link: "https://raw.githubusercontent.com/openebs/charts/{{ lookup('env','COMMIT_ID') }}/{{ to_version }}/cstor-operator.yaml"
-rc_operator_link: "https://raw.githubusercontent.com/openebs/charts/{{ lookup('env','COMMIT_ID') }}/{{ to_version }}/cstor-operator-{{ lookup('env','RC_TAG') }}.yaml"
+cstor_operator_link: https://raw.githubusercontent.com/openebs/charts/gh-pages/{{ release_branch }}/cstor-operator.yaml
+release_operator_link: "https://raw.githubusercontent.com/openebs/charts/{{ lookup('env','COMMIT_ID') }}/{{ release_branch }}/cstor-operator.yaml"
+rc_operator_link: "https://raw.githubusercontent.com/openebs/charts/{{ lookup('env','COMMIT_ID') }}/{{ release_branch }}/cstor-operator-{{ lookup('env','RC_TAG') }}.yaml"
 cspc_pool_upgrade: "{{ lookup('env', 'CSPC_POOL_UPGRADE') }}"
 csi_volume_upgrade: "{{ lookup('env', 'CSI_VOLUME_UPGRADE') }}"
 cstor_operator_upgrade: "{{ lookup('env', 'CSTOR_OPERATOR_UPGRADE') }}"
 commit_id: "{{ lookup('env','COMMIT_ID') }}"
 rc_tag: "{{ lookup('env','RC_TAG') }}"
+release_branch: "{{ lookup('env','RELEASE_VERSION') }}"
