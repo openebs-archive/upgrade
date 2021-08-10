@@ -30,6 +30,9 @@ spec:
           - name: TO_VERSION
             value: ""
             
+          - name: RELEASE_VERSION
+            value: ""
+
             # Namespace where OpenEBS is deployed
           - name: OPERATOR_NS
             value: "openebs"
