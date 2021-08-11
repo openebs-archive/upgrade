@@ -224,6 +224,7 @@ func (obj *CStorVolumePatch) transformCVDeploy(d *appsv1.Deployment, res *Resour
 	d.Spec.Template.Labels["openebs.io/persistent-volume-claim"] = pvObj.Spec.ClaimRef.Name
 	d.Labels["openebs.io/version"] = res.To
 	d.Spec.Template.Labels["openebs.io/version"] = res.To
+	d.Spec.Template.Spec.ServiceAccountName = cstorOperatorServiceAccount
 	return nil
 }
 
