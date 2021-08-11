@@ -28,6 +28,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+var (
+	cstorOperatorServiceAccount = "openebs-cstor-operator"
+)
+
 func getImageURL(url, prefix string) (string, error) {
 	lastIndex := strings.LastIndex(url, ":")
 	if lastIndex == -1 {
@@ -84,6 +88,9 @@ func isOperatorUpgraded(componentName string, namespace string,
 			return fmt.Errorf("%s is in %s version, please upgrade it to %s version",
 				componentName, pod.Labels["openebs.io/version"], toVersion)
 		}
+	}
+	if componentName == "cspc-operator" || componentName == "cvc-operator" {
+		cstorOperatorServiceAccount = operatorPods.Items[0].Spec.ServiceAccountName
 	}
 	return nil
 }
