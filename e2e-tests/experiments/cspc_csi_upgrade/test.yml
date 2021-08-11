@@ -82,6 +82,13 @@
               register: csi_sts_version
               failed_when: "csi_sts_version.stdout != from_version"
 
+            - name: Clean up the CSIDriver CR before upgrade operator incase from 2.4.0 or previous versions
+              shell: kubectl delete csidriver cstor.csi.openebs.io
+              args:
+                executable: /bin/bash
+              register: csidriver
+              when: "{{ from_version is version('2.4.0', operator='le', strict=True) }}"
+            
             - block:
 
                 - name: Downloading cstor operator yaml for rc tag
