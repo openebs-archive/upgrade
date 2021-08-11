@@ -241,13 +241,13 @@ func (obj *CSPIPatch) Init() (string, error) {
 	return "", nil
 }
 
-func getCSPIDeployPatchData(obobj *CSPIPatch) error {
-	newDeploy := obobj.Deploy.Object.DeepCopy()
-	err := transformCSPIDeploy(newDeploy, obobj.ResourcePatch)
+func getCSPIDeployPatchData(obj *CSPIPatch) error {
+	newDeploy := obj.Deploy.Object.DeepCopy()
+	err := transformCSPIDeploy(newDeploy, obj.ResourcePatch)
 	if err != nil {
 		return err
 	}
-	obobj.Deploy.Data, err = GetPatchData(obobj.Deploy.Object, newDeploy)
+	obj.Deploy.Data, err = GetPatchData(obj.Deploy.Object, newDeploy)
 	return err
 }
 
@@ -272,6 +272,7 @@ func transformCSPIDeploy(d *appsv1.Deployment, res *ResourcePatch) error {
 	}
 	d.Labels["openebs.io/version"] = res.To
 	d.Spec.Template.Labels["openebs.io/version"] = res.To
+	d.Spec.Template.Spec.ServiceAccountName = cstorOperatorServiceAccount
 	return nil
 }
 

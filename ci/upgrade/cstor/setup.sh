@@ -17,13 +17,12 @@
 
 set -ex
 
-echo "Install cstor-operators in 1.10.0"
+echo "Install cstor-operators in 2.0.0"
 
 kubectl create ns openebs
 
-kubectl apply -f ./ci/upgrade/cstor/ndm-operator.yaml \
- -f https://raw.githubusercontent.com/openebs/charts/master/archive/1.10.x/csi-operator-1.10.0-ubuntu-18.04.yaml \
- -f https://raw.githubusercontent.com/openebs/charts/master/archive/1.10.x/cstor-operator-1.10.0.yaml 
+kubectl apply -f https://raw.githubusercontent.com/openebs/charts/gh-pages/2.0.0/cstor-operator.yaml \
+    -f ./ci/upgrade/cstor/ndm-operator.yaml 
 sleep 100
 
 echo "Wait for cspc-operator to start"
@@ -43,7 +42,11 @@ echo "Upgrade control plane to latest version"
 
 sed "s|testimage|$TEST_IMAGE_TAG|g" ./ci/upgrade/cstor/cstor-operator.tmp.yaml | sed "s|testversion|$TEST_VERSION|g" | sed "s|imageorg|$IMAGE_ORG|g" > ./ci/upgrade/cstor/cstor-operator.yaml
 
-kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/csi-operator.yaml \
+kubectl delete csidriver cstor.csi.openebs.io
+
+kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/crds/all_cstor_crds.yaml \
+ -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/rbac.yaml \
+ -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/csi-operator.yaml \
  -f ./ci/upgrade/cstor/cstor-operator.yaml -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/ndm-operator.yaml
 sleep 10
 kubectl wait --for=condition=available --timeout=300s deployment/cspc-operator -n openebs

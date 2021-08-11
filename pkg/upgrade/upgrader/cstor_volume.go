@@ -125,7 +125,11 @@ func (obj *CStorVolumePatch) Init() (string, error) {
 	if err != nil {
 		return "failed to get target svc for volume" + obj.Name, err
 	}
-	err = obj.getCVCPatchData()
+	return "", nil
+}
+
+func (obj *CStorVolumePatch) GetVolumePatches() (string, error) {
+	err := obj.getCVCPatchData()
 	if err != nil {
 		return "failed to create CVC patch for volume" + obj.Name, err
 	}
@@ -224,6 +228,7 @@ func (obj *CStorVolumePatch) transformCVDeploy(d *appsv1.Deployment, res *Resour
 	d.Spec.Template.Labels["openebs.io/persistent-volume-claim"] = pvObj.Spec.ClaimRef.Name
 	d.Labels["openebs.io/version"] = res.To
 	d.Spec.Template.Labels["openebs.io/version"] = res.To
+	d.Spec.Template.Spec.ServiceAccountName = cstorOperatorServiceAccount
 	return nil
 }
 
@@ -300,6 +305,16 @@ func (obj *CStorVolumePatch) Upgrade() error {
 		return errors.Wrap(err, msg)
 	}
 	msg, err = obj.PreUpgrade()
+	if err != nil {
+		statusObj.Message = msg
+		statusObj.Reason = err.Error()
+		obj.Utask, uerr = updateUpgradeDetailedStatus(obj.Utask, statusObj, obj.OpenebsNamespace, obj.Client)
+		if uerr != nil && isUpgradeTaskJob {
+			return uerr
+		}
+		return errors.Wrap(err, msg)
+	}
+	msg, err = obj.GetVolumePatches()
 	if err != nil {
 		statusObj.Message = msg
 		statusObj.Reason = err.Error()

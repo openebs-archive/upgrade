@@ -36,14 +36,14 @@ spec:
       # VERIFY the value of serviceAccountName is pointing to service account
       # created within openebs namespace. Use the non-default account.
       # by running `kubectl get sa -n <openebs-namespace>`
-      serviceAccountName: openebs-maya-operator
+      serviceAccountName: openebs-cstor-operator
       containers:
       - name:  upgrade
         args:
         - "cstor-volume"
 
         # --from-version is the current version of the volume
-        - "--from-version=1.10.0"
+        - "--from-version=2.0.0"
 
         # --to-version is the version desired upgrade version
         - "--to-version=testversion"

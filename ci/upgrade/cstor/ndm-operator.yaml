@@ -1,4 +1,4 @@
-# Copyright © 2020 The OpenEBS Authors
+# Copyright © 2020-2021 The OpenEBS Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ metadata:
   labels:
     name: openebs-ndm
     openebs.io/component-name: ndm
-    openebs.io/version: 1.10.0
+    openebs.io/version: 2.0.0
 spec:
   selector:
     matchLabels:
@@ -73,7 +73,7 @@ spec:
       labels:
         name: openebs-ndm
         openebs.io/component-name: ndm
-        openebs.io/version: 1.10.0
+        openebs.io/version: 2.0.0
     spec:
       # By default the node-disk-manager will be run on all kubernetes nodes
       # If you would like to limit this to only some nodes, say the nodes
@@ -86,14 +86,19 @@ spec:
       #  "openebs.io/nodegroup": "storage-node"
       serviceAccountName: openebs-maya-operator
       hostNetwork: true
+      # host PID is used to check status of iSCSI Service when the NDM
+      # API service is enabled
+      #hostPID: true
       containers:
       - name: node-disk-manager
-        image: quay.io/openebs/node-disk-manager-amd64:0.5.0
+        image: openebs/node-disk-manager:0.8.2
         args:
           - -v=4
         # The feature-gate is used to enable the new UUID algorithm.
-        # This is a feature currently in Alpha state
-        #  - --feature-gates="GPTBasedUUID"
+          - --feature-gates="GPTBasedUUID"
+        # The feature gate is used to start the gRPC API service. The gRPC server
+        # starts at 9115 port by default. This feature is currently in Alpha state
+        # - --feature-gates="APIService"
         imagePullPolicy: IfNotPresent
         securityContext:
           privileged: true
@@ -107,6 +112,8 @@ spec:
         - name: procmount
           mountPath: /host/proc
           readOnly: true
+        - name: devmount
+          mountPath: /dev
         - name: basepath
           mountPath: /var/openebs/ndm
         - name: sparsepath
@@ -154,6 +161,12 @@ spec:
         hostPath:
           path: /proc
           type: Directory
+      - name: devmount
+      # the /dev directory is mounted so that we have access to the devices that
+      # are connected at runtime of the pod.
+        hostPath:
+          path: /dev
+          type: Directory
       - name: basepath
         hostPath:
           path: /var/openebs/ndm
@@ -170,7 +183,7 @@ metadata:
   labels:
     name: openebs-ndm-operator
     openebs.io/component-name: ndm-operator
-    openebs.io/version: 1.10.0
+    openebs.io/version: 2.0.0
 spec:
   selector:
     matchLabels:
@@ -184,12 +197,12 @@ spec:
       labels:
         name: openebs-ndm-operator
         openebs.io/component-name: ndm-operator
-        openebs.io/version: 1.10.0
+        openebs.io/version: 2.0.0
     spec:
       serviceAccountName: openebs-maya-operator
       containers:
         - name: node-disk-operator
-          image: quay.io/openebs/node-disk-operator-amd64:0.5.0
+          image: openebs/node-disk-operator:0.8.2
           imagePullPolicy: IfNotPresent
           readinessProbe:
             exec:
@@ -216,7 +229,7 @@ spec:
             - name: OPERATOR_NAME
               value: "node-disk-operator"
             - name: CLEANUP_JOB_IMAGE
-              value: "quay.io/openebs/linux-utils:1.10.0"
+              value: "openebs/linux-utils:2.0.0"
             # OPENEBS_IO_INSTALL_CRD environment variable is used to enable/disable CRD installation
             # from NDM operator. By default the CRDs will be installed
             #- name: OPENEBS_IO_INSTALL_CRD
@@ -232,25 +245,3 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 60
 ---
-apiVersion: apiextensions.k8s.io/v1beta1
-kind: CustomResourceDefinition
-metadata:
-  # name must match the spec fields below, and be in the form: <plural>.<group>
-  name: upgradetasks.openebs.io
-spec:
-  # group name to use for REST API: /apis/<group>/<version>
-  group: openebs.io
-  # version name to use for REST API: /apis/<group>/<version>
-  version: v1alpha1
-  # either Namespaced or Cluster
-  scope: Namespaced
-  names:
-    # plural name to be used in the URL: /apis/<group>/<version>/<plural>
-    plural: upgradetasks
-    # singular name to be used as an alias on the CLI and for display
-    singular: upgradetask
-    # kind is normally the CamelCased singular type. Your resource manifests use this.
-    kind: UpgradeTask
-    # shortNames allow shorter string to match your resource on the CLI
-    shortNames:
-    - utask
