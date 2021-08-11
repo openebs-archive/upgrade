@@ -271,6 +271,7 @@ func transformCSPIDeploy(d *appsv1.Deployment, res *ResourcePatch) error {
 		d.Spec.Template.Spec.Containers[i].Image = url + ":" + tag
 	}
 	d.Labels["openebs.io/version"] = res.To
+	d.Spec.Template.Labels["openebs.io/version"] = res.To
 	d.Spec.Template.Spec.ServiceAccountName = cstorOperatorServiceAccount
 	return nil
 }
