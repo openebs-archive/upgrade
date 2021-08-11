@@ -66,6 +66,7 @@ if [ $? != 0 ]; then
   kubectl logs -l job-name=upgrade-pool -n openebs
   kubectl logs -l job-name=upgrade-volume -n openebs
   kubectl describe pods -n openebs
+  kubectl describe deploy -n openebs
   exit 1
 fi
 
