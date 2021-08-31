@@ -1,7 +1,7 @@
 #kubeapply: kubectl --kubeconfig /root/admin.conf
-new_operator: "https://openebs.github.io/charts/{{ lookup('env','OPENEBS_VERSION') }}/openebs-operator.yaml"
-rc_operator_link: "https://raw.githubusercontent.com/openebs/charts/{{ lookup('env','COMMIT_ID') }}/{{ lookup('env','OPENEBS_VERSION') }}/openebs-operator-{{ lookup('env','RC_TAG') }}.yaml"
-release_operator_link: "https://raw.githubusercontent.com/openebs/charts/{{ lookup('env','COMMIT_ID') }}/{{ lookup('env','OPENEBS_VERSION') }}/openebs-operator.yaml"
+new_operator: "https://raw.githubusercontent.com/openebs/charts/gh-pages/versioned/{{ lookup('env','OPENEBS_VERSION') }}/openebs-operator.yaml"
+rc_operator_link: "https://raw.githubusercontent.com/openebs/charts/{{ lookup('env','COMMIT_ID') }}/versioned/{{ lookup('env','OPENEBS_VERSION') }}/openebs-operator-{{ lookup('env','RC_TAG') }}.yaml"
+release_operator_link: "https://raw.githubusercontent.com/openebs/charts/{{ lookup('env','COMMIT_ID') }}/versioned/{{ lookup('env','OPENEBS_VERSION') }}/openebs-operator.yaml"
 openebs_version: "{{ lookup('env','OPENEBS_VERSION') }}"
 openebs_operator: openebs-operator.yaml
 test_name: "openebs-{{ lookup('env','Action') }}"

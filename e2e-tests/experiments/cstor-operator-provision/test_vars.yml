@@ -1,6 +1,6 @@
-cstor_operator_link: https://raw.githubusercontent.com/openebs/charts/gh-pages/{{ openebs_version }}/cstor-operator.yaml
-release_operator_link: "https://raw.githubusercontent.com/openebs/charts/{{ commit_id }}/{{ openebs_version }}/cstor-operator.yaml"
-rc_operator_link: "https://raw.githubusercontent.com/openebs/charts/{{ commit_id }}/{{ openebs_version }}/cstor-operator-{{ rc_tag }}.yaml"
+cstor_operator_link: https://raw.githubusercontent.com/openebs/charts/gh-pages/versioned/{{ openebs_version }}/cstor-operator.yaml
+release_operator_link: "https://raw.githubusercontent.com/openebs/charts/{{ commit_id }}/versioned/{{ openebs_version }}/cstor-operator.yaml"
+rc_operator_link: "https://raw.githubusercontent.com/openebs/charts/{{ commit_id }}/versioned/{{ openebs_version }}/cstor-operator-{{ rc_tag }}.yaml"
 cstor_operator: cstor-operator.yaml
 openebs_version: "{{ lookup('env','OPENEBS_VERSION') }}"
 webhook_policy: "{{ lookup('env','WEBHOOK_FAILURE_POLICY') }}"
