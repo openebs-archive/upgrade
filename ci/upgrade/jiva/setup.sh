@@ -21,8 +21,8 @@ echo "Install jiva-operator in 2.7.0"
 
 kubectl create ns openebs
 
-kubectl apply -f https://raw.githubusercontent.com/openebs/charts/gh-pages/2.7.0/jiva-operator.yaml \
- -f https://raw.githubusercontent.com/openebs/charts/gh-pages/2.7.0/openebs-operator.yaml 
+kubectl apply -f https://raw.githubusercontent.com/openebs/charts/gh-pages/versioned/2.7.0/jiva-operator.yaml \
+ -f https://raw.githubusercontent.com/openebs/charts/gh-pages/versioned/2.7.0/openebs-operator.yaml 
 sleep 100
 
 echo "Wait for jiva-operator to start"
