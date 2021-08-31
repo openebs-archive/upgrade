@@ -21,7 +21,7 @@ echo "Install cstor-operators in 2.0.0"
 
 kubectl create ns openebs
 
-kubectl apply -f https://raw.githubusercontent.com/openebs/charts/gh-pages/2.0.0/cstor-operator.yaml \
+kubectl apply -f https://raw.githubusercontent.com/openebs/charts/gh-pages/versioned/2.0.0/cstor-operator.yaml \
     -f ./ci/upgrade/cstor/ndm-operator.yaml 
 sleep 100
 
