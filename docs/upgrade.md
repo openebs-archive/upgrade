@@ -18,24 +18,28 @@ Before upgrading the pools make sure the following prerequisites are taken care 
 
  - Upgrade the control plane components by applying the desired version of cstor-operator from the [charts](https://github.com/openebs/charts/tree/gh-pages). 
  
- **Note:** If upgrading the control plane from 2.4.0 or the previous versions to the latest version please clean up the CSIDriver CR before applying the operator using the below command.
-  ```sh
-  kubectl delete csidriver cstor.csi.openebs.io
-  ```
+ **Note:**
+ 1. Day-2-operations of cStor pools & cStor volumes doesn't support when control plane alone is upgraded.
+ 2. If upgrading the control plane from 2.4.0 or the previous versions to the latest version please clean up the CSIDriver CR before applying the operator using the below command.
+    ```sh
+    kubectl delete csidriver cstor.csi.openebs.io
+    ```
 
- You can verify the current version of the control plane using the command:
+    You can verify the current version of the control plane using the command:
     
-    $ kubectl -n openebs get pods -l openebs.io/version=<version>
+     kubectl -n openebs get pods -l openebs.io/version=<version>
      
- where `<version>` is the desired version.
+     where `<version>` is the desired version.
     
- For example if desired version is `2.12.0` the output should look like:
+    For example if desired version is `2.12.0` the output should look like:
     
-    $ kubectl -n openebs get pods -l openebs.io/version=2.12.0
-    NAME                                              READY   STATUS    RESTARTS   AGE
-    cspc-operator-7744bfb75-fj2w8                     1/1     Running   0          6m11s
-    cvc-operator-5c6456df79-jpl5c                     1/1     Running   0          6m11s
-    openebs-cstor-admission-server-845d78b97d-sgcnh   1/1     Running   0          6m10s
+    ```sh
+     $ kubectl -n openebs get pods -l openebs.io/version=2.12.0
+     NAME                                              READY   STATUS    RESTARTS   AGE
+     cspc-operator-7744bfb75-fj2w8                     1/1     Running   0          6m11s
+     cvc-operator-5c6456df79-jpl5c                     1/1     Running   0          6m11s
+     openebs-cstor-admission-server-845d78b97d-sgcnh   1/1     Running   0          6m10s
+     ```
     
 
 ### Running the upgrade job
