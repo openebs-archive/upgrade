@@ -18,6 +18,7 @@ Below are the steps for upgrading the OpenEBS reources:
 
 **Note:** 
  - If current version of ndm-operator is 1.12.0 or below and using virtual disks as blockdevices for provisioning cStor pool please refer this [doc](https://github.com/openebs/upgrade/blob/master/docs/virtual-disk-troubleshoot.md) before proceeding.
+ - After upgrading the cStor or Jiva control plane, you have to upgrade Jiva/cStor pools and volumes to the latest control plane version as early as possible. While Jiva/cStor pools and volumes will continue to work, the management operations like **_Volume Expansion, Volume Migration, Ongoing Pool/Volume Provisioning, cStor Pool Scaleup/Scaledown, cStor VolumeReplica Scaling, cStor Pool Expansion_** will **not be supported** when the control plane and the pools, volumes are in different versions.
 
 ## [Migrating cStor pools and volumes from SPC to CSPC](https://github.com/openebs/upgrade/blob/master/docs/migration.md)
 Below are the steps for migrating the OpenEBS cStor custom reources:

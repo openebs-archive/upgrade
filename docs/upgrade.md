@@ -19,7 +19,7 @@ Before upgrading the pools make sure the following prerequisites are taken care 
  - Upgrade the control plane components by applying the desired version of cstor-operator from the [charts](https://github.com/openebs/charts/tree/gh-pages). 
  
  **Note:**
- 1. Day-2-operations of cStor pools & cStor volumes doesn't support when control plane alone is upgraded.
+ 1. After upgrading the control plane, you have to upgrade cStor pools and volumes to the latest control plane version as early as possible. While cStor pools & volumes will continue to work, the management operations like **_Volume Expansion, Volume Migration, Ongoing Pool/Volume Provisioning, cStor Pool Scaleup/Scaledown, cStor VolumeReplica Scaling, cStor Pool Expansion_** will **not be supported** when the control plane and the pools, volumes are in different versions.
  2. If upgrading the control plane from 2.4.0 or the previous versions to the latest version please clean up the CSIDriver CR before applying the operator using the below command.
     ```sh
     kubectl delete csidriver cstor.csi.openebs.io
@@ -278,7 +278,7 @@ These instructions will guide you through the process of upgrading jiva CSI volu
 Before upgrading the volumes make sure the following prerequisites are taken care of:
 
  - Upgrade the jiva operator to desired version by applying the jiva-operator from the [charts](https://github.com/openebs/charts/tree/gh-pages).
-
+ - After upgrading the Jiva control plane, you have to upgrade Jiva volumes to the latest control plane version as early as possible. While Jiva volumes will continue to work, the management operations like **_Volume Expansion, Volume Migration, Ongoing Volume Provisioning_** will **not be supported** when the control plane and the pools, volumes are in different versions.
  - Check for the `REMOUNT` env in `openebs-jiva-csi-node` daemonset, if disabled then scaling down the application before upgrading the volume is recommended to avoid any read-only issues.
 
 ### Running the upgrade job
