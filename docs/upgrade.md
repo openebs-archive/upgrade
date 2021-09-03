@@ -18,24 +18,28 @@ Before upgrading the pools make sure the following prerequisites are taken care 
 
  - Upgrade the control plane components by applying the desired version of cstor-operator from the [charts](https://github.com/openebs/charts/tree/gh-pages). 
  
- **Note:** If upgrading the control plane from 2.4.0 or the previous versions to the latest version please clean up the CSIDriver CR before applying the operator using the below command.
-  ```sh
-  kubectl delete csidriver cstor.csi.openebs.io
-  ```
+ **Note:**
+ 1. After upgrading the control plane, you have to upgrade cStor pools and volumes to the latest control plane version as early as possible. While cStor pools & volumes will continue to work, the management operations like **_Ongoing Pool/Volume Provisioning, Volume Expansion, Volume Replica Migration, cStor Pool Scaleup/Scaledown, cStor VolumeReplica Scaling, cStor Pool Expansion_** will **not be supported** due to difference in control plane and pools/volumes version.
+ 2. If upgrading the control plane from 2.4.0 or the previous versions to the latest version please clean up the CSIDriver CR before applying the operator using the below command.
+    ```sh
+    kubectl delete csidriver cstor.csi.openebs.io
+    ```
 
- You can verify the current version of the control plane using the command:
+    You can verify the current version of the control plane using the command:
     
-    $ kubectl -n openebs get pods -l openebs.io/version=<version>
+     kubectl -n openebs get pods -l openebs.io/version=<version>
      
- where `<version>` is the desired version.
+     where `<version>` is the desired version.
     
- For example if desired version is `2.12.0` the output should look like:
+    For example if desired version is `2.12.0` the output should look like:
     
-    $ kubectl -n openebs get pods -l openebs.io/version=2.12.0
-    NAME                                              READY   STATUS    RESTARTS   AGE
-    cspc-operator-7744bfb75-fj2w8                     1/1     Running   0          6m11s
-    cvc-operator-5c6456df79-jpl5c                     1/1     Running   0          6m11s
-    openebs-cstor-admission-server-845d78b97d-sgcnh   1/1     Running   0          6m10s
+    ```sh
+     $ kubectl -n openebs get pods -l openebs.io/version=2.12.0
+     NAME                                              READY   STATUS    RESTARTS   AGE
+     cspc-operator-7744bfb75-fj2w8                     1/1     Running   0          6m11s
+     cvc-operator-5c6456df79-jpl5c                     1/1     Running   0          6m11s
+     openebs-cstor-admission-server-845d78b97d-sgcnh   1/1     Running   0          6m10s
+     ```
     
 
 ### Running the upgrade job
@@ -274,7 +278,7 @@ These instructions will guide you through the process of upgrading jiva CSI volu
 Before upgrading the volumes make sure the following prerequisites are taken care of:
 
  - Upgrade the jiva operator to desired version by applying the jiva-operator from the [charts](https://github.com/openebs/charts/tree/gh-pages).
-
+ - After upgrading the Jiva control plane, you have to upgrade Jiva volumes to the latest control plane version as early as possible. While Jiva volumes will continue to work, the management operations like **_Ongoing Pool/Volume Provisioning, Volume Expansion, Volume Replica Migration, Volume Replica Scaling** will **not be supported** due to difference in control plane and pools/volumes version.
  - Check for the `REMOUNT` env in `openebs-jiva-csi-node` daemonset, if disabled then scaling down the application before upgrading the volume is recommended to avoid any read-only issues.
 
 ### Running the upgrade job
