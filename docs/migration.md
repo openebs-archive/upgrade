@@ -293,13 +293,13 @@ Before migrating the volumes make sure the following prerequisites are taken car
  - The jiva-operator should be installed with version 2.7.0 or above. You can install the correct version of jiva-operator from [charts](https://github.com/openebs/charts/tree/gh-pages). Get the jiva-operator yaml within the correct versioned folder and install. 
  - **The application needs to be scaled down before migrating.** This is required as the old PVC and PV spec needs to be deleted at the end of migration.
 
- For this example lets say the original volume has PVC name `demo-vol-claim` and PV name `pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683`.
+ For this example lets say the original volume has PVC name `demo-vol-claim` in `default` namespace and PV name `pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683`.
  
 ### Migration steps
 
 1. Note down the nodes on which the replicas were scheduled originally 
    ```
-    $ k get pods -o wide
+    $ kubectl -n openebs get pods -o wide -l openebs.io/persistent-volume=pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683
     NAME                                                              READY   STATUS    RESTARTS   AGE     IP               NODE    
     pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683-ctrl-6c7c87bb99-pkjrl    2/2     Running   0          10m     192.168.77.131   kworker2
     pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683-rep-1-66f8f74b64-m26c6   1/1     Running   0          14s     192.168.41.140   kworker1
@@ -309,7 +309,7 @@ Before migrating the volumes make sure the following prerequisites are taken car
 
 2. Scale down volume controller and all replica deployments. You can find these deployments using the command:
    ```
-    $ kubectl -n openebs get deploy
+    $ kubectl -n openebs get deploy -l openebs.io/persistent-volume=pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683
     NAME                                             READY   UP-TO-DATE   AVAILABLE   AGE
     pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683-ctrl    1/1     1            1           24m
     pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683-rep-1   1/1     1            1           24m
@@ -384,7 +384,7 @@ Before migrating the volumes make sure the following prerequisites are taken car
         - ReadWriteOnce
       resources:
         requests:
-        storage: 4Gi
+          storage: 4Gi
     ```
     Make sure the size and other spec fields should match the old external provisioned volume.
 
@@ -395,6 +395,11 @@ Before migrating the volumes make sure the following prerequisites are taken car
     NAME                      STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS           AGE
     demo-vol-claim            Bound    pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683   4G         RWO            openebs-jiva-default   29m
     migrated-demo-vol-claim   Bound    pvc-13001311-8787-4c56-9a26-eef0fa819377   4Gi        RWO            openebs-jiva-csi-sc    10s
+
+    $ kubectl get pv
+    NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS     CLAIM                                                                 STORAGECLASS           REASON   AGE
+    pvc-1ee9579c-7acf-49f8-b23d-74a2bc0781aa   4Gi        RWO            Delete           Bound      openebs/openebs-pvc-13001311-8787-4c56-9a26-eef0fa819377-jiva-rep-1   openebs-hostpath                51m
+    pvc-dda3733a-2b7a-49ad-b54b-7e759dee812f   4Gi        RWO            Delete           Bound      openebs/openebs-pvc-13001311-8787-4c56-9a26-eef0fa819377-jiva-rep-0   openebs-hostpath                51m
     
     $ kubectl -n openebs get pvc
     NAME                                                          STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS       AGE
@@ -422,7 +427,8 @@ Before migrating the volumes make sure the following prerequisites are taken car
 
 9. Scale up the replica statefulset. Replace the volume name in the application and scale it up. Verify the data.
 
-10. Delete the old volume. Done!!
+10. Delete the old PVC & PV. Done!!
     ```sh
     $ kubectl delete pvc demo-vol-claim
+    $ kubectl delete pv pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683
     ```
