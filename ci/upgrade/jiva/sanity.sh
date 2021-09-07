@@ -39,10 +39,11 @@ else
 fi
 
 TEST_IMAGE_TAG="${CURRENT_BRANCH}-ci"
+TEST_VERSION="${CURRENT_BRANCH}-dev"
 if [ "${CURRENT_BRANCH}" = "master" ]; then
   TEST_IMAGE_TAG="ci"
+  TEST_VERSION="develop-dev"
 fi
-TEST_VERSION="${CURRENT_BRANCH}-dev"
 
 if [ -n "$RELEASE_TAG" ]; then
     # Trim the `v` from the RELEASE_TAG if it exists
