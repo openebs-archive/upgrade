@@ -293,19 +293,30 @@ Before migrating the volumes make sure the following prerequisites are taken car
  - The jiva-operator should be installed with version 2.7.0 or above. You can install the correct version of jiva-operator from [charts](https://github.com/openebs/charts/tree/gh-pages). Get the jiva-operator yaml within the correct versioned folder and install. 
  - **The application needs to be scaled down before migrating.** This is required as the old PVC and PV spec needs to be deleted at the end of migration.
 
- For this example lets say the original volume has PVC name `demo-vol-claim` and PV name `pvc-898d90cc-ec73-4868-9205-1a8ba141a5bb`.
+ For this example lets say the original volume has PVC name `demo-vol-claim` in `default` namespace and PV name `pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683`.
  
 ### Migration steps
 
-1. Scale down volume controller and all replica deployments. You can find these deployments using the command:
+1. Note down the nodes on which the replicas were scheduled originally 
    ```
-    $ kubectl -n openebs get deploy
+    $ kubectl -n openebs get pods -o wide -l openebs.io/persistent-volume=pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683
+    NAME                                                              READY   STATUS    RESTARTS   AGE     IP               NODE    
+    pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683-ctrl-6c7c87bb99-pkjrl    2/2     Running   0          10m     192.168.77.131   kworker2
+    pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683-rep-1-66f8f74b64-m26c6   1/1     Running   0          14s     192.168.41.140   kworker1
+    pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683-rep-2-668895c5c-s5z8j    1/1     Running   0          14s     192.168.77.135   kworker2
+   ```
+   In this case the replicas are scheduled on `kworker1` and `kworker2`
+
+2. Scale down volume controller and all replica deployments. You can find these deployments using the command:
+   ```
+    $ kubectl -n openebs get deploy -l openebs.io/persistent-volume=pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683
     NAME                                             READY   UP-TO-DATE   AVAILABLE   AGE
-    pvc-898d90cc-ec73-4868-9205-1a8ba141a5bb-ctrl    1/1     1            1           50s
-    pvc-898d90cc-ec73-4868-9205-1a8ba141a5bb-rep-1   1/1     1            1           50s
+    pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683-ctrl    1/1     1            1           24m
+    pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683-rep-1   1/1     1            1           24m
+    pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683-rep-2   1/1     1            1           24m
    ```
 
-2. Create a jivaVolumePolicy equivalent to old storageclass annotations. For example if the original storageclass was:
+3. Create a jivaVolumePolicy equivalent to old storageclass annotations. For example if the original storageclass was:
    ```yaml
     apiVersion: storage.k8s.io/v1
     kind: StorageClass
@@ -315,7 +326,7 @@ Before migrating the volumes make sure the following prerequisites are taken car
         openebs.io/cas-type: jiva
         cas.openebs.io/config: |
           - name: ReplicaCount
-            value: "1"
+            value: "2"
     provisioner: openebs.io/provisioner-iscsi
    ```
     The equivalent jivaVolumepolicy will look like:
@@ -324,18 +335,31 @@ Before migrating the volumes make sure the following prerequisites are taken car
     apiVersion: openebs.io/v1alpha1
     kind: JivaVolumePolicy
     metadata:
-      name: example-jivavolumepolicy
+      name: tmp-jivavolumepolicy
       namespace: openebs
     spec:
       replicaSC: openebs-hostpath
       target:
         # This should be same as the ReplicaCount
         # in the old StorageClass 
-        replicationFactor: 1
+        replicationFactor: 2
+      replica:
+        # this affinity is required to schedule the new sts replica
+        # pods to the same node as the old replica deployment pods
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                  - kworker1
+                  - kworker2
     ```
     You can find more about jivaVolumePolicy [here](https://github.com/openebs/jiva-operator/blob/master/docs/tutorials/policies.md).
 
-3. Create equivalent CSI storageclass. 
+4. Create equivalent CSI storageclass. 
     ```yaml
     apiVersion: storage.k8s.io/v1
     kind: StorageClass
@@ -344,11 +368,11 @@ Before migrating the volumes make sure the following prerequisites are taken car
     provisioner: jiva.csi.openebs.io
     parameters:
       cas-type: "jiva"
-      policy: "example-jivavolumepolicy"
+      policy: "tmp-jivavolumepolicy"
     ```
     The jivaVolumePolicy will be added to the parameters instead of having the annotation.
 
-4. Create an equivalent volume with new CSI storageclass. 
+5. Create an equivalent volume with new CSI storageclass. 
     ```yaml
     kind: PersistentVolumeClaim
     apiVersion: v1
@@ -360,26 +384,51 @@ Before migrating the volumes make sure the following prerequisites are taken car
         - ReadWriteOnce
       resources:
         requests:
-        storage: 5Gi
+          storage: 4Gi
     ```
     Make sure the size and other spec fields should match the old external provisioned volume.
 
-5. The new csi volume replica statefulset will have a hostpath-localpv volume each. Note down the node-name and the hostpath for the volume.
+6. The new csi volume replica statefulset will have a hostpath-localpv volume each. Note down the node-name and the hostpath for the volume.
+   For the new csi volume there will be sts volumes with same name as the pv for the csi volume.
     ```
-    NodeName 	  Corresponding hostpath 
-    127.0.0.1 	/var/openebs/local/pvc-91d8fa8d-a474-4444-881e-a13571be5487
+    $ kubectl get pvc
+    NAME                      STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS           AGE
+    demo-vol-claim            Bound    pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683   4G         RWO            openebs-jiva-default   29m
+    migrated-demo-vol-claim   Bound    pvc-13001311-8787-4c56-9a26-eef0fa819377   4Gi        RWO            openebs-jiva-csi-sc    10s
+
+    $ kubectl get pv
+    NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS     CLAIM                                                                 STORAGECLASS           REASON   AGE
+    pvc-1ee9579c-7acf-49f8-b23d-74a2bc0781aa   4Gi        RWO            Delete           Bound      openebs/openebs-pvc-13001311-8787-4c56-9a26-eef0fa819377-jiva-rep-1   openebs-hostpath                51m
+    pvc-dda3733a-2b7a-49ad-b54b-7e759dee812f   4Gi        RWO            Delete           Bound      openebs/openebs-pvc-13001311-8787-4c56-9a26-eef0fa819377-jiva-rep-0   openebs-hostpath                51m
+    
+    $ kubectl -n openebs get pvc
+    NAME                                                          STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS       AGE
+    openebs-pvc-13001311-8787-4c56-9a26-eef0fa819377-jiva-rep-0   Bound    pvc-dda3733a-2b7a-49ad-b54b-7e759dee812f   4Gi        RWO            openebs-hostpath   23s
+    openebs-pvc-13001311-8787-4c56-9a26-eef0fa819377-jiva-rep-1   Bound    pvc-1ee9579c-7acf-49f8-b23d-74a2bc0781aa   4Gi        RWO            openebs-hostpath   23s
+
+    $ kubectl -n openebs get pods -o wide
+    NAME                                                              READY   STATUS    RESTARTS   AGE     IP               NODE
+    pvc-13001311-8787-4c56-9a26-eef0fa819377-jiva-rep-0               1/1     Running   0          3m46s   192.168.77.143   kworker2
+    pvc-13001311-8787-4c56-9a26-eef0fa819377-jiva-rep-1               1/1     Running   0          3m46s   192.168.41.148   kworker1
+    ```
+    The node names and paths can be matched by using the above outputs
+    ```
+    NodeName    Corresponding hostpath 
+    kworker1    /var/openebs/local/pvc-1ee9579c-7acf-49f8-b23d-74a2bc0781aa
+    kworker2    /var/openebs/local/pvc-dda3733a-2b7a-49ad-b54b-7e759dee812f
     ```
 
-6. Scale down the csi replica sts to 0.
+7. Scale down the csi replica sts to 0.
     ```sh
-    $ kubectl scale sts pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650-rep -n openebs --replicas=0
+    $ kubectl scale sts pvc-13001311-8787-4c56-9a26-eef0fa819377-jiva-rep -n openebs --replicas=0
     ```
 
-7. SSH into each node. Remove the files from the new localpv hostpath and copy the files from old hostpath to the new localpv hostpath which we have noted down in step 5. The old hostpath would be the same for all replica deployments and will be like `/var/openebs/<pv-name>`, for example `/var/openebs/pvc-898d90cc-ec73-4868-9205-1a8ba141a5bb`
+8. SSH into each node. Remove the files from the new localpv hostpath and copy the files from old hostpath to the new localpv hostpath which we have noted down in step 6. The old hostpath would be the same for all replica deployments and will be like `/var/openebs/<pv-name>`, for example `/var/openebs/pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683`
 
-8. Scale up the replica statefulset. Replace the volume name in the application and scale it up. Verify the data.
+9. Scale up the replica statefulset. Replace the volume name in the application and scale it up. Verify the data.
 
-9. Delete the old volume. Done!!
+10. Delete the old PVC & PV. Done!!
     ```sh
     $ kubectl delete pvc demo-vol-claim
+    $ kubectl delete pv pvc-feefe71b-d073-4f0d-a5c2-bc0b78812683
     ```
