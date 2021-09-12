@@ -39,7 +39,7 @@ else
 fi
 
 TEST_IMAGE_TAG="${CURRENT_BRANCH}-ci"
-if [ "${CURRENT_BRANCH}" = "master" ]; then
+if [ "${CURRENT_BRANCH}" = "develop" ]; then
   TEST_IMAGE_TAG="ci"
 fi
 TEST_VERSION="${CURRENT_BRANCH}-dev"
