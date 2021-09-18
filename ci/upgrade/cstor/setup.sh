@@ -44,10 +44,9 @@ sed "s|testimage|$TEST_IMAGE_TAG|g" ./ci/upgrade/cstor/cstor-operator.tmp.yaml |
 
 kubectl delete csidriver cstor.csi.openebs.io
 
-kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/crds/all_cstor_crds.yaml \
- -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/rbac.yaml \
- -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/csi-operator.yaml \
- -f ./ci/upgrade/cstor/cstor-operator.yaml -f https://raw.githubusercontent.com/openebs/cstor-operators/master/deploy/ndm-operator.yaml
+kubectl apply -f https://raw.githubusercontent.com/openebs/cstor-operators/develop/deploy/cstor-operator.yaml \
+ -f ./ci/upgrade/cstor/cstor-operator.yaml
+
 sleep 10
 kubectl wait --for=condition=available --timeout=300s deployment/cspc-operator -n openebs
 

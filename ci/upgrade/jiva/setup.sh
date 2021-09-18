@@ -39,8 +39,7 @@ echo "Upgrade control plane to latest version"
 
 sed "s|testimage|$TEST_IMAGE_TAG|g" ./ci/upgrade/jiva/jiva-operator.tmp.yaml | sed "s|testversion|$TEST_VERSION|g" | sed "s|imageorg|$IMAGE_ORG|g" > ./ci/upgrade/jiva/jiva-operator.yaml
 
-kubectl apply -f https://raw.githubusercontent.com/openebs/jiva-operator/master/deploy/jiva-csi.yaml \
- -f https://raw.githubusercontent.com/openebs/jiva-operator/master/deploy/operator.yaml \
+kubectl apply -f https://raw.githubusercontent.com/openebs/jiva-operator/develop/deploy/jiva-operator.yaml \
  -f ./ci/upgrade/jiva/jiva-operator.yaml
 
 sleep 50
