@@ -282,7 +282,7 @@ metadata:
     openebs.io/target-affinity: fio-cstor
 ```
 
-# Migrating jiva External Provisioned volumes to jiva CSI volumes (Experimental)
+# Migrating jiva External Provisioned volumes to jiva CSI volumes
 
 These instructions will guide you through the process of migrating Jiva volumes from the old v1alpha1 external provisioned spec to v1 CSI spec. 
 
