@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
 	apis "github.com/openebs/maya/pkg/apis/openebs.io/v1alpha1"
 )
 

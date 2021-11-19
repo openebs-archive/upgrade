@@ -20,7 +20,7 @@ import (
 	"context"
 	"os"
 
-	v1Alpha1API "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
+	v1Alpha1API "github.com/openebs/api/v3/pkg/apis/openebs.io/v1alpha1"
 	"github.com/pkg/errors"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -20,7 +20,7 @@ import (
 	"context"
 	"strings"
 
-	// clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
+	// clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
 	jv "github.com/openebs/jiva-operator/pkg/apis/openebs/v1alpha1"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/types"

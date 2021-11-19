@@ -20,8 +20,8 @@ import (
 	"context"
 	"strings"
 
-	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	clientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
+	apis "github.com/openebs/api/v3/pkg/apis/cstor/v1"
+	clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
