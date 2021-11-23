@@ -20,8 +20,8 @@ import (
 	"context"
 	"time"
 
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	"github.com/openebs/api/v2/pkg/apis/types"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
+	"github.com/openebs/api/v3/pkg/apis/types"
 	apis "github.com/openebs/maya/pkg/apis/openebs.io/v1alpha1"
 	csp "github.com/openebs/maya/pkg/cstor/pool/v1alpha3"
 	"github.com/openebs/maya/pkg/util/retry"

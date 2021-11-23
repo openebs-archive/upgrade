@@ -20,7 +20,7 @@ import (
 	"context"
 	"time"
 
-	apis "github.com/openebs/api/v2/pkg/apis/cstor/v1"
+	apis "github.com/openebs/api/v3/pkg/apis/cstor/v1"
 	"github.com/openebs/upgrade/pkg/upgrade/patch"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

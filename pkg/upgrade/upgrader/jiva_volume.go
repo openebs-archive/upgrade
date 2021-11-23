@@ -19,7 +19,7 @@ package upgrader
 import (
 	"time"
 
-	v1Alpha1API "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
+	v1Alpha1API "github.com/openebs/api/v3/pkg/apis/openebs.io/v1alpha1"
 	jv "github.com/openebs/jiva-operator/pkg/apis/openebs/v1alpha1"
 	"github.com/openebs/upgrade/pkg/upgrade/patch"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"

@@ -23,8 +23,8 @@ import (
 
 	"k8s.io/client-go/rest"
 
-	v1Alpha1API "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
-	openebsclientset "github.com/openebs/api/v2/pkg/client/clientset/versioned"
+	v1Alpha1API "github.com/openebs/api/v3/pkg/apis/openebs.io/v1alpha1"
+	openebsclientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
 	"github.com/openebs/maya/pkg/util"
 	cmdUtil "github.com/openebs/upgrade/cmd/util"
 	migrate "github.com/openebs/upgrade/pkg/migrate/cstor"

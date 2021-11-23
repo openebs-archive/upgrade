@@ -20,9 +20,9 @@ import (
 	"context"
 	"time"
 
-	cstor "github.com/openebs/api/v2/pkg/apis/cstor/v1"
-	v1Alpha1API "github.com/openebs/api/v2/pkg/apis/openebs.io/v1alpha1"
-	"github.com/openebs/api/v2/pkg/apis/types"
+	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
+	v1Alpha1API "github.com/openebs/api/v3/pkg/apis/openebs.io/v1alpha1"
+	"github.com/openebs/api/v3/pkg/apis/types"
 	translate "github.com/openebs/upgrade/pkg/migrate/cstor"
 	"github.com/openebs/upgrade/pkg/upgrade/patch"
 	"github.com/pkg/errors"
