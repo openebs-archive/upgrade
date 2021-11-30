@@ -6,7 +6,7 @@ require (
 	github.com/google/go-cmp v0.5.4
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.0.0
 	github.com/openebs/api/v3 v3.0.0-20211116062351-ecd9a8a61d3e
-	github.com/openebs/jiva-operator v1.12.2-0.20210305095718-9ceaccf89e9d
+	github.com/openebs/jiva-operator v1.12.2-0.20211126122511-b8b205d44bfa
 	github.com/openebs/maya v1.12.1-0.20210308113344-5c43ada4c9e2
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.1.1

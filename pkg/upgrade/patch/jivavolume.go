@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	// clientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
-	jv "github.com/openebs/jiva-operator/pkg/apis/openebs/v1alpha1"
+	jv "github.com/openebs/jiva-operator/pkg/apis/openebs/v1"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"

@@ -46,7 +46,14 @@ func TranslateBackupToV1(oldBackup openebsio.CStorBackup) *cstor.CStorBackup {
 // TranslateRestoreToV1 translates v1alpha resources to v1
 func TranslateRestoreToV1(oldRestore openebsio.CStorRestore) *cstor.CStorRestore {
 	newRestore := &cstor.CStorRestore{}
-	newRestore.ObjectMeta = oldRestore.ObjectMeta
+	newRestore.ObjectMeta = metav1.ObjectMeta{
+		Name:            oldRestore.Name,
+		Namespace:       oldRestore.Namespace,
+		Labels:          oldRestore.Labels,
+		Annotations:     oldRestore.Annotations,
+		Finalizers:      oldRestore.Finalizers,
+		OwnerReferences: oldRestore.OwnerReferences,
+	}
 	newRestore.Spec = cstor.CStorRestoreSpec{
 		RestoreName:   oldRestore.Spec.RestoreName,
 		VolumeName:    oldRestore.Spec.VolumeName,
@@ -64,7 +71,14 @@ func TranslateRestoreToV1(oldRestore openebsio.CStorRestore) *cstor.CStorRestore
 // TranslateCompletedBackupToV1 translates v1alpha resources to v1
 func TranslateCompletedBackupToV1(oldCompletedBackup openebsio.CStorCompletedBackup) *cstor.CStorCompletedBackup {
 	newCompletedBackup := &cstor.CStorCompletedBackup{}
-	newCompletedBackup.ObjectMeta = oldCompletedBackup.ObjectMeta
+	newCompletedBackup.ObjectMeta = metav1.ObjectMeta{
+		Name:            oldCompletedBackup.Name,
+		Namespace:       oldCompletedBackup.Namespace,
+		Labels:          oldCompletedBackup.Labels,
+		Annotations:     oldCompletedBackup.Annotations,
+		Finalizers:      oldCompletedBackup.Finalizers,
+		OwnerReferences: oldCompletedBackup.OwnerReferences,
+	}
 	newCompletedBackup.Spec = cstor.CStorCompletedBackupSpec{
 		BackupName:         oldCompletedBackup.Spec.BackupName,
 		VolumeName:         oldCompletedBackup.Spec.VolumeName,
