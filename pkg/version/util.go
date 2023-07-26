@@ -28,7 +28,7 @@ var (
 		"2.7.0": true, "2.8.0": true, "2.9.0": true, "2.10.0": true,
 		"2.10.1": true, "2.11.0": true, "2.12.0": true, "2.12.1": true,
 		"2.12.2": true, "3.0.0": true, "3.1.0": true, "3.2.0": true,
-		"3.3.0": true,
+		"3.3.0": true, "3.4.0": true,
 	}
 	validDesiredVersion = strings.Split(GetVersion(), "-")[0]
 )

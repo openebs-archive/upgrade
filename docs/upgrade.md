@@ -10,7 +10,7 @@ This document describes the steps for upgrading the following OpenEBS reources:
 
 ## CSPC pools
 
-These instructions will guide you through the process of upgrading cStor CSPC pools from `1.10.0` or later to a newer release up to `3.4.0`.
+These instructions will guide you through the process of upgrading cStor CSPC pools from `1.10.0` or later to a newer release up to `3.5.0`.
 
 ### Prerequisites
 
@@ -81,7 +81,7 @@ spec:
         - "--from-version=1.10.0"
 
         # --to-version is the version desired upgrade version
-        - "--to-version=3.4.0"
+        - "--to-version=3.5.0"
         # if required the image prefix of the pool deployments can be
         # changed using the flag below, defaults to whatever was present on old
         # deployments.
@@ -131,7 +131,7 @@ cstor-cspc-upgrade-2x4bv     1/1     Running    0          34s
  
 ```sh
 $ kubectl -n openebs logs -f cstor-cspc-upgrade-2x4bv
-I0714 12:37:09.747331       1 cstor_cspc.go:65] Upgrading cspc-stripe to 3.4.0
+I0714 12:37:09.747331       1 cstor_cspc.go:65] Upgrading cspc-stripe to 3.5.0
 I0714 12:37:10.062861       1 deployment.go:77] patching deployment cspc-stripe-k7cc
 I0714 12:40:11.493424       1 deployment.go:114] deployment cspc-stripe-k7cc patched successfully
 I0714 12:40:11.493476       1 cspi.go:73] patching cspi cspc-stripe-k7cc
@@ -140,12 +140,12 @@ I0714 12:40:11.527764       1 cstor_cspi.go:285] Verifying the reconciliation of
 I0714 12:40:21.632513       1 cspc.go:75] patching cspc cspc-stripe
 I0714 12:40:21.682353       1 cspc.go:95] cspc cspc-stripe patched
 I0714 12:40:21.693266       1 cstor_cspc.go:190] Verifying the reconciliation of version for cspc-stripe
-I0714 12:40:31.701881       1 cstor_cspc.go:76] Successfully upgraded cspc-stripe to 3.4.0
+I0714 12:40:31.701881       1 cstor_cspc.go:76] Successfully upgraded cspc-stripe to 3.5.0
 ```
 
 ## cStor CSI volumes
 
-These instructions will guide you through the process of upgrading cStor CSI volumes from `1.10.0` or later to a newer release up to `3.4.0`.
+These instructions will guide you through the process of upgrading cStor CSI volumes from `1.10.0` or later to a newer release up to `3.5.0`.
 
 ### Prerequisites
 
@@ -202,7 +202,7 @@ spec:
         - "--from-version=1.10.0"
 
         # --to-version is the version desired upgrade version
-        - "--to-version=3.4.0"
+        - "--to-version=3.5.0"
         # if required the image prefix of the volume deployments can be
         # changed using the flag below, defaults to whatever was present on old
         # deployments.
@@ -251,7 +251,7 @@ cstor-volume-upgrade-jd747     1/1     Running    0          34s
 ```
 ```sh
 $ kubectl -n openebs logs -f cstor-volume-upgrade-jd747
-I0714 14:00:53.309707       1 cstor_volume.go:67] Upgrading pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49 to 3.4.0
+I0714 14:00:53.309707       1 cstor_volume.go:67] Upgrading pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49 to 3.5.0
 I0714 14:00:53.818666       1 cvr.go:75] patching cvr pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49-cspc-stripe-k7cc
 I0714 14:00:53.863867       1 cvr.go:95] cvr pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49-cspc-stripe-k7cc patched
 I0714 14:00:53.923339       1 cstor_cvr.go:138] Verifying the reconciliation of version for pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49-cspc-stripe-k7cc
@@ -266,12 +266,12 @@ I0714 14:03:05.890751       1 cstor_volume.go:401] Verifying the reconciliation 
 I0714 14:03:15.897696       1 cvc.go:75] patching cvc pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49
 I0714 14:03:15.929871       1 cvc.go:95] cvc pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49 patched
 I0714 14:03:16.030782       1 cstor_volume.go:423] Verifying the reconciliation of version for pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49
-I0714 14:03:26.046950       1 cstor_volume.go:78] Successfully upgraded pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49 to 3.4.0
+I0714 14:03:26.046950       1 cstor_volume.go:78] Successfully upgraded pvc-5fdce1bf-2cfc-4692-8353-8bc66deace49 to 3.5.0
 ```
 
 ## jiva CSI volumes
 
-These instructions will guide you through the process of upgrading jiva CSI volumes from `2.7.0` or later to a newer release up to `3.4.0`.
+These instructions will guide you through the process of upgrading jiva CSI volumes from `2.7.0` or later to a newer release up to `3.5.0`.
 
 ### Prerequisites
 
@@ -320,7 +320,7 @@ spec:
         - "--from-version=2.7.0"
 
         # --to-version is the version desired upgrade version
-        - "--to-version=3.4.0"
+        - "--to-version=3.5.0"
         # if required the image prefix of the volume deployments can be
         # changed using the flag below, defaults to whatever was present on old
         # deployments.
@@ -369,7 +369,7 @@ jiva-volume-upgrade-jd747     1/1     Running    0          34s
 ```
 ```sh
 $ kubectl -n openebs logs -f jiva-volume-upgrade-jd747
-I0330 13:07:31.054955       1 jiva_volume.go:63] Upgrading JivaVolume pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650 to 3.4.0
+I0330 13:07:31.054955       1 jiva_volume.go:63] Upgrading JivaVolume pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650 to 3.5.0
 I0330 13:07:31.502460       1 statefulset.go:77] patching statefulset pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650-jiva-rep
 I0330 13:07:31.562237       1 statefulset.go:109] rollout status: waiting for statefulset rolling update to complete 0 pods at revision pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650-jiva-rep-55b8789655...
 I0330 13:07:36.565525       1 statefulset.go:109] rollout status: Waiting for 1 pods to be ready...
@@ -385,5 +385,5 @@ I0330 13:07:53.787189       1 service.go:99] Service pvc-9cebb2c3-b26e-4372-9e25
 I0330 13:07:53.787233       1 jivavolume.go:76] patching jivaVolume pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650
 I0330 13:07:53.799901       1 jivavolume.go:96] jivaVolume pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650 patched
 I0330 13:07:53.806268       1 jiva_volume.go:383] Verifying the reconciliation of version for pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650
-I0330 13:08:03.814190       1 jiva_volume.go:74] Successfully upgraded pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650 to 3.4.0
+I0330 13:08:03.814190       1 jiva_volume.go:74] Successfully upgraded pvc-9cebb2c3-b26e-4372-9e25-d1dc2d26c650 to 3.5.0
 ```
