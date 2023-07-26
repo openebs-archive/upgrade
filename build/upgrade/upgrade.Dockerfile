@@ -14,7 +14,7 @@
 #
 # This Dockerfile builds upgrade
 #
-FROM golang:1.14.7 as build
+FROM golang:1.19.11 as build
 
 ARG RELEASE_TAG
 ARG BRANCH
