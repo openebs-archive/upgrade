@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Shellcheck
         uses: reviewdog/action-shellcheck@v1
@@ -49,7 +49,7 @@ jobs:
     needs: ['lint','upgrade-e2e']
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set Image Org
         # sets the default IMAGE_ORG to openebs
@@ -70,21 +70,20 @@ jobs:
       - name: Set Build Date
         id: date
         run: |
-          echo "::set-output name=DATE::$(date -u +'%Y-%m-%dT%H:%M:%S%Z')"
+          echo "DATE=$(date -u +'%Y-%m-%dT%H:%M:%S%Z')" >> $GITHUB_OUTPUT
 
       - name: Docker meta
         id: docker_meta
-        uses: crazy-max/ghaction-docker-meta@v1
+        uses: docker/metadata-action@v4
         with:
           # add each registry to which the image needs to be pushed here
           images: |
             ${{ env.IMAGE_ORG }}/upgrade
             quay.io/${{ env.IMAGE_ORG }}/upgrade
             ghcr.io/${{ env.IMAGE_ORG }}/upgrade
-          tag-latest: false
-          tag-custom-only: true
-          tag-custom: |
-            ${{ env.TAG }}
+          tags: |
+            type=raw,value=latest,enable=false
+            type=raw,value=${{ env.IMAGE_TAG }}
 
       - name: Print Tag info
         run: |
@@ -92,38 +91,38 @@ jobs:
           echo "${{ steps.docker_meta.outputs.tags }}"
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v2
         with:
           platforms: all
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
         with:
           version: v0.5.1
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v1 
+        uses: docker/login-action@v2 
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Login to Quay
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: quay.io
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_TOKEN }}
 
       - name: Login to GHCR
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build & Push Image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           context: .
           file: ./build/upgrade/upgrade.Dockerfile
@@ -142,7 +141,7 @@ jobs:
     needs: ['lint', 'migration-e2e']
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set Image Org
         # sets the default IMAGE_ORG to openebs
@@ -163,21 +162,20 @@ jobs:
       - name: Set Build Date
         id: date
         run: |
-          echo "::set-output name=DATE::$(date -u +'%Y-%m-%dT%H:%M:%S%Z')"
+          echo "DATE=$(date -u +'%Y-%m-%dT%H:%M:%S%Z')" >> $GITHUB_OUTPUT
 
       - name: Docker meta
         id: docker_meta
-        uses: crazy-max/ghaction-docker-meta@v1
+        uses: docker/metadata-action@v4
         with:
           # add each registry to which the image needs to be pushed here
           images: |
             ${{ env.IMAGE_ORG }}/migrate
             quay.io/${{ env.IMAGE_ORG }}/migrate
             ghcr.io/${{ env.IMAGE_ORG }}/migrate
-          tag-latest: false
-          tag-custom-only: true
-          tag-custom: |
-            ${{ env.TAG }}
+          tags: |
+            type=raw,value=latest,enable=false
+            type=raw,value=${{ env.IMAGE_TAG }}
 
       - name: Print Tag info
         run: |
@@ -185,38 +183,38 @@ jobs:
           echo "${{ steps.docker_meta.outputs.tags }}"
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v2
         with:
           platforms: all
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
         with:
           version: v0.5.1
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v1 
+        uses: docker/login-action@v2 
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Login to Quay
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: quay.io
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_TOKEN }}
 
       - name: Login to GHCR
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build & Push Image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           context: .
           file: ./build/migrate/migrate.Dockerfile
@@ -237,14 +235,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-    - name: Set up Go 1.14
-      uses: actions/setup-go@v2
+    - name: Set up Go 1.19
+      uses: actions/setup-go@v4
       with:
-        go-version: 1.14.7
+        go-version: 1.19.11
       id: go
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: verify license
       run: make check-license 
@@ -261,17 +259,21 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        kubernetes: [v1.18.6]
+        kubernetes: [v1.27.3]
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      
+        uses: actions/checkout@v3
+
       - name: Setup Minikube-Kubernetes
-        uses: manusa/actions-setup-minikube@v2.3.0
+        uses: medyagh/setup-minikube@latest
         with:
-          minikube version: v1.9.2
-          kubernetes version: ${{ matrix.kubernetes }}
-          github token: ${{ secrets.GITHUB_TOKEN }}
+          cache: false
+          minikube-version: 1.31.1
+          driver: none
+          kubernetes-version: ${{ matrix.kubernetes }}
+          cni: calico
+          start-args: '--install-addons=false'
+
       
       - name: Set tag
         run: |
@@ -295,14 +297,18 @@ jobs:
         engine: [cstor, jiva]
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      
+        uses: actions/checkout@v3
+
       - name: Setup Minikube-Kubernetes
-        uses: manusa/actions-setup-minikube@v2.3.0
+        uses: medyagh/setup-minikube@latest
         with:
-          minikube version: v1.9.2
-          kubernetes version: v1.18.6
-          github token: ${{ secrets.GITHUB_TOKEN }}
+          cache: false
+          minikube-version: 1.31.1
+          driver: none
+          kubernetes-version: ${{ matrix.kubernetes }}
+          cni: calico
+          start-args: '--install-addons=false'
+
 
       - name: Set Image Org
         # sets the default IMAGE_ORG to openebs
@@ -321,7 +327,7 @@ jobs:
           echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
 
       - name: Build image locally
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           context: .
           file: ./build/upgrade/upgrade.Dockerfile
@@ -343,7 +349,7 @@ jobs:
     needs: ['unit-tests']
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set Image Org
         # sets the default IMAGE_ORG to openebs
@@ -352,16 +358,16 @@ jobs:
           echo "IMAGE_ORG=${IMAGE_ORG}" >> $GITHUB_ENV
       
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push the ansible image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           file: ./e2e-tests/Dockerfile
           push: true
