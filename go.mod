@@ -53,7 +53,7 @@ require (
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
+	gopkg.in/yaml.v3 v3.0.0 // indirect
 	k8s.io/klog/v2 v2.4.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20201113171705-d219536bb9fd // indirect
 	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009 // indirect
