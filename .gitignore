@@ -16,4 +16,4 @@
 # vendor/
 
 # IDE files
-.idea/
+**/.idea
