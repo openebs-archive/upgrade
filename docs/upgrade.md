@@ -192,7 +192,7 @@ spec:
       # VERIFY the value of serviceAccountName is pointing to service account
       # created within openebs namespace. Use the non-default account.
       # by running `kubectl get sa -n <openebs-namespace>`
-      serviceAccountName: openebs-maya-operator
+      serviceAccountName: openebs-cstor-operator
       containers:
       - name:  upgrade
         args:
