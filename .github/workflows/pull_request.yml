@@ -128,7 +128,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        kubernetes: [v1.27.3]
+        kubernetes: [v1.22.17]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -160,6 +160,7 @@ jobs:
       fail-fast: true
       matrix:
         engine: [cstor, jiva]
+        kubernetes: [v1.27.3]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
