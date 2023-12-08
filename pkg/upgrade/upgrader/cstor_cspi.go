@@ -23,13 +23,14 @@ import (
 	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
 	v1Alpha1API "github.com/openebs/api/v3/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/api/v3/pkg/apis/types"
-	translate "github.com/openebs/upgrade/pkg/migrate/cstor"
-	"github.com/openebs/upgrade/pkg/upgrade/patch"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
+
+	translate "github.com/openebs/upgrade/pkg/migrate/cstor"
+	"github.com/openebs/upgrade/pkg/upgrade/patch"
 )
 
 // CSPIPatch is the patch required to upgrade cspi

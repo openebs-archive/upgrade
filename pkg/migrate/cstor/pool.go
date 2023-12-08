@@ -22,10 +22,6 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/klog"
-
 	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
 	v1Alpha1API "github.com/openebs/api/v3/pkg/apis/openebs.io/v1alpha1"
 	"github.com/openebs/api/v3/pkg/apis/types"
@@ -34,11 +30,15 @@ import (
 	csp "github.com/openebs/maya/pkg/cstor/pool/v1alpha3"
 	cvr "github.com/openebs/maya/pkg/cstor/volumereplica/v1alpha1"
 	spc "github.com/openebs/maya/pkg/storagepoolclaim/v1alpha1"
-	"github.com/openebs/upgrade/pkg/version"
 	"github.com/pkg/errors"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
+
+	"github.com/openebs/upgrade/pkg/version"
 )
 
 const (
@@ -261,19 +261,20 @@ func (c *CSPCMigrator) migrate(spcName string) (string, error) {
 
 // checkForExistingCSPC verifies the migration as follows:
 // spc = getSPC
-// 1. if spc does not exist
-// 	return nil (getSPCWithMigrationStatus will handle it)
+//  1. if spc does not exist
+//     return nil (getSPCWithMigrationStatus will handle it)
+//
 // cspc = getCSPC(from flag or same as spc)
-// 2. if cspc exist &&
-// 	a. spc has anno with cspc-name && cspc has migration anno with spc-name
-// 		return nil
-// 	b. else
-// 		return err cspc already exists
-// 3. if cspc does not exist &&
-// 	a. spc has no anno
-// 		patch spc with anno
-// 	b. spc has diff anno than current cspc-name
-// 		return err
+//  2. if cspc exist &&
+//     a. spc has anno with cspc-name && cspc has migration anno with spc-name
+//     return nil
+//     b. else
+//     return err cspc already exists
+//  3. if cspc does not exist &&
+//     a. spc has no anno
+//     patch spc with anno
+//     b. spc has diff anno than current cspc-name
+//     return err
 func (c *CSPCMigrator) checkForExistingCSPC(spcName string) error {
 	spcObj, err := spc.NewKubeClient().Get(spcName, metav1.GetOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {

@@ -22,12 +22,13 @@ import (
 
 	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
 	v1Alpha1API "github.com/openebs/api/v3/pkg/apis/openebs.io/v1alpha1"
-	"github.com/openebs/upgrade/pkg/upgrade/patch"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
+
+	"github.com/openebs/upgrade/pkg/upgrade/patch"
 )
 
 // CStorVolumePatch is the patch required to upgrade CStorVolume

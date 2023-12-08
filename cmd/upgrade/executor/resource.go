@@ -22,18 +22,19 @@ import (
 	"strings"
 
 	"k8s.io/client-go/rest"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	v1Alpha1API "github.com/openebs/api/v3/pkg/apis/openebs.io/v1alpha1"
 	openebsclientset "github.com/openebs/api/v3/pkg/client/clientset/versioned"
 	"github.com/openebs/maya/pkg/util"
-	cmdUtil "github.com/openebs/upgrade/cmd/util"
-	upgrade "github.com/openebs/upgrade/pkg/upgrade"
-	"github.com/openebs/upgrade/pkg/version"
-	errors "github.com/pkg/errors"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	cmdUtil "github.com/openebs/upgrade/cmd/util"
+	upgrade "github.com/openebs/upgrade/pkg/upgrade"
+	"github.com/openebs/upgrade/pkg/version"
 )
 
 var (
