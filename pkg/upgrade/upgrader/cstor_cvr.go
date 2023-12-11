@@ -21,10 +21,11 @@ import (
 	"time"
 
 	apis "github.com/openebs/api/v3/pkg/apis/cstor/v1"
-	"github.com/openebs/upgrade/pkg/upgrade/patch"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
+
+	"github.com/openebs/upgrade/pkg/upgrade/patch"
 )
 
 // CVRPatch is the patch required to upgrade cvr

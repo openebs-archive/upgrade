@@ -20,11 +20,12 @@ import (
 	"strings"
 
 	"github.com/openebs/maya/pkg/util"
-	cstor "github.com/openebs/upgrade/pkg/migrate/cstor"
 	"github.com/spf13/cobra"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
-	errors "github.com/pkg/errors"
+	cstor "github.com/openebs/upgrade/pkg/migrate/cstor"
+
+	"github.com/pkg/errors"
 )
 
 var (

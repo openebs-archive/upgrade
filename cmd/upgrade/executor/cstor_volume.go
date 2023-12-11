@@ -19,11 +19,12 @@ package executor
 import (
 	"github.com/openebs/maya/pkg/util"
 	"github.com/spf13/cobra"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
+
+	"github.com/pkg/errors"
 
 	upgrade "github.com/openebs/upgrade/pkg/upgrade"
 	"github.com/openebs/upgrade/pkg/version"
-	errors "github.com/pkg/errors"
 )
 
 var (

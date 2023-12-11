@@ -24,7 +24,7 @@ import (
 	jv "github.com/openebs/jiva-operator/pkg/apis/openebs/v1"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

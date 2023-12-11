@@ -21,17 +21,18 @@ import (
 
 	v1Alpha1API "github.com/openebs/api/v3/pkg/apis/openebs.io/v1alpha1"
 	jv "github.com/openebs/jiva-operator/pkg/apis/openebs/v1"
-	"github.com/openebs/upgrade/pkg/upgrade/patch"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
+	"github.com/openebs/upgrade/pkg/upgrade/patch"
+
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // JivaVolumePatch is the patch required to upgrade JivaVolume
